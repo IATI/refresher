@@ -177,6 +177,12 @@ def reload(database_url, s3_client, retry_errors):
             if process.is_alive():
                 finished = False
 
+    stale_datasets = conn.execute(datasets.select().where(datasets.c.stale == True)).fetchall()
+    stale_dataset_ids = [dataset["id"] for dataset in stale_datasets]
+    conn.execute(datasets.delete().where(datasets.c.id.in_(stale_dataset_ids)))
+    for dataset in stale_datasets:
+        s3_client.delete_object(Bucket=IATI_BUCKET_NAME, Key=IATI_FOLDER_NAME+dataset['id'])
+
     return 200, "Reload complete. Failed to download {} datasets.".format(download_errors)
 
 
