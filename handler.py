@@ -183,7 +183,7 @@ def reload(database_url, s3_client, retry_errors):
 def refresh_handler(event, context):
     body = {"input": event}
     try:
-        body["message"], status_code = refresh(event["database_url"])
+        status_code, body["message"] = refresh(event["database_url"])
     except Exception as e:
         body["message"] = str(e)
         status_code = 500
@@ -206,7 +206,7 @@ def reload_handler(event, context):
             aws_access_key_id=event["s3_key"],
             aws_secret_access_key=event["s3_secret"]
         )
-        body["message"], status_code = reload(event["database_url"], s3_client, event["retry_errors"])
+        status_code, body["message"] = reload(event["database_url"], s3_client, event["retry_errors"])
     except Exception as e:
         body["message"] = str(e)
         status_code = 500
