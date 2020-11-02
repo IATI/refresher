@@ -4,5 +4,5 @@
     "s3_host": "",
     "s3_key": "",
     "s3_secret": "",
-    "retry_errors": 1
+    "retry_errors": 0
 }
