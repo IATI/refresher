@@ -22,6 +22,7 @@ var/
 # Python
 __pycache__
 venv
+mock_reload.json
 
 # Node
 node_modules

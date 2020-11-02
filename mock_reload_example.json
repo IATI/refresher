@@ -1,0 +1,8 @@
+{
+    "database_url": "postgresql://postgres@:5432/analyst_ui",
+    "s3_region": "",
+    "s3_host": "",
+    "s3_key": "",
+    "s3_secret": "",
+    "retry_errors": 1
+}

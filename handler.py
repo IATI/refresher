@@ -1,14 +1,20 @@
-import requests
+import boto3
 import json
-import progressbar
-import sqlalchemy
-from sqlalchemy import create_engine, MetaData, Table, Column, String
-from sqlalchemy.types import Boolean
+from multiprocessing import Process
+import os
+import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+import sqlalchemy
+from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
+from sqlalchemy.types import Boolean
+import time
 
 DATA_SCHEMA = "public"
 DATA_TABLENAME = "serverless_refresher"
+PARALLEL_PROCESSES = 10
+IATI_BUCKET_NAME = "iati-s3"
+IATI_FOLDER_NAME = "serverless_refresher/"
 
 
 def requests_retry_session(
@@ -106,14 +112,101 @@ def refresh(database_url):
 
     engine.dispose()
 
-    return "New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count)
+    return 200, "New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count)
+
+
+def split(lst, n):
+    k, m = divmod(len(lst), n)
+    return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
+
+
+def download_chunk(chunk, s3_client, conn, datasets, download_errors):
+    for dataset in chunk:
+        try:
+            download_xml = requests_retry_session(retries=3).get(url=dataset["url"], timeout=5).content
+            s3_client.put_object(Body=download_xml, Bucket=IATI_BUCKET_NAME, Key=IATI_FOLDER_NAME+dataset['id'])
+            conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(new=False, modified=False, stale=False, error=False))
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+            download_errors += 1
+            conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(error=True))
+
+
+def reload(database_url, s3_client, retry_errors):
+    engine = create_engine(database_url)
+    conn = engine.connect()
+    meta = MetaData(engine)
+    meta.reflect()
+
+    try:
+        datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
+    except sqlalchemy.exc.NoSuchTableError:
+        return 500, "No database found. Try running `refresh` first."
+
+    if retry_errors in [1, "TRUE", "true", "True", True]:
+        dataset_filter = datasets.c.error == True
+    else:
+        dataset_filter = and_(
+            or_(
+                datasets.c.new == True,
+                datasets.c.modified == True
+            ),
+            datasets.c.error == False
+        )
+
+    new_datasets = conn.execute(datasets.select().where(dataset_filter)).fetchall()
+
+    chunked_datasets = list(split(new_datasets, PARALLEL_PROCESSES))
+
+    processes = []
+    
+    download_errors = 0
+    for chunk in chunked_datasets:
+        if len(chunk) == 0:
+            continue
+        process = Process(target=download_chunk, args=(chunk, s3_client, conn, datasets, download_errors))
+        process.start()
+        processes.append(process)
+
+    finished = False
+
+    while finished == False:
+        time.sleep(2)
+        finished = True
+        for process in processes:
+            process.join(timeout=0)
+            if process.is_alive():
+                finished = False
+
+    return 200, "Reload complete. Failed to download {} datasets.".format(download_errors)
 
 
 def refresh_handler(event, context):
     body = {"input": event}
     try:
-        body["message"] = refresh(event["database_url"])
-        status_code = 200
+        body["message"], status_code = refresh(event["database_url"])
+    except Exception as e:
+        body["message"] = str(e)
+        status_code = 500
+
+    response = {
+        "statusCode": status_code,
+        "body": json.dumps(body)
+    }
+
+    return response
+
+def reload_handler(event, context):
+    body = {"input": event}
+    try:
+        s3_session = boto3.session.Session()
+        s3_client = s3_session.client(
+            's3',
+            region_name=event["s3_region"],
+            endpoint_url=event["s3_host"],
+            aws_access_key_id=event["s3_key"],
+            aws_secret_access_key=event["s3_secret"]
+        )
+        body["message"], status_code = reload(event["database_url"], s3_client, event["retry_errors"])
     except Exception as e:
         body["message"] = str(e)
         status_code = 500
