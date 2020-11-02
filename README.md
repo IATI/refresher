@@ -17,3 +17,7 @@ serverless invoke local -f refresh -p mock_refresh.json
 serverless invoke local -f reload -p mock_reload.json
 ```
 
+# Deployment (AWS)
+```
+serverless deploy
+```
