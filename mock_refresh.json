@@ -1,3 +1,0 @@
-{
-    "database_url": "postgresql://postgres@:5432/analyst_ui"
-}

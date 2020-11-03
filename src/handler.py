@@ -1,3 +1,4 @@
+import argparse
 import boto3
 import json
 from multiprocessing import Process
@@ -112,7 +113,7 @@ def refresh(database_url):
 
     engine.dispose()
 
-    return 200, "New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count)
+    print("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
 
 
 def split(lst, n):
@@ -140,9 +141,9 @@ def reload(database_url, s3_client, retry_errors):
     try:
         datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
     except sqlalchemy.exc.NoSuchTableError:
-        return 500, "No database found. Try running `refresh` first."
+        raise ValueError("No database found. Try running `-t refresh` first.")
 
-    if retry_errors in [1, "TRUE", "true", "True", True]:
+    if retry_errors:
         dataset_filter = datasets.c.error == True
     else:
         dataset_filter = and_(
@@ -183,43 +184,32 @@ def reload(database_url, s3_client, retry_errors):
     for dataset in stale_datasets:
         s3_client.delete_object(Bucket=IATI_BUCKET_NAME, Key=IATI_FOLDER_NAME+dataset['id'])
 
-    return 200, "Reload complete. Failed to download {} datasets.".format(download_errors)
+    print("Reload complete. Failed to download {} datasets.".format(download_errors))
 
 
-def refresh_handler(event, context):
-    body = {"input": event}
-    try:
-        status_code, body["message"] = refresh(event["database_url"])
-    except Exception as e:
-        body["message"] = str(e)
-        status_code = 500
-
-    response = {
-        "statusCode": status_code,
-        "body": json.dumps(body)
-    }
-
-    return response
-
-def reload_handler(event, context):
-    body = {"input": event}
-    try:
+def main(args):
+    database_url = os.environ.get("DATABASE_URL", None)
+    if args.type == "refresh":
+        refresh(database_url)
+    else:
         s3_session = boto3.session.Session()
         s3_client = s3_session.client(
             's3',
-            region_name=event["s3_region"],
-            endpoint_url=event["s3_host"],
-            aws_access_key_id=event["s3_key"],
-            aws_secret_access_key=event["s3_secret"]
+            region_name=os.environ.get("S3_REGION", None),
+            endpoint_url=os.environ.get("S3_HOST", None),
+            aws_access_key_id=os.environ.get("S3_KEY", None),
+            aws_secret_access_key=os.environ.get("S3_SECRET", None)
         )
-        status_code, body["message"] = reload(event["database_url"], s3_client, event["retry_errors"])
-    except Exception as e:
-        body["message"] = str(e)
-        status_code = 500
+        reload(
+            database_url,
+            s3_client,
+            args.errors
+        )
 
-    response = {
-        "statusCode": status_code,
-        "body": json.dumps(body)
-    }
 
-    return response
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Refresh/Reload from IATI Registry')
+    parser.add_argument('-t', '--type', dest='type', default="refresh", help="Trigger 'refresh' or 'reload'")
+    parser.add_argument('-e', '--errors', dest='errors', action='store_true', default=False, help="Attempt to download previous errors")
+    args = parser.parse_args()
+    main(args)
