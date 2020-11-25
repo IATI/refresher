@@ -30,6 +30,21 @@ def convert_migration_to_version(migration_rev):
 def convert_version_to_migration(version):
     return 'BR_' + version.replace('.', '_')
 
+def isUpgrade(fromVersion, toVersion):
+    fromSplit = fromVersion.split('.')
+    toSplit = toVersion.split('.')
+
+    if int(fromSplit[0]) < int(toSplit[0]):
+        return True
+
+    if int(fromSplit[1]) < int(toSplit[1]):
+        return True
+
+    if int(fromSplit[2]) < int(toSplit[2]):
+        return True
+
+    return False
+
 def requests_retry_session(
     retries=10,
     backoff_factor=0.3,
@@ -80,10 +95,18 @@ def refresh():
     current_migration_version = convert_migration_to_version(context.get_current_revision())
 
     if current_migration_version != __version__:
-        alembicArgs = [
+
+        if isUpgrade(current_migration_version, __version__):
+            alembicArgs = [
             '--raiseerr',
             'upgrade', convert_version_to_migration(__version__),
-        ]
+            ]
+        else:
+            alembicArgs = [
+            '--raiseerr',
+            'downgrade', convert_version_to_migration(__version__),
+            ]
+
         alembic.config.main(argv=alembicArgs)
 
     datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
