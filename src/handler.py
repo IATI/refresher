@@ -1,5 +1,6 @@
 import argparse
-import boto3
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.core import exceptions as AzureExceptions
 import json
 from multiprocessing import Process
 import os
@@ -9,14 +10,40 @@ from requests.packages.urllib3.util.retry import Retry
 import sqlalchemy
 from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
 from sqlalchemy.types import Boolean
+import alembic.config
+from alembic.migration import MigrationContext
 import time
 
-DATA_SCHEMA = "public"
-DATA_TABLENAME = "serverless_refresher"
-PARALLEL_PROCESSES = 10
-IATI_BUCKET_NAME = "iati-s3"
-IATI_FOLDER_NAME = "serverless_refresher/"
+from constants.version import __version__
 
+DATA_SCHEMA = "public"
+DATA_TABLENAME = "refresher"
+PARALLEL_PROCESSES = 10
+
+CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_SOURCE')
+STORAGE_CONNECTION_STR = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+DB_CONNECTION_STR = os.getenv('DB_CONNECTION_STRING')
+
+def convert_migration_to_version(migration_rev):
+    return migration_rev.replace('BR_', '').replace('_','.')
+
+def convert_version_to_migration(version):
+    return 'BR_' + version.replace('.', '_')
+
+def isUpgrade(fromVersion, toVersion):
+    fromSplit = fromVersion.split('.')
+    toSplit = toVersion.split('.')
+
+    if int(fromSplit[0]) < int(toSplit[0]):
+        return True
+
+    if int(fromSplit[1]) < int(toSplit[1]):
+        return True
+
+    if int(fromSplit[2]) < int(toSplit[2]):
+        return True
+
+    return False
 
 def requests_retry_session(
     retries=10,
@@ -55,8 +82,8 @@ def fetch_datasets():
     return results
 
 
-def refresh(database_url):
-    engine = create_engine(database_url)
+def refresh():
+    engine = create_engine(DB_CONNECTION_STR)
     conn = engine.connect()
     meta = MetaData(engine)
     meta.reflect()
@@ -64,24 +91,25 @@ def refresh(database_url):
     all_datasets = fetch_datasets()
     new_count = 0
 
-    try:
-        datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
-    except sqlalchemy.exc.NoSuchTableError:  # First run
-        datasets = Table(
-            DATA_TABLENAME,
-            meta,
-            Column('id', String, primary_key=True),
-            Column('hash', String),
-            Column('url', String),
-            Column('new', Boolean, unique=False, default=True),  # Marks whether a dataset is brand new
-            Column('modified', Boolean, unique=False, default=False),  # Marks whether a dataset is old but modified
-            Column('stale', Boolean, unique=False, default=False),  # Marks whether a dataset is scheduled for deletion
-            Column('error', Boolean, unique=False, default=False),
-            schema=DATA_SCHEMA
-        )
-        meta.create_all(engine)
-        new_count += len(all_datasets)
-        conn.execute(datasets.insert(), all_datasets)
+    context = MigrationContext.configure(conn)
+    current_migration_version = convert_migration_to_version(context.get_current_revision())
+
+    if current_migration_version != __version__:
+
+        if isUpgrade(current_migration_version, __version__):
+            alembicArgs = [
+            '--raiseerr',
+            'upgrade', convert_version_to_migration(__version__),
+            ]
+        else:
+            alembicArgs = [
+            '--raiseerr',
+            'downgrade', convert_version_to_migration(__version__),
+            ]
+
+        alembic.config.main(argv=alembicArgs)
+
+    datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
 
     all_dataset_ids = [dataset["id"] for dataset in all_datasets]
     cached_datasets = conn.execute(datasets.select()).fetchall()
@@ -121,23 +149,31 @@ def split(lst, n):
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
-def download_chunk(chunk, s3_client, conn, datasets, download_errors):
+def download_chunk(chunk, blob_service_client, datasets, download_errors):
+    engine = create_engine(DB_CONNECTION_STR)
+    conn = engine.connect()
+    meta = MetaData(engine)
+    meta.reflect()
     for dataset in chunk:
         try:
             download_xml = requests_retry_session(retries=3).get(url=dataset["url"], timeout=5).content
-            s3_client.put_object(Body=download_xml, Bucket=IATI_BUCKET_NAME, Key=IATI_FOLDER_NAME+dataset['id'])
+
+            blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=dataset['hash'] + '.xml')
+            blob_client.upload_blob(download_xml)
+
             conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(new=False, modified=False, stale=False, error=False))
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             download_errors += 1
             conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(error=True))
+        except (AzureExceptions.ResourceExistsError) as e:
+            pass
 
 
-def reload(database_url, s3_client, retry_errors):
-    engine = create_engine(database_url)
+def reload(blob_service_client, retry_errors):
+    engine = create_engine(DB_CONNECTION_STR)
     conn = engine.connect()
     meta = MetaData(engine)
     meta.reflect()
-
     try:
         datasets = Table(DATA_TABLENAME, meta, schema=DATA_SCHEMA, autoload=True)
     except sqlalchemy.exc.NoSuchTableError:
@@ -164,7 +200,7 @@ def reload(database_url, s3_client, retry_errors):
     for chunk in chunked_datasets:
         if len(chunk) == 0:
             continue
-        process = Process(target=download_chunk, args=(chunk, s3_client, conn, datasets, download_errors))
+        process = Process(target=download_chunk, args=(chunk, blob_service_client, datasets, download_errors))
         process.start()
         processes.append(process)
 
@@ -181,28 +217,22 @@ def reload(database_url, s3_client, retry_errors):
     stale_datasets = conn.execute(datasets.select().where(datasets.c.stale == True)).fetchall()
     stale_dataset_ids = [dataset["id"] for dataset in stale_datasets]
     conn.execute(datasets.delete().where(datasets.c.id.in_(stale_dataset_ids)))
+
+    container_client = blob_service_client.get_container_client(CONTAINER_NAME)
+
     for dataset in stale_datasets:
-        s3_client.delete_object(Bucket=IATI_BUCKET_NAME, Key=IATI_FOLDER_NAME+dataset['id'])
+        container_client.delete_blob(dataset['hash'] + '.xml')
 
     print("Reload complete. Failed to download {} datasets.".format(download_errors))
 
 
 def main(args):
-    database_url = os.environ.get("DATABASE_URL", None)
     if args.type == "refresh":
-        refresh(database_url)
+        refresh()
     else:
-        s3_session = boto3.session.Session()
-        s3_client = s3_session.client(
-            's3',
-            region_name=os.environ.get("S3_REGION", None),
-            endpoint_url=os.environ.get("S3_HOST", None),
-            aws_access_key_id=os.environ.get("S3_KEY", None),
-            aws_secret_access_key=os.environ.get("S3_SECRET", None)
-        )
+        blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STR)
         reload(
-            database_url,
-            s3_client,
+            blob_service_client,
             args.errors
         )
 
