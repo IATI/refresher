@@ -33,11 +33,19 @@ docker run --env-file=.env IMAGE_NAME
 
 These are required:
 
-### AZURE_STORAGE_CONNECTION_STRING
+## AZURE_STORAGE_CONNECTION_STRING
 
-### AZURE_STORAGE_CONTAINER_SOURCE
+- This can be found in the Storage Account > Access Keys or by running `az storage account show-connection-string -g MyResourceGroup -n MyStorageAccount`
 
-### DB_CONNECTION_STRING
+## AZURE_STORAGE_CONTAINER_SOURCE
+
+- The string name of your blob container in Azure E.g. fun-blob-1
+
+## DB_CONNECTION_STRING
+
+- The connection string for your local postgresql database for the refresher
+  - If you create the database like above then this is the string:
+    - "postgresql://refresh:refresh@localhost/refresher"
 
 # DB Migrations
 
