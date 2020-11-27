@@ -35,7 +35,7 @@ jobs:
           docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
 
-      - name: Set Env variables
+      - name: "Set Env variables"
         uses: Azure/appservice-settings@v1
         with:
           app-name: "${{env.STAGE}}-${{env.NAME}}"
