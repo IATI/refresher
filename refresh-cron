@@ -1,2 +1,2 @@
-0 0 * * * /usr/local/bin/python /code/handler.py -t refresh && python handler.py -t reload >> /var/log/cron.log 2>&1
-0 5 * * 0 /usr/local/bin/python /code/handler.py -t reload -e >> /var/log/cron.log 2>&1
+14 30 * * * /usr/local/bin/python /code/handler.py -t refresh && python handler.py -t reload >> /var/log/cron.log 2>&1
+14 35 * * 0 /usr/local/bin/python /code/handler.py -t reload -e >> /var/log/cron.log 2>&1

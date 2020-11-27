@@ -9,8 +9,8 @@ env:
   STAGE: dev
   NAME: iati-refresher
   TAG: ${{ github.sha }}
-  AZURE_STORAGE_CONNECTION_STRING": ${{ secrets.REFRESHER_DEV_STORAGE_CONN_STR}},
-  AZURE_STORAGE_CONTAINER_SOURCE": ${{ secrets.REFRESHER_DEV_CONTAINER_SOURCE}},
+  AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.REFRESHER_DEV_STORAGE_CONN_STR}}
+  AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.REFRESHER_DEV_CONTAINER_SOURCE}}
   DB_CONNECTION_STRING: ${{ secrets.REFRESHER_DEV_DB_CONN_STR}}
 
 jobs:
@@ -34,6 +34,31 @@ jobs:
       - run: |
           docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+
+      - name: Set Env variables
+        uses: Azure/appservice-settings@v1
+        with:
+        app-name: "${{env.STAGE}}-${{env.NAME}}"
+        app-settings-json: |
+              [
+                  {
+                      "name": "AZURE_STORAGE_CONNECTION_STRING",
+                      "value": "${{ env.AZURE_STORAGE_CONNECTION_STRING }}",
+                      "slotSetting": false
+                  },
+                  {
+                      "name": "AZURE_STORAGE_CONTAINER_SOURCE",
+                      "value": "${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}",
+                      "slotSetting": false
+                  },
+                  {
+                    "name": "DB_CONNECTION_STRING",
+                    "value": "${{ env.DB_CONNECTION_STRING }}",
+                    "slotSetting": false
+                  }
+              ]
+
+
       - name: "Deploy to Azure Web Apps"
         uses: azure/webapps-deploy@v2
         with:
