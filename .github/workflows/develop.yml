@@ -38,25 +38,25 @@ jobs:
       - name: Set Env variables
         uses: Azure/appservice-settings@v1
         with:
-            app-name: "${{env.STAGE}}-${{env.NAME}}"
-            app-settings-json: |
-                [
-                    {
-                        "name": "AZURE_STORAGE_CONNECTION_STRING",
-                        "value": "${{ env.AZURE_STORAGE_CONNECTION_STRING }}",
-                        "slotSetting": false
-                    },
-                    {
-                        "name": "AZURE_STORAGE_CONTAINER_SOURCE",
-                        "value": "${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}",
-                        "slotSetting": false
-                    },
-                    {
-                        "name": "DB_CONNECTION_STRING",
-                        "value": "${{ env.DB_CONNECTION_STRING }}",
-                        "slotSetting": false
-                    }
-                ]
+          app-name: "${{env.STAGE}}-${{env.NAME}}"
+          app-settings-json: |
+            [
+                {
+                    "name": "AZURE_STORAGE_CONNECTION_STRING",
+                    "value": "${{ env.AZURE_STORAGE_CONNECTION_STRING }}",
+                    "slotSetting": false
+                },
+                {
+                    "name": "AZURE_STORAGE_CONTAINER_SOURCE",
+                    "value": "${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}",
+                    "slotSetting": false
+                },
+                {
+                    "name": "DB_CONNECTION_STRING",
+                    "value": "${{ env.DB_CONNECTION_STRING }}",
+                    "slotSetting": false
+                }
+            ]
       - name: "Deploy to Azure Web Apps"
         uses: azure/webapps-deploy@v2
         with:
