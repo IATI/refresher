@@ -1,0 +1,41 @@
+name: Deploy_Refresher_To_Development_On_Push
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  STAGE: dev
+  NAME: iati-refresher
+  TAG: ${{ github.sha }}
+  AZURE_STORAGE_CONNECTION_STRING": ${{ secrets.REFRESHER_DEV_STORAGE_CONN_STR}},
+  AZURE_STORAGE_CONTAINER_SOURCE": ${{ secrets.REFRESHER_DEV_CONTAINER_SOURCE}},
+  DB_CONNECTION_STRING: ${{ secrets.REFRESHER_DEV_DB_CONN_STR}}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v2
+
+      - name: "Login via Azure CLI"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Build and push image"
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - run: |
+          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+      - name: "Deploy to Azure Web Apps"
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: "${{env.STAGE}}-${{env.NAME}}"
+          images: "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}"
