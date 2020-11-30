@@ -38,7 +38,7 @@ jobs:
         uses: 'azure/aci-deploy@v1'
         with:
           resource-group: iati
-          dns-name-label: dev-iati-refresher.uksouth.azurecontainer.io
+          dns-name-label: dev-iati-refresher
           image: iatiimages.azurecr.io/{{ $STAGE }}-{{ $NAME }}:${{ github.sha }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
