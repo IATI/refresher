@@ -40,6 +40,7 @@ jobs:
           resource-group: iati
           dns-name-label: dev-iati-refresher
           image: iatiimages.azurecr.io/{{ $STAGE }}-{{ $NAME }}:${{ github.sha }}
+          registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
           environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }} DB_CONNECTION_STRING=${{ env.DB_CONNECTION_STRING }}
