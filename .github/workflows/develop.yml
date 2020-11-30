@@ -34,29 +34,6 @@ jobs:
       - run: |
           docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-
-      - name: "Set Env variables"
-        uses: Azure/appservice-settings@v1
-        with:
-          app-name: "${{env.STAGE}}-${{env.NAME}}"
-          app-settings-json: |
-            [
-                {
-                    "name": "AZURE_STORAGE_CONNECTION_STRING",
-                    "value": "${{ env.AZURE_STORAGE_CONNECTION_STRING }}",
-                    "slotSetting": false
-                },
-                {
-                    "name": "AZURE_STORAGE_CONTAINER_SOURCE",
-                    "value": "${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}",
-                    "slotSetting": false
-                },
-                {
-                    "name": "DB_CONNECTION_STRING",
-                    "value": "${{ env.DB_CONNECTION_STRING }}",
-                    "slotSetting": false
-                }
-            ]
       - name: 'Deploy to Azure Container Instances'
         uses: 'azure/aci-deploy@v1'
         with:
@@ -65,5 +42,6 @@ jobs:
           image: iatiimages.azurecr.io/{{ $STAGE }}-{{ $NAME }}:${{ github.sha }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }} DB_CONNECTION_STRING=${{ env.DB_CONNECTION_STRING }}
           name: dev-iati-refresher
           location: 'south uk'
