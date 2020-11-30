@@ -44,4 +44,4 @@ jobs:
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
           environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }} DB_CONNECTION_STRING=${{ env.DB_CONNECTION_STRING }}
           name: dev-iati-refresher
-          location: 'south uk'
+          location: 'UK South'
