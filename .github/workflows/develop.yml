@@ -57,8 +57,13 @@ jobs:
                     "slotSetting": false
                 }
             ]
-      - name: "Deploy to Azure Web Apps"
-        uses: azure/webapps-deploy@v2
+      - name: 'Deploy to Azure Container Instances'
+        uses: 'azure/aci-deploy@v1'
         with:
-          app-name: "${{env.STAGE}}-${{env.NAME}}"
-          images: "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}"
+          resource-group: iati
+          dns-name-label: dev-iati-refresher.uksouth.azurecontainer.io
+          image: iatiimages.azurecr.io/{{ $STAGE }}-{{ $NAME }}:${{ github.sha }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          name: dev-iati-refresher
+          location: 'south uk'
