@@ -11,7 +11,11 @@ env:
   TAG: ${{ github.sha }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
-  DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+  DB_USER: ${{ secrets.DB_USER }}
+  DB_PASS: ${{ secrets.DB_PASS }}
+  DB_HOST: ${{ secrets.DB_HOST }}
+  DB_NAME: ${{ secrets.DB_NAME }}
+  DB_PORT: ${{ secrets.DB_PORT }}
 
 jobs:
   build-and-deploy:
@@ -37,7 +41,12 @@ jobs:
       - name: 'Deploy to Azure Container Instances'
         uses: 'azure/aci-deploy@v1'
         with:
-          secure-environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }} DB_CONNECTION_STRING=${{ env.DB_CONNECTION_STRING }}
+          secure-environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}
+            DB_HOST=${{ env.DB_HOST }}
+            DB_PORT=${{ env.DB_PORT }}
+            DB_USER=${{ env.DB_USER }}
+            DB_PASS=${{ env.DB_PASS }}
+            DB_NAME=${{ env.DB_NAME }}
           resource-group: ${{ secrets.RESOURCE_GROUP }}
           dns-name-label: ${{ env.STAGE }}-${{ env.NAME }} # url subdomain: dns-name-label.location.azurecontainer.io/
           image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}

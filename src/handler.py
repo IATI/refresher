@@ -13,6 +13,7 @@ from sqlalchemy.types import Boolean
 import alembic.config
 from alembic.migration import MigrationContext
 import time
+import logging
 
 from constants.version import __version__
 
@@ -22,7 +23,14 @@ PARALLEL_PROCESSES = 10
 
 CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_SOURCE')
 STORAGE_CONNECTION_STR = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-DB_CONNECTION_STR = os.getenv('DB_CONNECTION_STRING')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+DB_NAME = os.getenv('DB_NAME')
+
+def getDbEngine():
+    return create_engine("postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME))
 
 def convert_migration_to_version(migration_rev):
     return migration_rev.replace('BR_', '').replace('_','.')
@@ -83,7 +91,7 @@ def fetch_datasets():
 
 
 def refresh():
-    engine = create_engine(DB_CONNECTION_STR)
+    engine = getDbEngine()
     conn = engine.connect()
     meta = MetaData(engine)
     meta.reflect()
@@ -141,7 +149,7 @@ def refresh():
 
     engine.dispose()
 
-    print("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
+    logging.info("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
 
 
 def split(lst, n):
@@ -150,7 +158,7 @@ def split(lst, n):
 
 
 def download_chunk(chunk, blob_service_client, datasets, download_errors):
-    engine = create_engine(DB_CONNECTION_STR)
+    engine = getDbEngine()
     conn = engine.connect()
     meta = MetaData(engine)
     meta.reflect()
@@ -165,12 +173,17 @@ def download_chunk(chunk, blob_service_client, datasets, download_errors):
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             download_errors += 1
             conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(error=True))
+        except (AzureExceptions.ServiceResponseError) as e:
+            logging.warning('Failed to upload XML with url ' + dataset['url'] + ' - Azure error message: ' + e.message)
         except (AzureExceptions.ResourceExistsError) as e:
             pass
+        except Exception as e:
+            logging.warning('Failed to upload XML with url ' + dataset['url'] + ' - message: ' + e.message)
+            
 
 
 def reload(blob_service_client, retry_errors):
-    engine = create_engine(DB_CONNECTION_STR)
+    engine = getDbEngine()
     conn = engine.connect()
     meta = MetaData(engine)
     meta.reflect()
@@ -221,9 +234,12 @@ def reload(blob_service_client, retry_errors):
     container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
     for dataset in stale_datasets:
-        container_client.delete_blob(dataset['hash'] + '.xml')
+        try
+            container_client.delete_blob(dataset['hash'] + '.xml')
+        except (AzureExceptions.ResourceNotFoundError) as e:
+            logging.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
 
-    print("Reload complete. Failed to download {} datasets.".format(download_errors))
+    logging.info("Reload complete. Failed to download {} datasets.".format(download_errors))
 
 
 def main(args):
