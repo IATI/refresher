@@ -100,11 +100,16 @@ def refresh():
     new_count = 0
 
     context = MigrationContext.configure(conn)
-    current_migration_version = convert_migration_to_version(context.get_current_revision())
+    if context.get_current_revision() == None:
+        current_migration_version = None
+        upgrade = True
+    else:
+        current_migration_version = convert_migration_to_version(context.get_current_revision())
+        upgrade = isUpgrade(current_migration_version, __version__)
 
     if current_migration_version != __version__:
 
-        if isUpgrade(current_migration_version, __version__):
+        if upgrade:
             alembicArgs = [
             '--raiseerr',
             'upgrade', convert_version_to_migration(__version__),
