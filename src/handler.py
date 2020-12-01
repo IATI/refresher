@@ -234,7 +234,7 @@ def reload(blob_service_client, retry_errors):
     container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
     for dataset in stale_datasets:
-        try
+        try:
             container_client.delete_blob(dataset['hash'] + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
             logging.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
