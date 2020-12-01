@@ -5,7 +5,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY src/ .
 COPY alembic.ini .
-COPY migrations/ .
+ADD migrations/ .
 
 COPY refresh-cron /etc/cron.d/refresh-cron
 RUN chmod 0644 /etc/cron.d/refresh-cron
