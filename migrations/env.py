@@ -19,7 +19,7 @@ CONN_STR = "postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(DB_USER
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option('sqlalchemy.url', os.getenv(CONN_STR))
+config.set_main_option('sqlalchemy.url', CONN_STR)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -49,7 +49,7 @@ def run_migrations_offline():
     script output.
 
     """
-    url = os.getenv(CONN_STR)
+    url = CONN_STR
     
     context.configure(
         url=url,
