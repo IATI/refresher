@@ -10,7 +10,7 @@ import time
 import logging
 import sqlalchemy
 from sqlalchemy import and_, or_
-import lib.db as db
+import library.db as db
 from constants.config import config
 
 logging.basicConfig(stream=sys.stdout)

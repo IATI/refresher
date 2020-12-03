@@ -1,5 +1,5 @@
 import argparse
-import lib.refresher as refresher
+import library.refresher as refresher
 
 def main(args):    
     if args.type == "refresh":
