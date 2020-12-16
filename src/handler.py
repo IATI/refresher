@@ -1,13 +1,15 @@
 import argparse
 import library.refresher as refresher
+import build as build
 
 def main(args):    
     if args.type == "refresh":
         refresher.refresh()
-    else:       
         refresher.reload(
             args.errors
         )
+    elif args.type == "build":    
+        build.main()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Reload from IATI Registry')

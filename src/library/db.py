@@ -6,6 +6,10 @@ import alembic.config
 from alembic.migration import MigrationContext
 from constants.version import __version__
 from constants.config import config
+import psycopg2
+
+def getDirectConnection():
+    return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
 
 def getDbEngine():
     return create_engine("postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(config['DB_USER'], config['DB_PASS'], config['DB_HOST'], config['DB_PORT'], config['DB_NAME']))
