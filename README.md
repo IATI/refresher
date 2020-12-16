@@ -1,5 +1,5 @@
-# IATI Serverless Refresher
-Serverless service based on the IATI Better Refresher
+# IATI Refresher
+Application to download IATI data as presented by the IATI registry, store and track changes in the source files, and store the normalised data in a compressed and performant SQL database.
 
 # Local setup
 ```
