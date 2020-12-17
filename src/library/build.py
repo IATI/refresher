@@ -1,4 +1,4 @@
-import os, time
+import os, time, sys
 from multiprocessing import Process
 import logging
 import datetime
@@ -6,24 +6,22 @@ from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
+import psycopg2
+import library.db as db
 
 
-def split(iterable, n):
-    i = iter(iterable)
-    piece = list(islice(i, n))
-    while piece:
-        yield piece
-        piece = list(islice(i, n))
+def chunk_list(l, n):
+    for i in range(0, n):
+        yield l[i::n]
 
-
-def process_blob_list(blob_list):
+def process_hash_list(hash_list):
     db = IATI_db()
 
-    for source_blob in blob_list:
+    for file_hash in hash_list:
         try:
-            db.create_from_iati_xml(source_blob) 
+            db.create_from_iati_xml(file_hash[0]) 
         except Exception as e:
-            logging.error('ERROR with ' + source_blob.name)
+            logging.error('ERROR with ' + file_hash[0])
             if hasattr(e, 'message'):                         
                 logging.error(e.message)
 
@@ -33,28 +31,40 @@ def process_blob_list(blob_list):
                 logging.warning(e.args[0])
             except:
                 pass
+    
+    db.close()
 
 def main():
-    now = datetime.datetime.now()
-    logging.info("Starting...")
+    logging.info("Starting build...")
 
-    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-    container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
-    blob_list = container_client.list_blobs()
+    try:
+        conn = db.getDirectConnection()
+        cur = conn.cursor()
+    except Exception as e:
+        logging.error('Failed to connect to Postgres')
+        sys.exit()
+
+    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
+
+    cur.execute(sql)
+    file_hashes = cur.fetchall()
+
+    cur.close()
+    conn.close()
 
     if config['DDS']['PARALLEL_PROCESSES'] == 1:
-        process_blob_list(blob_list)
+        process_hash_list(file_hashes)
     else:
-        chunked_blob_lists= list(split(blob_list, config['DDS']['PARALLEL_PROCESSES']))
+        chunked_hash_lists = list(chunk_list(file_hashes, config['DDS']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logging.info("Processing " + str(len(dirlist)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
+        logging.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
 
-        for chunk in chunked_blob_lists:
+        for chunk in chunked_hash_lists:
             if len(chunk) == 0:
                 continue
-            process = Process(target=process_dirlist, args=(chunk,))
+            process = Process(target=process_hash_list, args=(chunk,))
             process.start()
             processes.append(process)
 
@@ -67,5 +77,4 @@ def main():
                 if process.is_alive():
                     finished = False
 
-    now = datetime.datetime.now()
     logging.info("Finished.")

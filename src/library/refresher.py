@@ -89,6 +89,7 @@ def refresh():
                 dataset["modified"] = True
                 dataset["stale"] = False  # If for some reason, we pick up a previously stale dataset
                 dataset["error"] = False
+                dataset["root_element_key"] = None
                 conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(dataset))
                 modified_count += 1
 
@@ -151,6 +152,9 @@ def reload(retry_errors):
     processes = []
     
     download_errors = 0
+
+    logging.info('Downloading files in ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
+    
     for chunk in chunked_datasets:
         if len(chunk) == 0:
             continue

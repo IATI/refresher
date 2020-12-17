@@ -15,8 +15,8 @@ setupLogging()
 
 class IATI_db:
     def __init__(self):
-        self._fileMD5 = None
-
+        self._parent_activity_hash = None
+        
         try:
             self._conn = db.getDirectConnection()
             self._cur = self._conn.cursor()
@@ -38,6 +38,9 @@ class IATI_db:
 
     def upsert_child_elements_recursively(self, parent_el, parent_hash):
             children = parent_el.getchildren()
+
+            if parent_el.tag == "iati-activity":
+                self._parent_activity_hash = parent_hash 
             
             for child_el in children:
 
@@ -56,7 +59,6 @@ class IATI_db:
                 sql = """INSERT INTO public.element_to_parent(
                         element_key, parent_key)
                         VALUES (%s, %s);"""
-
                 
                 try:
                     self._cur.execute(sql, (child_hash, parent_hash))
@@ -64,7 +66,21 @@ class IATI_db:
                 except psycopg2.IntegrityError:
                     self._conn.rollback()
 
-                self.upsert_child_elements_recursively(child_el, child_hash)            
+                if self._parent_activity_hash is not None: 
+
+                    sql = """INSERT INTO public.element_to_activity(
+                        element_key, activity_key)
+                        VALUES (%s, %s);"""                
+
+                    try:
+                        self._cur.execute(sql, (child_hash, self._parent_activity_hash))
+                        self._conn.commit()
+                    except psycopg2.IntegrityError:
+                        self._conn.rollback()
+
+                self._parent_activity_hash = None
+
+                self.upsert_child_elements_recursively(child_el, child_hash)       
             
 
     def get_attribute_hash(self, key,value):
@@ -131,12 +147,15 @@ class IATI_db:
     def upsert_element(self, el, is_root=False):
         el_hash = self.get_element_hash(el)
 
+        if is_root:
+            self._root_element_hash = el_hash
+
         sql = """INSERT INTO public.element(
-                md5_pk, name, text_raw, text_tokens, file_md5, is_root)
+                md5_pk, name, text_raw, text_tokens, is_root)
                 VALUES (%s, %s, %s, to_tsvector(%s), %s, %s);"""
         
         try:
-            self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, self._fileMD5, is_root))
+            self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, is_root))
         except psycopg2.IntegrityError:
             self._conn.rollback()
             return el_hash
@@ -147,40 +166,20 @@ class IATI_db:
 
         return el_hash
 
-    def file_exists(self, fileMD5) :
-        sql = 'SELECT COUNT(*) FROM element WHERE file_md5 = %s'
+    def create_from_iati_xml(self, file_hash):
 
-        self._cur.execute(sql, (fileMD5,))
-        result = self._cur.fetchone()
-
-        if result[0] == 1:
-            return True
-        else:
-            return False
-
-    def create_from_iati_xml(self, blob):
-
-        file_hash = blob.name.replace('.xml', '')
-
-        if file_hash == '':
-            raise ValueError('Can not get hash from blob name.')
-
-        self._fileMD5 = file_hash
-
-        if config['DDS']['SKIP_EXISTING_FILES']:
-            if self.file_exists(self._fileMD5):
-                return
+        blob_name = file_hash + '.xml'
 
         parser = objectify.makeparser(remove_comments=True)
 
         blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-        blob_client = blob_service_client.get_blob_client(container=blob.container, blob=blob.name)
+        blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
         downloader = blob_client.download_blob()
         root = etree.fromstring(downloader.content_as_text())
 
         if root.tag != "iati-activities" and root.tag != "iati-organisations":
-            logging.warning('Neither activities nor organisations file - ' + file_name)
+            logging.warning('Neither activities nor organisations file - ' + blob_name)
             raise ValueError('Neither activities nor organisations file')
          
         root_hash = self.upsert_element(root, True)
@@ -189,3 +188,12 @@ class IATI_db:
             return
 
         return self.upsert_child_elements_recursively(root, root_hash)
+
+        sql = "UDPATE refresher SET root_element_key = %s WHERE hash = %s"
+
+        try:
+            self._cur.execute(sql, (root_hash, file_hash))
+            self._conn.commit()
+        except psycopg2.IntegrityError:
+            logging.warning('Should never be getting to adding duplicate el to att relationships')
+            self._conn.rollback()
