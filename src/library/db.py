@@ -39,28 +39,35 @@ def isUpgrade(fromVersion, toVersion):
     return False
 
 def migrateIfRequired(conn):
-    context = MigrationContext.configure(conn)
-    if context.get_current_revision() == None:
-        current_migration_version = None
-        upgrade = True
-    else:
-        current_migration_version = convert_migration_to_version(context.get_current_revision())
-        upgrade = isUpgrade(current_migration_version, __version__)
+    current_db_version = get_current_db_version(conn) #todo TUESDAY
 
-    if current_migration_version != __version__:
+    if current_db_version is None:
+        current_db_version = {
+            'name': '0.0.0'
+            'migration': 0
+        }
+
+    if current_db_version['name'] == __version__['name']:
+        return
+        
+    upgrade = isUpgrade(current_db_version['name'], __version__)
+
+    if upgrade:
+        step = 1
+    else:
+        step = -1
+
+    for i in range(current_db_version['migration'], __version__['migration'] + step, step):
+        migration = importlib.import_module('mig_' + str(i))
 
         if upgrade:
-            alembicArgs = [
-            '--raiseerr',
-            'upgrade', convert_version_to_migration(__version__),
-            ]
+            sql = migration.upgrade
         else:
-            alembicArgs = [
-            '--raiseerr',
-            'downgrade', convert_version_to_migration(__version__),
-            ]
+            sql = migration.downgrade
+        
+        with self.connection as cursor:
+            cursor.execute(sql)
 
-        alembic.config.main(argv=alembicArgs)
 
 def getDatasets(engine):
     meta = getMeta(engine)

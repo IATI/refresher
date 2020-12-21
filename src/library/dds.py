@@ -66,19 +66,17 @@ class IATI_db:
                 except psycopg2.IntegrityError:
                     self._conn.rollback()
 
-                if self._parent_activity_hash is not None: 
+                if self._activity_hash is not None: 
 
                     sql = """INSERT INTO public.element_to_activity(
                         element_key, activity_key)
                         VALUES (%s, %s);"""                
 
                     try:
-                        self._cur.execute(sql, (child_hash, self._parent_activity_hash))
+                        self._cur.execute(sql, (child_hash, self._activity_hash))
                         self._conn.commit()
                     except psycopg2.IntegrityError:
                         self._conn.rollback()
-
-                self._parent_activity_hash = None
 
                 self.upsert_child_elements_recursively(child_el, child_hash)       
             
@@ -126,7 +124,7 @@ class IATI_db:
             try:
                 self._cur.execute(sql, (att_hash, key, value))
                 self._conn.commit()
-            except psycopg2.IntegrityError:
+            except psycopg2.IntegrityError as e:
                 self._conn.rollback()
             except Exception as e:
                 self._conn.rollback()
@@ -147,18 +145,18 @@ class IATI_db:
     def upsert_element(self, el, is_root=False):
         el_hash = self.get_element_hash(el)
 
-        if is_root:
-            self._root_element_hash = el_hash
+        if el.tag == 'iati-activity':
+            self._activity_hash = el_hash
 
         sql = """INSERT INTO public.element(
                 md5_pk, name, text_raw, text_tokens, is_root)
-                VALUES (%s, %s, %s, to_tsvector(%s), %s, %s);"""
+                VALUES (%s, %s, %s, to_tsvector(%s), %s);"""
         
         try:
             self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, is_root))
-        except psycopg2.IntegrityError:
+        except psycopg2.IntegrityError as e:
             self._conn.rollback()
-            return el_hash
+            return None
 
         self._conn.commit()
         
