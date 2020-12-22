@@ -56,11 +56,10 @@ def refresh():
     logger.info('Begin refresh...')
     engine = db.getDbEngine()
     conn = engine.connect()
+    db.migrateIfRequired()
 
     all_datasets = fetch_datasets()
     new_count = 0
-
-    db.migrateIfRequired(conn)
 
     datasets = db.getDatasets(engine)
 

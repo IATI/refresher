@@ -1,9 +1,6 @@
-import os
-import sqlalchemy
+import os, importlib, pathlib
 from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
 from sqlalchemy.types import Boolean
-import alembic.config
-from alembic.migration import MigrationContext
 from constants.version import __version__
 from constants.config import config
 import psycopg2
@@ -38,35 +35,80 @@ def isUpgrade(fromVersion, toVersion):
 
     return False
 
-def migrateIfRequired(conn):
-    current_db_version = get_current_db_version(conn) #todo TUESDAY
+def get_current_db_version(conn):
+    sql = 'SELECT number, migration FROM version LIMIT 1'
+
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(sql)
+        result = cursor.fetchall()
+    except psycopg2.errors.UndefinedTable as e:
+        return None
+    
+    if len(result) != 1:
+        return None
+    else:
+        return {'number': result[0][0], 'migration': result[0][1]}
+
+def set_current_db_version(number, migration, current_number):
+    conn = getDirectConnection()
+    cursor = conn.cursor()
+
+    if current_number == '0.0.0':
+        sql = 'INSERT INTO version (number, migration) values (%s, %s)'
+        cursor.execute(sql, (number, migration))
+    else:
+        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
+        cursor.execute(sql, (number, migration, current_number))    
+    
+    conn.commit()
+    conn.close()
+
+
+def migrateIfRequired():
+    conn = getDirectConnection()
+    conn.set_session(autocommit=True)
+    current_db_version = get_current_db_version(conn)
 
     if current_db_version is None:
         current_db_version = {
-            'name': '0.0.0'
-            'migration': 0
+            'number': '0.0.0',
+            'migration': -1
         }
 
-    if current_db_version['name'] == __version__['name']:
+    if current_db_version['number'] == __version__['number']:
         return
-        
-    upgrade = isUpgrade(current_db_version['name'], __version__)
+    
+    upgrade = isUpgrade(current_db_version['number'], __version__['number'])
 
     if upgrade:
         step = 1
     else:
         step = -1
 
-    for i in range(current_db_version['migration'], __version__['migration'] + step, step):
-        migration = importlib.import_module('mig_' + str(i))
+    for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
+        migration = 'mig_' + str(i)
+
+        parent = str(pathlib.Path(__file__).parent.absolute())
+        spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
+        mig = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mig)
 
         if upgrade:
-            sql = migration.upgrade
+            sql = mig.upgrade
         else:
-            sql = migration.downgrade
+            sql = mig.downgrade
+
+        sql = sql.replace('\n', ' ')
+        sql = sql.replace('\t', ' ')
         
-        with self.connection as cursor:
-            cursor.execute(sql)
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        cursor.close()
+        conn.close()
+
+    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'])   
 
 
 def getDatasets(engine):
