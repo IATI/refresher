@@ -8,8 +8,14 @@ def main(args):
         refresher.reload(
             args.errors
         )
-    elif args.type == "build":    
+    if args.type == "reload":
+        refresher.reload(
+            args.errors
+        )
+    if args.type == "build": 
         build.main()
+    else:
+        print("Type is required - either refresh, reload or build.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')

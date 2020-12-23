@@ -1,4 +1,4 @@
-import os, time, sys
+import os, time, sys, traceback
 from multiprocessing import Process
 import logging
 import datetime
@@ -22,6 +22,7 @@ def process_hash_list(hash_list):
             db.create_from_iati_xml(file_hash[0]) 
         except Exception as e:
             logging.error('ERROR with ' + file_hash[0])
+            print(traceback.format_exc())
             if hasattr(e, 'message'):                         
                 logging.error(e.message)
 

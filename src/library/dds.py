@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys, time, re
 import logging
 from .logger import setupLogging
 import json
@@ -66,14 +66,14 @@ class IATI_db:
                 except psycopg2.IntegrityError:
                     self._conn.rollback()
 
-                if self._activity_hash is not None: 
+                if self._parent_activity_hash is not None: 
 
                     sql = """INSERT INTO public.element_to_activity(
                         element_key, activity_key)
                         VALUES (%s, %s);"""                
 
                     try:
-                        self._cur.execute(sql, (child_hash, self._activity_hash))
+                        self._cur.execute(sql, (child_hash, self._parent_activity_hash))
                         self._conn.commit()
                     except psycopg2.IntegrityError:
                         self._conn.rollback()
@@ -122,7 +122,7 @@ class IATI_db:
                         VALUES (%s, %s, %s);"""
 
             try:
-                self._cur.execute(sql, (att_hash, key, value))
+                self._cur.execute(sql, (att_hash, key, str(value)))
                 self._conn.commit()
             except psycopg2.IntegrityError as e:
                 self._conn.rollback()
@@ -143,20 +143,23 @@ class IATI_db:
 
 
     def upsert_element(self, el, is_root=False):
+        if el.tag is etree.Comment:
+            return
+            
         el_hash = self.get_element_hash(el)
 
         if el.tag == 'iati-activity':
-            self._activity_hash = el_hash
+            self._parent_activity_hash = el_hash
 
         sql = """INSERT INTO public.element(
                 md5_pk, name, text_raw, text_tokens, is_root)
                 VALUES (%s, %s, %s, to_tsvector(%s), %s);"""
         
         try:
-            self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, is_root))
+            self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, str(is_root)))
         except psycopg2.IntegrityError as e:
             self._conn.rollback()
-            return None
+            return el_hash
 
         self._conn.commit()
         
@@ -168,13 +171,17 @@ class IATI_db:
 
         blob_name = file_hash + '.xml'
 
-        parser = objectify.makeparser(remove_comments=True)
-
         blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
         blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
         downloader = blob_client.download_blob()
-        root = etree.fromstring(downloader.content_as_text())
+
+        try:
+            root = etree.fromstring(downloader.content_as_text())
+        except ValueError as e:
+            xml = re.sub(r'\bencoding="[-\w]+"', '', downloader.content_as_text(), count=1)
+            xml = re.sub(r'\bencoding=\'[-\w]+\'', '', xml, count=1)
+            root = etree.fromstring(xml)
 
         if root.tag != "iati-activities" and root.tag != "iati-organisations":
             logging.warning('Neither activities nor organisations file - ' + blob_name)
@@ -185,13 +192,13 @@ class IATI_db:
         if root_hash == None:
             return
 
-        return self.upsert_child_elements_recursively(root, root_hash)
+        self.upsert_child_elements_recursively(root, root_hash)
 
-        sql = "UDPATE refresher SET root_element_key = %s WHERE hash = %s"
+        sql = "UPDATE refresher SET root_element_key = %s WHERE hash = %s"
 
         try:
             self._cur.execute(sql, (root_hash, file_hash))
             self._conn.commit()
         except psycopg2.IntegrityError:
-            logging.warning('Should never be getting to adding duplicate el to att relationships')
+            logging.warning('Integrity error on root el write where root el pk = ' + root_hash + ' and file hash = ' + file_hash)
             self._conn.rollback()
