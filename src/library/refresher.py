@@ -56,11 +56,10 @@ def refresh():
     logger.info('Begin refresh...')
     engine = db.getDbEngine()
     conn = engine.connect()
+    db.migrateIfRequired()
 
     all_datasets = fetch_datasets()
     new_count = 0
-
-    db.migrateIfRequired(conn)
 
     datasets = db.getDatasets(engine)
 
@@ -89,6 +88,7 @@ def refresh():
                 dataset["modified"] = True
                 dataset["stale"] = False  # If for some reason, we pick up a previously stale dataset
                 dataset["error"] = False
+                dataset["root_element_key"] = None
                 conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(dataset))
                 modified_count += 1
 
@@ -108,7 +108,7 @@ def download_chunk(chunk, blob_service_client, datasets, download_errors):
         try:
             download_xml = requests_retry_session(retries=3).get(url=dataset["url"], timeout=5).content
 
-            blob_client = blob_service_client.get_blob_client(container=config['CONTAINER_NAME'], blob=dataset['hash'] + '.xml')
+            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=dataset['hash'] + '.xml')
             blob_client.upload_blob(download_xml)
 
             conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(new=False, modified=False, stale=False, error=False))
@@ -151,6 +151,9 @@ def reload(retry_errors):
     processes = []
     
     download_errors = 0
+
+    logging.info('Downloading files in ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
+    
     for chunk in chunked_datasets:
         if len(chunk) == 0:
             continue
@@ -172,7 +175,7 @@ def reload(retry_errors):
     stale_dataset_ids = [dataset["id"] for dataset in stale_datasets]
     conn.execute(datasets.delete().where(datasets.c.id.in_(stale_dataset_ids)))
 
-    container_client = blob_service_client.get_container_client(config['CONTAINER_NAME'])
+    container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
     for dataset in stale_datasets:
         try:

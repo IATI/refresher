@@ -1,2 +1,2 @@
-10 17 * * * /usr/local/bin/python /code/handler.py -t refresh >> /var/log/cron.log 2>&1 && /usr/local/bin/python /code/handler.py -t reload >> /var/log/cron.log 2>&1
-0 9 * * 0 /usr/local/bin/python /code/handler.py -t reload -e >> /var/log/cron.log 2>&1
+10 17 * * * /usr/local/bin/python /code/src/handler.py -t refresh >> /var/log/cron.log 2>&1 && /usr/local/bin/python /code/src/handler.py -t reload >> /var/log/cron.log 2>&1 && /usr/local/bin/python /code/src/handler.py -t build >> /var/log/cron.log 2>&1
+0 9 * * 0 /usr/local/bin/python /code/src/handler.py -t reload -e >> /var/log/cron.log 2>&1
