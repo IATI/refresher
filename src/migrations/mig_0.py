@@ -18,7 +18,7 @@ CREATE TYPE public.att_data_type AS ENUM (
 );
 
 
-ALTER TYPE public.att_data_type OWNER TO dds;
+ALTER TYPE public.att_data_type;
 
 SET default_tablespace = '';
 
@@ -32,7 +32,7 @@ CREATE TABLE public.attribute (
 );
 
 
-ALTER TABLE public.attribute OWNER TO dds;
+ALTER TABLE public.attribute;
 
 
 CREATE TABLE public.attribute_type (
@@ -41,7 +41,7 @@ CREATE TABLE public.attribute_type (
 );
 
 
-ALTER TABLE public.attribute_type OWNER TO dds;
+ALTER TABLE public.attribute_type;
 
 
 CREATE TABLE public.element (
@@ -53,7 +53,7 @@ CREATE TABLE public.element (
 );
 
 
-ALTER TABLE public.element OWNER TO dds;
+ALTER TABLE public.element;
 
 
 CREATE TABLE public.element_to_activity (
@@ -62,7 +62,7 @@ CREATE TABLE public.element_to_activity (
 );
 
 
-ALTER TABLE public.element_to_activity OWNER TO dds;
+ALTER TABLE public.element_to_activity;
 
 CREATE TABLE public.element_to_attribute (
     element_key uuid NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE public.element_to_attribute (
 );
 
 
-ALTER TABLE public.element_to_attribute OWNER TO dds;
+ALTER TABLE public.element_to_attribute;
 
 CREATE TABLE public.element_to_child (
     element_key uuid NOT NULL,
@@ -78,14 +78,14 @@ CREATE TABLE public.element_to_child (
 );
 
 
-ALTER TABLE public.element_to_child OWNER TO dds;
+ALTER TABLE public.element_to_child;
 
 CREATE TABLE public.element_to_parent (
     element_key uuid NOT NULL,
     parent_key uuid NOT NULL
 );
 
-ALTER TABLE public.element_to_parent OWNER TO dds;
+ALTER TABLE public.element_to_parent;
 
 CREATE TABLE public.refresher (
     id character varying NOT NULL,
@@ -98,14 +98,14 @@ CREATE TABLE public.refresher (
     root_element_key uuid
 );
 
-ALTER TABLE public.refresher OWNER TO dds;
+ALTER TABLE public.refresher;
 
 CREATE TABLE public.version (
     number character varying NOT NULL,
     migration integer NOT NULL
 );
 
-ALTER TABLE public.version OWNER TO dds;
+ALTER TABLE public.version;
 
 INSERT INTO public.attribute_type VALUES ('version', 'string');
 INSERT INTO public.attribute_type VALUES ('generated-datetime', 'date');
