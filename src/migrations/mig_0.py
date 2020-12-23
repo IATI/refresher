@@ -17,9 +17,6 @@ CREATE TYPE public.att_data_type AS ENUM (
     'boolean'
 );
 
-
-ALTER TYPE public.att_data_type;
-
 SET default_tablespace = '';
 
 CREATE TABLE public.attribute (
@@ -31,18 +28,10 @@ CREATE TABLE public.attribute (
     boolean_value boolean
 );
 
-
-ALTER TABLE public.attribute;
-
-
 CREATE TABLE public.attribute_type (
     name character varying NOT NULL,
     type public.att_data_type
 );
-
-
-ALTER TABLE public.attribute_type;
-
 
 CREATE TABLE public.element (
     md5_pk uuid NOT NULL,
@@ -52,40 +41,25 @@ CREATE TABLE public.element (
     is_root boolean NOT NULL
 );
 
-
-ALTER TABLE public.element;
-
-
 CREATE TABLE public.element_to_activity (
     element_key uuid NOT NULL,
     activity_key uuid NOT NULL
 );
-
-
-ALTER TABLE public.element_to_activity;
 
 CREATE TABLE public.element_to_attribute (
     element_key uuid NOT NULL,
     attribute_key uuid NOT NULL
 );
 
-
-ALTER TABLE public.element_to_attribute;
-
 CREATE TABLE public.element_to_child (
     element_key uuid NOT NULL,
     child_key uuid NOT NULL
 );
 
-
-ALTER TABLE public.element_to_child;
-
 CREATE TABLE public.element_to_parent (
     element_key uuid NOT NULL,
     parent_key uuid NOT NULL
 );
-
-ALTER TABLE public.element_to_parent;
 
 CREATE TABLE public.refresher (
     id character varying NOT NULL,
@@ -98,14 +72,10 @@ CREATE TABLE public.refresher (
     root_element_key uuid
 );
 
-ALTER TABLE public.refresher;
-
 CREATE TABLE public.version (
     number character varying NOT NULL,
     migration integer NOT NULL
 );
-
-ALTER TABLE public.version;
 
 INSERT INTO public.attribute_type VALUES ('version', 'string');
 INSERT INTO public.attribute_type VALUES ('generated-datetime', 'date');
