@@ -4,6 +4,8 @@ from sqlalchemy.types import Boolean
 from constants.version import __version__
 from constants.config import config
 import psycopg2
+import logging
+from .logger import setupLogging
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
@@ -69,6 +71,7 @@ def set_current_db_version(number, migration, current_number):
 def migrateIfRequired():
     conn = getDirectConnection()
     conn.set_session(autocommit=True)
+    cursor = conn.cursor()
     current_db_version = get_current_db_version(conn)
 
     if current_db_version is None:
@@ -101,12 +104,12 @@ def migrateIfRequired():
             sql = mig.downgrade
 
         sql = sql.replace('\n', ' ')
-        sql = sql.replace('\t', ' ')
-        
-        cursor = conn.cursor()
+        sql = sql.replace('\t', ' ')   
+
         cursor.execute(sql)
-        cursor.close()
-        conn.close()
+
+    cursor.close()
+    conn.close()
 
     set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'])   
 

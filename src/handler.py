@@ -5,9 +5,6 @@ import library.build as build
 def main(args):    
     if args.type == "refresh":
         refresher.refresh()
-        refresher.reload(
-            args.errors
-        )
     if args.type == "reload":
         refresher.reload(
             args.errors
