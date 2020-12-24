@@ -39,7 +39,7 @@ jobs:
           docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
       - name: 'Deploy to Azure Container Instances'
-        uses: 'IATI/aci-deploy@v1.3'
+        uses: 'IATI/aci-deploy@v1.2'
         with:
           secure-environment-variables: AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}
             DB_HOST=${{ env.DB_HOST }}
