@@ -55,5 +55,5 @@ jobs:
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
           name: ${{ env.STAGE }}-${{ env.NAME }}
           location: "uksouth"
-          restart-policy: 'Never'
+          restart-policy: "Never"
           ports: 80
