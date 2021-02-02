@@ -3,6 +3,7 @@ import os
 config = dict(DATA_SCHEMA = "public",
     DATA_TABLENAME = "refresher",
     PARALLEL_PROCESSES = 10,
+    DAILY_SHUTDOWN_PERIOD_MINS = 10
     SOURCE_CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_SOURCE'),
     STORAGE_CONNECTION_STR = os.getenv('AZURE_STORAGE_CONNECTION_STRING'),
     DB_USER = os.getenv('DB_USER'),
@@ -12,6 +13,9 @@ config = dict(DATA_SCHEMA = "public",
     DB_NAME = os.getenv('DB_NAME'),
     DDS = dict(
         SKIP_EXISTING_FILES = True,
+        PARALLEL_PROCESSES = 20
+    )
+    VALIDATION = dict(
         PARALLEL_PROCESSES = 1
     )
 )

@@ -1,6 +1,11 @@
 import argparse
 import library.refresher as refresher
 import library.build as build
+import library.validate as validate
+from datetime import datetime
+from constants.config import config
+
+
 
 def main(args):    
     if args.type == "refresh":
@@ -11,8 +16,18 @@ def main(args):
         )
     if args.type == "build": 
         build.main()
+    if args.type == "validate":
+        validate.main()
+    if args.type == "dailyrun":
+        now = datetime.now()
+        run_time = 1440 - config.DAILY_SHUTDOWN_PERIOD_MINS
+        shutdown_time = now + datetime.timedelta(minutes = run_time)
+
+        refresher.refresh()
+        refresher.reload()
+        build.main(shutdown_time)
     else:
-        print("Type is required - either refresh, reload or build.")
+        print("Type is required - either refresh, reload or build, or dailyrun.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')
