@@ -2,12 +2,16 @@ import argparse
 import library.refresher as refresher
 import library.build as build
 import library.validate as validate
+import library.db as db
 from datetime import datetime
 from constants.config import config
 
 
 
-def main(args):    
+
+def main(args):
+    db.migrateIfRequired()
+
     if args.type == "refresh":
         refresher.refresh()
     if args.type == "reload":
