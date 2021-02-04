@@ -141,7 +141,7 @@ def updateValidationState(conn, filehash, state):
 
     cur = conn.cursor()
 
-    sql = "UPDATE refresher SET valid=%s WHERE hash=%s FROM refresher WHERE valid is Null"
+    sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
 
     data = (state, filehash,)
 
