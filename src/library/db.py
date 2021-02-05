@@ -136,6 +136,17 @@ def getUnvalidatedDatasets(conn):
 
     cur.close()
 
+def getUnprocessedDatasets(conn):    
+    cur = conn.cursor()
+
+    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
+
+    cur.execute(sql)
+    
+    return cur.fetchall()
+
+    cur.close()
+
 
 def updateValidationState(conn, filehash, state):
 

@@ -14,15 +14,15 @@ def main(args):
 
     if args.type == "refresh":
         refresher.refresh()
-    if args.type == "reload":
+    elif args.type == "reload":
         refresher.reload(
             args.errors
         )
-    if args.type == "build": 
+    elif args.type == "build": 
         build.main()
-    if args.type == "validate":
+    elif args.type == "validate":
         validate.main()
-    if args.type == "dailyrun":
+    elif args.type == "dailyrun":
         now = datetime.now()
         run_time = 1440 - config.DAILY_SHUTDOWN_PERIOD_MINS
         shutdown_time = now + datetime.timedelta(minutes = run_time)

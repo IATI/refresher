@@ -31,15 +31,15 @@ def process_hash_list(hash_list):
 
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
 
-            if response.status_code is not 200:
+            if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
-                    logging.warning('Validotor reports Client Error with status ' + response.status_code + ' for source blob ' file_hash[0] + '.xml')
+                    logging.warning('Validator reports Client Error with status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 elif response.status_code >= 400 and response.status_code < 500:
-                    logging.warning('Validotor reports Server Error with status ' + response.status_code + ' for source blob ' file_hash[0] + '.xml')
+                    logging.warning('Validator reports Server Error with status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
                     continue
-                else 
-                    logging.warning('Validotor reports status ' + response.status_code + ' for source blob ' file_hash[0] + '.xml')
+                else: 
+                    logging.warning('Validator reports status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
             
             report = response.json()
 

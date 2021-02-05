@@ -44,15 +44,11 @@ def main(shutdown_time=None):
 
     try:
         conn = db.getDirectConnection()
-        cur = conn.cursor()
     except Exception as e:
         logging.error('Failed to connect to Postgres')
         sys.exit()
 
-    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
-
-    cur.execute(sql)
-    file_hashes = cur.fetchall()
+    file_hashes = db.getUnprocessedDatasets(conn)
 
     cur.close()
     conn.close()
