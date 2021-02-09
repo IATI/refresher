@@ -14,10 +14,14 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
-def process_hash_list(hash_list):
+def process_hash_list(hash_list, shutdown_time):
     db = IATI_db()
 
     for file_hash in hash_list:
+        if datetime.now() > shutdown_time:
+            logging.info('Past shutdown time, closing process.')
+            break
+
         try:
             db.create_from_iati_xml(file_hash[0]) 
         except Exception as e:
@@ -35,20 +39,16 @@ def process_hash_list(hash_list):
     
     db.close()
 
-def main():
+def main(shutdown_time=None):
     logging.info("Starting build...")
 
     try:
         conn = db.getDirectConnection()
-        cur = conn.cursor()
     except Exception as e:
         logging.error('Failed to connect to Postgres')
         sys.exit()
 
-    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
-
-    cur.execute(sql)
-    file_hashes = cur.fetchall()
+    file_hashes = db.getUnprocessedDatasets(conn)
 
     cur.close()
     conn.close()
@@ -65,7 +65,7 @@ def main():
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
                 continue
-            process = Process(target=process_hash_list, args=(chunk,))
+            process = Process(target=process_hash_list, args=(chunk, shutdown_time))
             process.start()
             processes.append(process)
 

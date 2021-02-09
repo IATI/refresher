@@ -1,11 +1,14 @@
-import os, importlib, pathlib
+import os, importlib, pathlib, sys
 from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
 from sqlalchemy.types import Boolean
 from constants.version import __version__
 from constants.config import config
 import psycopg2
 import logging
-from .logger import setupLogging
+
+logging.basicConfig(stream=sys.stdout)
+logger = logging.getLogger('refresher')
+logger.setLevel(logging.INFO)
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
@@ -54,7 +57,7 @@ def get_current_db_version(conn):
         return {'number': result[0][0], 'migration': result[0][1]}
 
 def set_current_db_version(number, migration, current_number):
-    conn = getDirectConnection()
+    db.getUnvalidatedDatasets(conn)
     cursor = conn.cursor()
 
     if current_number == '0.0.0':
@@ -81,13 +84,16 @@ def migrateIfRequired():
         }
 
     if current_db_version['number'] == __version__['number']:
+        logger.info('DB at correct version')
         return
     
     upgrade = isUpgrade(current_db_version['number'], __version__['number'])
 
     if upgrade:
+        logger.info('DB upgrading to version ' + __version__['number'])
         step = 1
     else:
+        logger.info('DB downgrading to version ' + __version__['number'])
         step = -1
 
     for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
@@ -118,3 +124,38 @@ def getDatasets(engine):
     meta = getMeta(engine)
     meta.reflect()
     return Table(config['DATA_TABLENAME'], meta, schema=config['DATA_SCHEMA'], autoload=True)
+
+def getUnvalidatedDatasets(conn):    
+    cur = conn.cursor()
+
+    sql = "SELECT hash FROM refresher WHERE valid is Null"
+
+    cur.execute(sql)
+    
+    return cur.fetchall()
+
+    cur.close()
+
+def getUnprocessedDatasets(conn):    
+    cur = conn.cursor()
+
+    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
+
+    cur.execute(sql)
+    
+    return cur.fetchall()
+
+    cur.close()
+
+
+def updateValidationState(conn, filehash, state):
+
+    cur = conn.cursor()
+
+    sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
+
+    data = (state, filehash,)
+
+    cur.execute(sql, data)    
+
+    cur.close()
