@@ -33,13 +33,13 @@ def process_hash_list(hash_list):
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
-                    logging.warning('Validator reports Client Error with status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
+                    logging.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
-                elif response.status_code >= 400 and response.status_code < 500:
-                    logging.warning('Validator reports Server Error with status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
+                elif response.status_code >= 500:
+                    logging.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 else: 
-                    logging.warning('Validator reports status ' + response.status_code + ' for source blob ' + file_hash[0] + '.xml')
+                    logging.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
             
             report = response.json()
 

@@ -154,7 +154,7 @@ def updateValidationState(conn, filehash, state):
 
     sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
 
-    data = (state, filehash,)
+    data = (state, filehash)
 
     cur.execute(sql, data)    
 
