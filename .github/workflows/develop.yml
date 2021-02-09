@@ -7,7 +7,7 @@ on:
 
 env:
   STAGE: dev
-  NAME: iati-refresher
+  NAME: refresher
   TAG: ${{ github.sha }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
