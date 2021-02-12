@@ -57,4 +57,4 @@ jobs:
           location: "uksouth"
           restart-policy: Always
           memory: "4"
-          ip-address: "Private"
+          ip-address: Private
