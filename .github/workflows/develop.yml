@@ -56,5 +56,6 @@ jobs:
           name: ${{ env.STAGE }}-${{ env.NAME }}
           location: "uksouth"
           restart-policy: "OnFailure"
-          memoryInGB: 4
+          memory: 4
+          cpu: 1
           ports: 80
