@@ -48,14 +48,14 @@ jobs:
             DB_PASS=${{ env.DB_PASS }}
             DB_NAME=${{ env.DB_NAME }}
           resource-group: ${{ secrets.RESOURCE_GROUP }}
-          dns-name-label: dev-aci-iati-refresher # url subdomain: dns-name-label.location.azurecontainer.io/
+          dns-name-label: ${{ env.STAGE }}-${{ env.NAME }} # url subdomain: dns-name-label.location.azurecontainer.io/
           image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}
           registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-          name: dev-aci-iati-refresher
+          name: ${{ env.STAGE }}-${{ env.NAME }}
           location: "uksouth"
-          restart-policy: "OnFailure"
+          restart-policy: "Always"
           memory: "4"
           cpu: "1"
           ports: 80
