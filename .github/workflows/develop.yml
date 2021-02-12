@@ -56,3 +56,4 @@ jobs:
           name: ${{ env.STAGE }}-${{ env.NAME }}
           location: "uksouth"
           restart-policy: Always
+          memory: 4
