@@ -156,6 +156,8 @@ def updateValidationState(conn, filehash, state):
 
     data = (state, filehash)
 
-    cur.execute(sql, data)    
+    cur.execute(sql, data)
+
+    conn.commit()        
 
     cur.close()

@@ -45,7 +45,7 @@ def process_hash_list(hash_list):
 
             state = None
 
-            if report['summary']['critical'] > 0 or report['summary']['danger'] > 0:
+            if report['summary']['critical'] > 0:
                 state = False
             else:
                 state = True
@@ -54,9 +54,14 @@ def process_hash_list(hash_list):
             blob_client = blob_service_client.get_blob_client(container=config['VALIDATION_CONTAINER_NAME'], blob=blob_name)
 
             blob_client.upload_blob(json.dumps(report))
+
+            db.updateValidationState(conn, file_hash[0], state)
             
         except (AzureExceptions.ResourceExistsError) as e:
+            db.updateValidationState(conn, file_hash[0], state)
             pass
+        except (AzureExceptions.ResourceNotFoundError) as e:
+            logging.warning('Blob not found for hash ' + file_hash[0])
         except Exception as e:
             logging.error('ERROR with validating ' + file_hash[0])
             print(traceback.format_exc())
@@ -67,9 +72,7 @@ def process_hash_list(hash_list):
             try:
                 logging.warning(e.args[0])
             except:
-                pass
-
-        db.updateValidationState(conn, file_hash[0], state)
+                pass        
 
     conn.close()
 
