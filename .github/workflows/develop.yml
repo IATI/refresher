@@ -39,7 +39,6 @@ jobs:
       - name: "Deploy to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
-            azcliversion: 2.19.1
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
