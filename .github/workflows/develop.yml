@@ -51,10 +51,10 @@ jobs:
               --name "${{ env.STAGE }}-${{ env.NAME }}" \
               --location "uksouth" \
               --restart-policy "Always" \
+              --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
               --memory "4" \
-              --ip-address "Private" \
               --cpu "1" \
               --os-type "Linux" \
               --secure-environment-variables \
