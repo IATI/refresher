@@ -49,7 +49,7 @@ jobs:
               --registry-username: "${{ secrets.REGISTRY_USERNAME }}" \
               --registry-password: "${{ secrets.REGISTRY_PASSWORD }}" \
               --name: "${{ env.STAGE }}-${{ env.NAME }}" \
-              --location "uksouth" \
+              --location: "uksouth" \
               --secure-environment-variables \
                 DJANGO_SETTINGS_MODULE="iati.settings.dev" \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
