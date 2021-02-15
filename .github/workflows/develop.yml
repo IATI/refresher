@@ -42,20 +42,20 @@ jobs:
             azcliversion: 2.19.1
             inlineScript: |
               az container create \
-              --resource-group: ${{ secrets.RESOURCE_GROUP }} \
-              --dns-name-label: ${{ env.STAGE }}-${{ env.NAME }} # url subdomain: dns-name-label.location.azurecontainer.io/ \
-              --image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }} \
-              --registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }} \
-              --registry-username: ${{ secrets.REGISTRY_USERNAME }} \
-              --registry-password: ${{ secrets.REGISTRY_PASSWORD }} \
-              --name: ${{ env.STAGE }}-${{ env.NAME }} \
-              --location uksouth \
+              --resource-group: "${{ secrets.RESOURCE_GROUP }}" \
+              --dns-name-label: "${{ env.STAGE }}-${{ env.NAME }}" # url subdomain: dns-name-label.location.azurecontainer.io/ \
+              --image: "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+              --registry-login-server: "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username: "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password: "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name: "${{ env.STAGE }}-${{ env.NAME }}" \
+              --location "uksouth" \
               --secure-environment-variables \
                 DJANGO_SETTINGS_MODULE="iati.settings.dev" \
-                AZURE_STORAGE_CONNECTION_STRING=${{ env.AZURE_STORAGE_CONNECTION_STRING }} \
-                AZURE_STORAGE_CONTAINER_SOURCE=${{ env.AZURE_STORAGE_CONTAINER_SOURCE }} \
-                DB_HOST=${{ env.DB_HOST }} \
-                DB_PORT=${{ env.DB_PORT }} \
-                DB_USER=${{ env.DB_USER }} \
-                DB_PASS=${{ env.DB_PASS }} \
-                DB_NAME=${{ env.DB_NAME }} \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
