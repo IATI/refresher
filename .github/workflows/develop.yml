@@ -51,7 +51,8 @@ jobs:
               --name "${{ env.STAGE }}-${{ env.NAME }}" \
               --location "uksouth" \
               --restart-policy "Always" \
-              --vnet "dev-aci-iati-refresher" \
+              --vnet "dev-iati-refresher" \
+              --subnet "default" \
               --memory "4" \
               --ip-address "Private" \
               --cpu "1" \
