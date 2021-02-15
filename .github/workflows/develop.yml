@@ -50,6 +50,11 @@ jobs:
               --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}" \
               --location "uksouth" \
+              --restart-policy: Always
+              --memory "4" \
+              --ip-address "Private" \
+              --cpu "1" \
+              --os-type "Linux" \
               --secure-environment-variables \
                 DJANGO_SETTINGS_MODULE="iati.settings.dev" \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
