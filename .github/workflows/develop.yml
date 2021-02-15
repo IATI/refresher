@@ -43,7 +43,6 @@ jobs:
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
-              --dns-name-label "${{ env.STAGE }}-${{ env.NAME }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
