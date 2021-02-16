@@ -115,10 +115,10 @@ def migrateIfRequired():
         cursor.execute(sql)
 
     cursor.close()
+
+    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'], conn)
+
     conn.close()
-
-    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'], conn)   
-
 
 def getDatasets(engine):
     meta = getMeta(engine)
