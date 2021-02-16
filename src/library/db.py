@@ -48,6 +48,7 @@ def get_current_db_version(conn):
     try:
         cursor.execute(sql)
         result = cursor.fetchall()
+        cursor.close()
     except psycopg2.errors.UndefinedTable as e:
         return None
     
@@ -56,8 +57,7 @@ def get_current_db_version(conn):
     else:
         return {'number': result[0][0], 'migration': result[0][1]}
 
-def set_current_db_version(number, migration, current_number):
-    db.getUnvalidatedDatasets(conn)
+def set_current_db_version(number, migration, current_number, conn):
     cursor = conn.cursor()
 
     if current_number == '0.0.0':
@@ -68,7 +68,7 @@ def set_current_db_version(number, migration, current_number):
         cursor.execute(sql, (number, migration, current_number))    
     
     conn.commit()
-    conn.close()
+    cursor.close()
 
 
 def migrateIfRequired():
@@ -117,7 +117,7 @@ def migrateIfRequired():
     cursor.close()
     conn.close()
 
-    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'])   
+    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'], conn)   
 
 
 def getDatasets(engine):
