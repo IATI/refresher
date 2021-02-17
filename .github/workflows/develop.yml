@@ -55,7 +55,6 @@ jobs:
               --subnet "default" \
               --memory "4" \
               --cpu "1" \
-              --ports 5000 \
               --os-type "Linux" \
               --secure-environment-variables \
                 DJANGO_SETTINGS_MODULE="iati.settings.dev" \
