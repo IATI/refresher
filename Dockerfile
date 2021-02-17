@@ -7,5 +7,4 @@ COPY src/ .
 COPY refresh-cron /etc/cron.d/refresh-cron
 RUN chmod 0644 /etc/cron.d/refresh-cron
 RUN crontab /etc/cron.d/refresh-cron
-RUN touch /var/log/cron.log
-CMD printenv > /etc/environment && cron && tail -f /var/log/cron.log
+CMD printenv > /etc/environment
