@@ -1,2 +1,2 @@
-0 1 * * * /usr/local/bin/python /code/handler.py -t dailyrun > /dev/stdout
-0 9 * * 0 /usr/local/bin/python /code/handler.py -t reload -e > /dev/stdout
+0 1 * * * /usr/local/bin/python /code/handler.py -t dailyrun > /proc/1/fd/1
+0 9 * * 0 /usr/local/bin/python /code/handler.py -t reload -e > /proc/1/fd/1
