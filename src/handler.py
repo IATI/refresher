@@ -3,11 +3,8 @@ import library.refresher as refresher
 import library.build as build
 import library.validate as validate
 import library.db as db
-from datetime import datetime
+from datetime import datetime, timedelta
 from constants.config import config
-
-
-
 
 def main(args):
     db.migrateIfRequired()
@@ -24,8 +21,8 @@ def main(args):
         validate.main()
     elif args.type == "dailyrun":
         now = datetime.now()
-        run_time = 1440 - config.DAILY_SHUTDOWN_PERIOD_MINS
-        shutdown_time = now + datetime.timedelta(minutes = run_time)
+        run_time = 1440 - config['DAILY_SHUTDOWN_PERIOD_MINS']
+        shutdown_time = now + timedelta(minutes = run_time)
 
         refresher.refresh()
         refresher.reload()
