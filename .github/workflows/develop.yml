@@ -56,7 +56,6 @@ jobs:
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
-              --ports 5000 \
               --secure-environment-variables \
                 DJANGO_SETTINGS_MODULE="iati.settings.dev" \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
