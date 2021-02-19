@@ -14,13 +14,10 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
-def process_hash_list(hash_list, shutdown_time):
+def process_hash_list(hash_list):
     db = IATI_db()
 
     for file_hash in hash_list:
-        if datetime.now() > shutdown_time:
-            logging.info('Past shutdown time, closing process.')
-            break
 
         try:
             db.create_from_iati_xml(file_hash[0]) 
@@ -39,7 +36,15 @@ def process_hash_list(hash_list, shutdown_time):
     
     db.close()
 
-def main(shutdown_time=None):
+def service_loop() {
+    logger.info("Start service loop")
+    count = 0
+    while True:
+        main()            
+        time.sleep(60)
+}
+
+def main():
     logging.info("Starting build...")
 
     try:
@@ -65,7 +70,7 @@ def main(shutdown_time=None):
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
                 continue
-            process = Process(target=process_hash_list, args=(chunk, shutdown_time))
+            process = Process(target=process_hash_list, args=(chunk,))
             process.start()
             processes.append(process)
 

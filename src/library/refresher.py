@@ -96,6 +96,21 @@ def refresh():
     logger.info("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
     logger.info('End refresh.')
 
+def service_loop() {
+    logger.info("Start service loop")
+    count = 0
+    while True:
+        count++
+        refresh()
+        reload()
+        
+        if count > 60:
+            count = 0
+            reload(true)
+            
+        time.sleep(60)
+}
+
 def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))

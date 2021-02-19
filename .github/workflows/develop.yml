@@ -36,7 +36,7 @@ jobs:
       - run: |
           docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-      - name: "Deploy to Azure Container Instances"
+      - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
             azcliversion: 2.19.1
