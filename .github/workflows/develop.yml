@@ -36,8 +36,8 @@ jobs:
       - run: |
           docker build . -f refresh-dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
-          docker build . -f build-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-build:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-build:$TAG
+          docker build . -f validate-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
