@@ -1,6 +1,6 @@
 import os, time, sys, traceback
 from multiprocessing import Process
-import logging
+from library.logger import getLogger
 import datetime
 import requests
 from library.dds import IATI_db
@@ -11,6 +11,8 @@ from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
 import json
+
+logger = getLogger()
 
 conn = db.getDirectConnection()
 
@@ -33,13 +35,13 @@ def process_hash_list(hash_list):
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
-                    logging.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 elif response.status_code >= 500:
-                    logging.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 else: 
-                    logging.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
             
             report = response.json()
 
@@ -61,23 +63,30 @@ def process_hash_list(hash_list):
             db.updateValidationState(conn, file_hash[0], state)
             pass
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logging.warning('Blob not found for hash ' + file_hash[0])
+            logger.warning('Blob not found for hash ' + file_hash[0])
         except Exception as e:
-            logging.error('ERROR with validating ' + file_hash[0])
+            logger.error('ERROR with validating ' + file_hash[0])
             print(traceback.format_exc())
             if hasattr(e, 'message'):                         
-                logging.error(e.message)
+                logger.error(e.message)
             if hasattr(e, 'msg'):                         
-                logging.error(e.msg)
+                logger.error(e.msg)
             try:
-                logging.warning(e.args[0])
+                logger.warning(e.args[0])
             except:
                 pass        
 
     conn.close()
 
+def service_loop():
+    logger.info("Start service loop")
+    count = 0
+    while True:
+        main()            
+        time.sleep(60)
+
 def main():
-    logging.info("Starting validation...")
+    logger.info("Starting validation...")
 
     file_hashes = db.getUnvalidatedDatasets(conn)
 
@@ -88,7 +97,7 @@ def main():
 
         processes = []
 
-        logging.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
@@ -106,4 +115,4 @@ def main():
                 if process.is_alive():
                     finished = False
 
-    logging.info("Finished.")
+    logger.info("Finished.")

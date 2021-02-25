@@ -4,11 +4,9 @@ from sqlalchemy.types import Boolean
 from constants.version import __version__
 from constants.config import config
 import psycopg2
-import logging
+from library.logger import getLogger
 
-logging.basicConfig(stream=sys.stdout)
-logger = logging.getLogger('refresher')
-logger.setLevel(logging.INFO)
+logger = getLogger()
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])

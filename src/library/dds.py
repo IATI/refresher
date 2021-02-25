@@ -1,6 +1,5 @@
 import os, sys, time, re
-import logging
-from .logger import setupLogging
+from .logger import getLogger
 import json
 import datetime
 import requests
@@ -11,7 +10,7 @@ from constants.config import config
 from azure.storage.blob import BlobServiceClient
 import psycopg2
 
-setupLogging()
+logging = getLogger()
 
 class IATI_db:
     def __init__(self):

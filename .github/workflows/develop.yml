@@ -8,7 +8,7 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  TAG: ${{ github.sha }}
+  TAG: 0.1.1
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   DB_USER: ${{ secrets.DB_USER }}
@@ -34,30 +34,59 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
       - run: |
-          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-      - name: "Deploy to Azure Container Instances"
+          docker build . -f refresh-dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
+          docker build . -f build-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-build:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-build:$TAG
+      - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
             azcliversion: 2.19.1
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-refresh:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
               --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "4" \
+              --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
               --secure-environment-variables \
-                DJANGO_SETTINGS_MODULE="iati.settings.dev" \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
+      - name: "Deploy Refresh to Azure Container Instances"
+        uses: "azure/CLI@v1"
+        with:
+            azcliversion: 2.19.1
+            inlineScript: |
+              az container create \
+              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate:${{ env.TAG }}" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "dev-iati-refresher" \
+              --subnet "default" \
+              --memory "2" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 DB_HOST="${{ env.DB_HOST }}" \

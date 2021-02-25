@@ -19,16 +19,14 @@ def main(args):
         build.main()
     elif args.type == "validate":
         validate.main()
-    elif args.type == "dailyrun":
-        now = datetime.now()
-        run_time = 1440 - config['DAILY_SHUTDOWN_PERIOD_MINS']
-        shutdown_time = now + timedelta(minutes = run_time)
-
-        refresher.refresh()
-        refresher.reload()
-        build.main(shutdown_time)
+    elif args.type == "refreshloop":
+        refresher.service_loop()
+    elif args.type == "buildloop":
+        build.service_loop()
+    elif args.type == "validateloop":
+        validate.service_loop()    
     else:
-        print("Type is required - either refresh, reload or build, or dailyrun.")
+        print("Type is required - either refresh, reload, build, or validate.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')

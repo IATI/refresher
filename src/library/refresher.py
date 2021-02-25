@@ -7,15 +7,13 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import time
-import logging
 import sqlalchemy
 from sqlalchemy import and_, or_
 import library.db as db
+from library.logger import getLogger
 from constants.config import config
 
-logging.basicConfig(stream=sys.stdout)
-logger = logging.getLogger('refresher')
-logger.setLevel(logging.INFO)
+logger = getLogger()
 
 def requests_retry_session(
     retries=10,
@@ -96,6 +94,21 @@ def refresh():
     logger.info("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
     logger.info('End refresh.')
 
+def service_loop():
+    logger.info("Start service loop")
+    count = 0
+    while True:
+        count = count + 1
+        refresh()
+        
+        if count > 1000:
+            count = 0
+            reload(True)
+        else:            
+            reload(False)
+            
+        time.sleep(60)
+
 def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
@@ -151,7 +164,7 @@ def reload(retry_errors):
     
     download_errors = 0
 
-    logging.info('Downloading files in ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
+    logger.info('Downloading ' + str(len(new_datasets)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
     
     for chunk in chunked_datasets:
         if len(chunk) == 0:
