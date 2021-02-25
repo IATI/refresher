@@ -23,6 +23,8 @@ def main(args):
         refresher.service_loop()
     elif args.type == "buildloop":
         build.service_loop()
+    elif args.type == "validateloop":
+        validate.service_loop()    
     else:
         print("Type is required - either refresh, reload, build, or validate.")
 

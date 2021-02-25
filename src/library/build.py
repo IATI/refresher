@@ -1,6 +1,6 @@
 import os, time, sys, traceback
 from multiprocessing import Process
-import logging
+from library.logger import getLogger
 import datetime
 from library.dds import IATI_db
 from constants.config import config
@@ -9,6 +9,7 @@ from itertools import islice
 import psycopg2
 import library.db as db
 
+logger = getLogger()
 
 def chunk_list(l, n):
     for i in range(0, n):
@@ -22,35 +23,34 @@ def process_hash_list(hash_list):
         try:
             db.create_from_iati_xml(file_hash[0]) 
         except Exception as e:
-            logging.error('ERROR with ' + file_hash[0])
+            logger.error('ERROR with ' + file_hash[0])
             print(traceback.format_exc())
             if hasattr(e, 'message'):                         
-                logging.error(e.message)
+                logger.error(e.message)
 
             if hasattr(e, 'msg'):                         
-                logging.error(e.msg)
+                logger.error(e.msg)
             try:
-                logging.warning(e.args[0])
+                logger.warning(e.args[0])
             except:
                 pass
     
     db.close()
 
-def service_loop() {
+def service_loop():
     logger.info("Start service loop")
     count = 0
     while True:
         main()            
         time.sleep(60)
-}
 
 def main():
-    logging.info("Starting build...")
+    logger.info("Starting build...")
 
     try:
         conn = db.getDirectConnection()
     except Exception as e:
-        logging.error('Failed to connect to Postgres')
+        logger.error('Failed to connect to Postgres')
         sys.exit()
 
     file_hashes = db.getUnprocessedDatasets(conn)
@@ -65,7 +65,7 @@ def main():
 
         processes = []
 
-        logging.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
@@ -83,4 +83,4 @@ def main():
                 if process.is_alive():
                     finished = False
 
-    logging.info("Finished.")
+    logger.info("Finished.")
