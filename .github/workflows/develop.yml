@@ -90,7 +90,7 @@ jobs:
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                FILE_VALIDATION_URL: "${{ env.FILE_VALIDATION_URL }}" \
+                FILE_VALIDATION_URL="${{ env.FILE_VALIDATION_URL }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
