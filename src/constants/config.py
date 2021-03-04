@@ -6,8 +6,8 @@ config = dict(DATA_SCHEMA = "public",
     SOURCE_CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_SOURCE'),
     VALIDATION_CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_VALIDATION'),
     STORAGE_CONNECTION_STR = os.getenv('AZURE_STORAGE_CONNECTION_STRING'),
-    SERVICE_LOOP_SLEEP = 60,
-    RETRY_ERRORS_AFTER_LOOP = 60,
+    SERVICE_LOOP_SLEEP = 3600,
+    RETRY_ERRORS_AFTER_LOOP = 24,
     DB_USER = os.getenv('DB_USER'),
     DB_PASS = os.getenv('DB_PASS'),
     DB_HOST = os.getenv('DB_HOST'),
@@ -19,6 +19,6 @@ config = dict(DATA_SCHEMA = "public",
     ),
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
-        FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL') + '?parallel=' + os.getenv('VALIDATOR_PARALLEL')
+        FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL')# + '?parallel=' + os.getenv('VALIDATOR_PARALLEL')
     )
 )

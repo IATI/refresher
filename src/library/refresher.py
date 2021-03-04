@@ -101,13 +101,13 @@ def service_loop():
         count = count + 1
         refresh()
         
-        if count > 1000:
+        if count > config['RETRY_ERRORS_AFTER_LOOP']:
             count = 0
             reload(True)
-        else:            
+        else:        
             reload(False)
             
-        time.sleep(60)
+        time.sleep(config['SERVICE_LOOP_SLEEP'])
 
 def split(lst, n):
     k, m = divmod(len(lst), n)
