@@ -178,4 +178,17 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
     conn.commit()
     cur.close()
 
+def removeFilesBefore(dt):
+    cur = conn.cursor()
+
+    sql = """
+        DELETE FROM refresher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
     

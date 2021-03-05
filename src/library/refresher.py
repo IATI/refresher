@@ -63,6 +63,8 @@ def refresh():
     for dataset in all_datasets:
         db.insertOrUpdateFile(conn, dataset['id'], dataset['hash'], dataset['url'], start_dt)
 
+    db.removeFilesBefore(start_dt)
+
     conn.close()        
     logger.info('End refresh.')
 
