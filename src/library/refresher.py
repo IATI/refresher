@@ -12,6 +12,7 @@ from sqlalchemy import and_, or_
 import library.db as db
 from library.logger import getLogger
 from constants.config import config
+from datetime import datetime
 
 logger = getLogger()
 
@@ -52,46 +53,17 @@ def fetch_datasets():
 
 def refresh():
     logger.info('Begin refresh...')
-    engine = db.getDbEngine()
-    conn = engine.connect()
+    start_dt = datetime.now()
+    conn = db.getDirectConnection()
 
     all_datasets = fetch_datasets()
-    new_count = 0
 
     datasets = db.getDatasets(engine)
 
-    all_dataset_ids = [dataset["id"] for dataset in all_datasets]
-    cached_datasets = conn.execute(datasets.select()).fetchall()
-    cached_dataset_ids = [dataset["id"] for dataset in cached_datasets]
-    stale_dataset_ids = list(set(cached_dataset_ids) - set(all_dataset_ids))
-    conn.execute(datasets.update().where(datasets.c.id.in_(stale_dataset_ids)).values(new=False, modified=False, stale=True, error=False))
-
-    stale_count = len(stale_dataset_ids)
-    modified_count = 0
     for dataset in all_datasets:
-        try:  # Try to insert new dataset
-            dataset["new"] = True
-            dataset["modified"] = False
-            dataset["stale"] = False
-            dataset["error"] = False
-            conn.execute(datasets.insert(dataset))
-            new_count += 1
-        except sqlalchemy.exc.IntegrityError:  # Dataset ID already exists
-            cached_dataset = conn.execute(datasets.select().where(datasets.c.id == dataset["id"])).fetchone()
-            if cached_dataset["hash"] == dataset["hash"]:  # If the hashes match, carry on
-                continue
-            else:  # Otherwise, mark it modified and update the metadata
-                dataset["new"] = False
-                dataset["modified"] = True
-                dataset["stale"] = False  # If for some reason, we pick up a previously stale dataset
-                dataset["error"] = False
-                dataset["root_element_key"] = None
-                conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(dataset))
-                modified_count += 1
+        db.insertOrUpdateFile(conn, dataset['id'], dataset['hash'], dataset['url'], start_dt)
 
-    engine.dispose()
-
-    logger.info("New: {}; Modified: {}; Stale: {}".format(new_count, modified_count, stale_count))
+    conn.close()        
     logger.info('End refresh.')
 
 def service_loop():

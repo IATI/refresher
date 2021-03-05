@@ -63,13 +63,19 @@ CREATE TABLE public.element_to_parent (
 
 CREATE TABLE public.refresher (
     id character varying NOT NULL,
-    hash character varying,
-    url character varying,
-    new boolean,
-    modified boolean,
-    stale boolean,
-    error boolean,
-    root_element_key uuid
+    hash character varying NOT NULL,
+    url character varying NOT NULL,
+    first_seen timestamp without time zone NOT NULL,
+    last_seen timestamp without time zone NOT NULL,
+    modified timestamp without time zone,
+    downloaded timestamp without time zone,
+    download_error integer,
+    validation_request timestamp,
+    validation_api_error integer,
+    valid boolean,
+    datastore_processing_start timestamp without time zone,
+    datastore_processing_end timestamp without time zone,
+    datastore_root_element_key uuid
 );
 
 CREATE TABLE public.version (
@@ -163,6 +169,12 @@ CREATE INDEX fki_etc_element_key ON public.element_to_child USING btree (element
 CREATE INDEX fki_etp_element_key ON public.element_to_parent USING btree (element_key);
 
 CREATE INDEX fki_etp_parent_key ON public.element_to_parent USING btree (parent_key);
+
+CREATE INDEX fki_file_id ON public.refresher USING btree (id);
+
+CREATE INDEX fki_file_hash ON public.refresher USING btree (hash);
+
+CREATE INDEX fki_file_url ON public.refresher USING btree (url);
 
 CREATE INDEX fki_file_root_element ON public.refresher USING btree (root_element_key);
 

@@ -125,37 +125,57 @@ def getDatasets(engine):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-
     sql = "SELECT hash FROM refresher WHERE valid is Null"
-
-    cur.execute(sql)
-    
+    cur.execute(sql)    
     return cur.fetchall()
-
     cur.close()
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-
     sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
-
-    cur.execute(sql)
-    
+    cur.execute(sql)    
     return cur.fetchall()
-
     cur.close()
 
 
 def updateValidationState(conn, filehash, state):
+    cur = conn.cursor()
+    sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
+    data = (state, filehash)
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
 
+def insertOrUpdateFile(conn, id, hash, url, dt):
     cur = conn.cursor()
 
-    sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
+    sql = """
+        INSERT INTO refresher (id, hash, url, first_seen, last_seen) 
+        VALUES (%(id)s, %(hash)s, %(url)s, %(date)s, %(date)s)
+        ON CONFLICT (id) DO 
+            UPDATE SET hash = %(hash)s,
+                url = %(url)s,
+                last_seen = %(date)s, 
+                modified = %(date)s,
+                downloaded = null,
+                downloaded_error = null,
+                validation_request = null,
+                validation_api_error = null,
+                valid = null,
+                datastore_processing_start = null,
+                datastore_processing_end = null
+            WHERE id=id and hash != %(hash)s
+    """
 
-    data = (state, filehash)
+    data = {
+        "id": id,
+        "hash": hash,
+        "url": url,
+        "date": dt,
+    }
 
     cur.execute(sql, data)
-
-    conn.commit()        
-
+    conn.commit()
     cur.close()
+
+    
