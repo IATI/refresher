@@ -50,13 +50,14 @@ def fetch_datasets():
     return results
 
 def refresh():
-    logger.info('Begin refresh...')
-    start_dt = datetime.now()
+
+    start_dt = datetime.now()    
+    logger.info('Begin refresh at ' + start_dt.isoformat())
+    
     conn = db.getDirectConnection()
-
+    logger.info('Getting results from the Registry...')
     all_datasets = fetch_datasets()
-
-    datasets = db.getDatasets(engine)
+    logger.info('...Registry result got. Updating DB...')
 
     for dataset in all_datasets:
         db.insertOrUpdateFile(conn, dataset['id'], dataset['hash'], dataset['url'], start_dt)

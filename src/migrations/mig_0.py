@@ -83,6 +83,8 @@ CREATE TABLE public.version (
     migration integer NOT NULL
 );
 
+INSERT INTO public.version VALUES ('0.1.0', 0);
+
 INSERT INTO public.attribute_type VALUES ('version', 'string');
 INSERT INTO public.attribute_type VALUES ('generated-datetime', 'date');
 INSERT INTO public.attribute_type VALUES ('linked-data-default', 'string');
@@ -176,7 +178,7 @@ CREATE INDEX fki_file_hash ON public.refresher USING btree (hash);
 
 CREATE INDEX fki_file_url ON public.refresher USING btree (url);
 
-CREATE INDEX fki_file_root_element ON public.refresher USING btree (root_element_key);
+CREATE INDEX fki_file_root_element ON public.refresher USING btree (datastore_root_element_key);
 
 CREATE INDEX name ON public.element USING gin (text_tokens);
 
@@ -210,6 +212,6 @@ ALTER TABLE ONLY public.element_to_parent
     ADD CONSTRAINT element_to_parent_key_fkey FOREIGN KEY (parent_key) REFERENCES public.element(md5_pk);
 
 ALTER TABLE ONLY public.refresher
-    ADD CONSTRAINT file_root_element FOREIGN KEY (root_element_key) REFERENCES public.element(md5_pk) NOT VALID;
+    ADD CONSTRAINT file_root_element FOREIGN KEY (datastore_root_element_key) REFERENCES public.element(md5_pk) NOT VALID;
 
 """

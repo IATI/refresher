@@ -50,19 +50,6 @@ def get_current_db_version(conn):
     else:
         return {'number': result[0][0], 'migration': result[0][1]}
 
-def set_current_db_version(number, migration, current_number, conn):
-    cursor = conn.cursor()
-
-    if current_number == '0.0.0':
-        sql = 'INSERT INTO version (number, migration) values (%s, %s)'
-        cursor.execute(sql, (number, migration))
-    else:
-        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
-        cursor.execute(sql, (number, migration, current_number))    
-    
-    conn.commit()
-    cursor.close()
-
 
 def migrateIfRequired():
     conn = getDirectConnection()
@@ -107,10 +94,11 @@ def migrateIfRequired():
 
         cursor.execute(sql)
 
+    if current_db_version['number'] != "0.0.0":
+        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
+        cursor.execute(sql, (number, migration, current_number))
+
     cursor.close()
-
-    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'], conn)
-
     conn.close()
 
 def getRefreshDataset(conn, retry_errors=False):
@@ -128,7 +116,7 @@ def getRefreshDataset(conn, retry_errors=False):
 
 def getCursor(conn, itersize, sql):
 
-    cursor = conn.cursor(name='name_of_cursor') as cursor:
+    cursor = conn.cursor()
     cursor.itersize = itersize
     cursor.execute(sql)
 
@@ -162,22 +150,27 @@ def updateValidationState(conn, filehash, state):
 def insertOrUpdateFile(conn, id, hash, url, dt):
     cur = conn.cursor()
 
-    sql = """
+    sql1 = """
         INSERT INTO refresher (id, hash, url, first_seen, last_seen) 
         VALUES (%(id)s, %(hash)s, %(url)s, %(date)s, %(date)s)
         ON CONFLICT (id) DO 
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
-                last_seen = %(date)s, 
                 modified = %(date)s,
                 downloaded = null,
-                downloaded_error = null,
+                download_error = null,
                 validation_request = null,
                 validation_api_error = null,
                 valid = null,
                 datastore_processing_start = null,
                 datastore_processing_end = null
-            WHERE id=id and hash != %(hash)s
+            WHERE refresher.id=%(id)s and refresher.hash != %(hash)s;
+    """
+
+    sql2 = """
+            UPDATE refresher SET
+            last_seen = %(date)s
+            WHERE refresher.id=%(id)s;
     """
 
     data = {
@@ -187,7 +180,8 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
         "date": dt,
     }
 
-    cur.execute(sql, data)
+    cur.execute(sql1, data)
+    cur.execute(sql2, data)
     conn.commit()
     cur.close()
 
@@ -203,7 +197,8 @@ def getFilesNotSeenAfter(conn, dt):
     cur.execute(sql, data)
     results = cur.fetchall()
     cur.close()
-    return cur.fetchall()
+    return results
+
 
 def removeFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
