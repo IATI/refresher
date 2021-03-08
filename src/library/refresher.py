@@ -7,8 +7,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import time
-import sqlalchemy
-from sqlalchemy import and_, or_
 import library.db as db
 from library.logger import getLogger
 from constants.config import config
@@ -63,10 +61,59 @@ def refresh():
     for dataset in all_datasets:
         db.insertOrUpdateFile(conn, dataset['id'], dataset['hash'], dataset['url'], start_dt)
 
-    db.removeFilesBefore(start_dt)
+    stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
+
+    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
+    container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
+
+    #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
+
+    for dataset in stale_datasets:
+        try:
+            container_client.delete_blob(dataset['hash'] + '.xml')
+        except (AzureExceptions.ResourceNotFoundError) as e:
+            logger.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
+
+    #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
+
+    db.removeFilesNotSeenAfter(conn, start_dt)
 
     conn.close()        
     logger.info('End refresh.')
+
+def reload(retry_errors):
+    logger.info('Start reload...')
+    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
+    conn = db.getDirectConnection()
+
+    datasets = db.getRefreshDataset(conn, retry_errors)
+
+    chunked_datasets = list(split(datasets, config['PARALLEL_PROCESSES']))
+
+    processes = []
+    
+    download_errors = 0
+
+    logger.info('Downloading ' + str(len(dataset)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
+    
+    for chunk in chunked_datasets:
+        if len(chunk) == 0:
+            continue
+        process = Process(target=download_chunk, args=(chunk, blob_service_client, datasets, download_errors))
+        process.start()
+        processes.append(process)
+
+    finished = False
+
+    while finished == False:
+        time.sleep(2)
+        finished = True
+        for process in processes:
+            process.join(timeout=0)
+            if process.is_alive():
+                finished = False
+
+    logger.info("Reload complete. Failed to download {} datasets.".format(download_errors))
 
 def service_loop():
     logger.info("Start service loop")
@@ -108,65 +155,3 @@ def download_chunk(chunk, blob_service_client, datasets, download_errors):
         except Exception as e:
             logger.warning('Failed to upload XML with url ' + dataset['url'] + ' - message: ' + e.message)
             
-def reload(retry_errors):
-    logger.info('Start reload...')
-    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-    engine = db.getDbEngine()
-    conn = engine.connect()
-
-    try:
-        datasets = db.getDatasets(engine)
-    except sqlalchemy.exc.NoSuchTableError:
-        raise ValueError("No database found. Try running `-t refresh` first.")
-
-    if retry_errors:
-        dataset_filter = datasets.c.error == True
-    else:
-        dataset_filter = and_(
-            or_(
-                datasets.c.new == True,
-                datasets.c.modified == True
-            ),
-            datasets.c.error == False
-        )
-
-    new_datasets = conn.execute(datasets.select().where(dataset_filter)).fetchall()
-
-    chunked_datasets = list(split(new_datasets, config['PARALLEL_PROCESSES']))
-
-    processes = []
-    
-    download_errors = 0
-
-    logger.info('Downloading ' + str(len(new_datasets)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
-    
-    for chunk in chunked_datasets:
-        if len(chunk) == 0:
-            continue
-        process = Process(target=download_chunk, args=(chunk, blob_service_client, datasets, download_errors))
-        process.start()
-        processes.append(process)
-
-    finished = False
-
-    while finished == False:
-        time.sleep(2)
-        finished = True
-        for process in processes:
-            process.join(timeout=0)
-            if process.is_alive():
-                finished = False
-
-    stale_datasets = conn.execute(datasets.select().where(datasets.c.stale == True)).fetchall()
-    stale_dataset_ids = [dataset["id"] for dataset in stale_datasets]
-    conn.execute(datasets.delete().where(datasets.c.id.in_(stale_dataset_ids)))
-
-    container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
-
-    for dataset in stale_datasets:
-        try:
-            container_client.delete_blob(dataset['hash'] + '.xml')
-        except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
-
-    logger.info("Reload complete. Failed to download {} datasets.".format(download_errors))

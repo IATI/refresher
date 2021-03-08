@@ -1,6 +1,4 @@
 import os, importlib, pathlib, sys
-from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
-from sqlalchemy.types import Boolean
 from constants.version import __version__
 from constants.config import config
 import psycopg2
@@ -13,9 +11,6 @@ def getDirectConnection():
 
 def getDbEngine():
     return create_engine("postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(config['DB_USER'], config['DB_PASS'], config['DB_HOST'], config['DB_PORT'], config['DB_NAME']))
-
-def getMeta(engine):
-    return MetaData(engine)
 
 def convert_migration_to_version(migration_rev):
     return migration_rev.replace('BR_', '').replace('_','.')
@@ -118,24 +113,42 @@ def migrateIfRequired():
 
     conn.close()
 
-def getDatasets(engine):
-    meta = getMeta(engine)
-    meta.reflect()
-    return Table(config['DATA_TABLENAME'], meta, schema=config['DATA_SCHEMA'], autoload=True)
+def getRefreshDataset(conn, retry_errors=False):
+
+    if retry_errors:
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded = null"
+    else:
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded = null AND downloaded_error = null"
+    
+    cursor.execute(sql)
+    results = cur.fetchall()
+    cur.close()
+    return cur.fetchall()
+
+
+def getCursor(conn, itersize, sql):
+
+    cursor = conn.cursor(name='name_of_cursor') as cursor:
+    cursor.itersize = itersize
+    cursor.execute(sql)
+
+    return cursor
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
     sql = "SELECT hash FROM refresher WHERE valid is Null"
     cur.execute(sql)    
-    return cur.fetchall()
+    results = cur.fetchall()
     cur.close()
+    return cur.fetchall()
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
     sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
     cur.execute(sql)    
-    return cur.fetchall()
+    results = cur.fetchall()
     cur.close()
+    return cur.fetchall()
 
 
 def updateValidationState(conn, filehash, state):
@@ -178,7 +191,21 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
     conn.commit()
     cur.close()
 
-def removeFilesBefore(dt):
+def getFilesNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        SELECT id, hash, url FROM refresher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    results = cur.fetchall()
+    cur.close()
+    return cur.fetchall()
+
+def removeFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
@@ -189,6 +216,4 @@ def removeFilesBefore(dt):
 
     cur.execute(sql, data)
     conn.commit()
-    cur.close()
-
-    
+    cur.close()    
