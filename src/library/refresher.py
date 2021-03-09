@@ -1,7 +1,8 @@
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from azure.core import exceptions as AzureExceptions
 import json
-from multiprocessing import Process
+import multiprocessing
+multiprocessing.set_start_method('spawn', True)
 import os, sys
 import requests
 from requests.adapters import HTTPAdapter
@@ -95,12 +96,12 @@ def reload(retry_errors):
     
     download_errors = 0
 
-    logger.info('Downloading ' + str(len(dataset)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
+    logger.info('Downloading ' + str(len(datasets)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
     
     for chunk in chunked_datasets:
         if len(chunk) == 0:
             continue
-        process = Process(target=download_chunk, args=(chunk, blob_service_client, datasets, download_errors))
+        process = multiprocessing.Process(target=download_chunk, args=(chunk, blob_service_client, datasets))
         process.start()
         processes.append(process)
 
@@ -135,24 +136,28 @@ def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
-def download_chunk(chunk, blob_service_client, datasets, download_errors):
-    engine = db.getDbEngine()
-    conn = engine.connect()
+def download_chunk(chunk, blob_service_client, datasets):
+    conn = db.getDirectConnection()
+
     for dataset in chunk:
+
+        id = dataset[0]
+        hash = dataset[1]
+        url = dataset[2]
+
         try:
-            download_xml = requests_retry_session(retries=3).get(url=dataset["url"], timeout=5).content
-
-            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=dataset['hash'] + '.xml')
+            download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
+            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
             blob_client.upload_blob(download_xml)
-
-            conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(new=False, modified=False, stale=False, error=False))
-        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-            download_errors += 1
-            conn.execute(datasets.update().where(datasets.c.id == dataset["id"]).values(error=True))
+            db.updateFileAsDownloaded(conn, id)
+        except (requests.exceptions.ConnectionError) as e:
+            db.updateFileAsDownloadError(conn, id, 0)
+        except (requests.exceptions.HTTPError) as e: 
+            db.updateFileAsDownloadError(conn, id, e.response.status_code)       
         except (AzureExceptions.ServiceResponseError) as e:
-            logger.warning('Failed to upload XML with url ' + dataset['url'] + ' - Azure error message: ' + e.message)
+            logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except (AzureExceptions.ResourceExistsError) as e:
             pass
         except Exception as e:
-            logger.warning('Failed to upload XML with url ' + dataset['url'] + ' - message: ' + e.message)
+            logger.warning('Failed to upload XML with url ' + url + ' - message: ' + e.message)
             

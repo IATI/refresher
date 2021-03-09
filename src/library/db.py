@@ -3,14 +3,12 @@ from constants.version import __version__
 from constants.config import config
 import psycopg2
 from library.logger import getLogger
+from datetime import datetime
 
 logger = getLogger()
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
-
-def getDbEngine():
-    return create_engine("postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(config['DB_USER'], config['DB_PASS'], config['DB_HOST'], config['DB_PORT'], config['DB_NAME']))
 
 def convert_migration_to_version(migration_rev):
     return migration_rev.replace('BR_', '').replace('_','.')
@@ -102,16 +100,17 @@ def migrateIfRequired():
     conn.close()
 
 def getRefreshDataset(conn, retry_errors=False):
+    cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM refresher WHERE downloaded = null"
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null"
     else:
-        sql = "SELECT id, hash, url FROM refresher WHERE downloaded = null AND downloaded_error = null"
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null AND download_error is null"
     
     cursor.execute(sql)
-    results = cur.fetchall()
-    cur.close()
-    return cur.fetchall()
+    results = cursor.fetchall()
+    cursor.close()
+    return results
 
 
 def getCursor(conn, itersize, sql):
@@ -147,16 +146,49 @@ def updateValidationState(conn, filehash, state):
     conn.commit()
     cur.close()
 
+def updateFileAsDownloaded(conn, id):
+    cur = conn.cursor()
+
+    sql="UPDATE refresher SET downloaded = %(dt)s WHERE id = %(id)s"
+
+    date = datetime.now()
+
+    data = {
+        "id": id,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def updateFileAsDownloadError(conn, id, status):
+    cur = conn.cursor()
+
+    sql="UPDATE refresher SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+
+    data = {
+        "id": id,
+        "dt": datetime.now(),
+        "status": status
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+
+
 def insertOrUpdateFile(conn, id, hash, url, dt):
     cur = conn.cursor()
 
     sql1 = """
         INSERT INTO refresher (id, hash, url, first_seen, last_seen) 
-        VALUES (%(id)s, %(hash)s, %(url)s, %(date)s, %(date)s)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s)
         ON CONFLICT (id) DO 
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
-                modified = %(date)s,
+                modified = %(dt)s,
                 downloaded = null,
                 download_error = null,
                 validation_request = null,
@@ -169,7 +201,7 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
 
     sql2 = """
             UPDATE refresher SET
-            last_seen = %(date)s
+            last_seen = %(dt)s
             WHERE refresher.id=%(id)s;
     """
 
@@ -177,7 +209,7 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
         "id": id,
         "hash": hash,
         "url": url,
-        "date": dt,
+        "dt": dt,
     }
 
     cur.execute(sql1, data)
