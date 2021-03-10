@@ -92,6 +92,8 @@ def service_loop():
 def main():
     logger.info("Starting validation...")
 
+    conn = db.getDirectConnection()
+
     file_hashes = db.getUnvalidatedDatasets(conn)
 
     if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
@@ -119,4 +121,5 @@ def main():
                 if process.is_alive():
                     finished = False
 
+    conn.close()
     logger.info("Finished.")
