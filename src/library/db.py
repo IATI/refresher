@@ -163,9 +163,14 @@ def updateValidationError(conn, filehash, status):
 
 def updateValidationState(conn, filehash, state):
     cur = conn.cursor()
-    sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
 
-    data = (state, filehash)
+    if state is not None:
+        sql = "UPDATE refresher SET valid=%s, validation_api_error = null WHERE hash=%s"
+        data = (state, filehash)
+    else:
+        sql = "UPDATE refresher SET valid=null WHERE hash=%s"
+        data = (filehash)
+    
     cur.execute(sql, data)
     conn.commit()
     cur.close()

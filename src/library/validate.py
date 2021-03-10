@@ -14,13 +14,14 @@ import json
 
 logger = getLogger()
 
-conn = db.getDirectConnection()
-
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
 def process_hash_list(hash_list):
+
+    conn = db.getDirectConnection()
+
     for file_hash in hash_list:
         try:
             blob_name = file_hash[0] + '.xml'
