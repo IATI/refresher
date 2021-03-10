@@ -115,7 +115,7 @@ def reload(retry_errors):
             if process.is_alive():
                 finished = False
 
-    logger.info("Reload complete. Failed to download {} datasets.".format(download_errors))
+    logger.info("Reload complete.")
 
 def service_loop():
     logger.info("Start service loop")
@@ -152,12 +152,12 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloaded(conn, id)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
-        except (requests.exceptions.HTTPError) as e: 
+        except (requests.exceptions.HTTPError) as e:
             db.updateFileAsDownloadError(conn, id, e.response.status_code)       
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except (AzureExceptions.ResourceExistsError) as e:
-            pass
+            db.updateFileAsDownloaded(conn, id)
         except Exception as e:
             logger.warning('Failed to upload XML with url ' + url + ' - message: ' + e.message)
             
