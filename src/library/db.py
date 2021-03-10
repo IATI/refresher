@@ -1,21 +1,14 @@
 import os, importlib, pathlib, sys
-from sqlalchemy import create_engine, MetaData, Table, Column, String, and_, or_
-from sqlalchemy.types import Boolean
 from constants.version import __version__
 from constants.config import config
 import psycopg2
 from library.logger import getLogger
+from datetime import datetime
 
 logger = getLogger()
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
-
-def getDbEngine():
-    return create_engine("postgresql+psycopg2://{}:{}@{}:{}/{}?sslmode=require".format(config['DB_USER'], config['DB_PASS'], config['DB_HOST'], config['DB_PORT'], config['DB_NAME']))
-
-def getMeta(engine):
-    return MetaData(engine)
 
 def convert_migration_to_version(migration_rev):
     return migration_rev.replace('BR_', '').replace('_','.')
@@ -47,26 +40,13 @@ def get_current_db_version(conn):
         cursor.execute(sql)
         result = cursor.fetchall()
         cursor.close()
-    except psycopg2.errors.UndefinedTable as e:
+    except psycopg2.errors.UndefinedTable:
         return None
     
     if len(result) != 1:
         return None
     else:
         return {'number': result[0][0], 'migration': result[0][1]}
-
-def set_current_db_version(number, migration, current_number, conn):
-    cursor = conn.cursor()
-
-    if current_number == '0.0.0':
-        sql = 'INSERT INTO version (number, migration) values (%s, %s)'
-        cursor.execute(sql, (number, migration))
-    else:
-        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
-        cursor.execute(sql, (number, migration, current_number))    
-    
-    conn.commit()
-    cursor.close()
 
 
 def migrateIfRequired():
@@ -112,50 +92,179 @@ def migrateIfRequired():
 
         cursor.execute(sql)
 
+    if current_db_version['number'] != "0.0.0":
+        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
+        cursor.execute(sql, (number, migration, current_number))
+
     cursor.close()
-
-    set_current_db_version(__version__['number'], __version__['migration'], current_db_version['number'], conn)
-
     conn.close()
 
-def getDatasets(engine):
-    meta = getMeta(engine)
-    meta.reflect()
-    return Table(config['DATA_TABLENAME'], meta, schema=config['DATA_SCHEMA'], autoload=True)
+def getRefreshDataset(conn, retry_errors=False):
+    cursor = conn.cursor()
+
+    if retry_errors:
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null"
+    else:
+        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null AND download_error is null"
+    
+    cursor.execute(sql)
+    results = cursor.fetchall()
+    cursor.close()
+    return results
+
+
+def getCursor(conn, itersize, sql):
+
+    cursor = conn.cursor()
+    cursor.itersize = itersize
+    cursor.execute(sql)
+
+    return cursor
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-
     sql = "SELECT hash FROM refresher WHERE valid is Null"
-
-    cur.execute(sql)
-    
-    return cur.fetchall()
-
+    cur.execute(sql)    
+    results = cur.fetchall()
     cur.close()
+    return results
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-
     sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
 
-    cur.execute(sql)
-    
-    return cur.fetchall()
+def updateValidationRequestDate(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE refresher SET validation_request=%(dt)s WHERE hash=%(hash)s"
 
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
     cur.close()
 
+def updateValidationError(conn, filehash, status):
+    cur = conn.cursor()
+    sql = "UPDATE refresher SET validation_api_error=%s WHERE hash=%s"
+
+    data = (status, filehash)
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
 
 def updateValidationState(conn, filehash, state):
-
     cur = conn.cursor()
-
     sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
 
     data = (state, filehash)
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def updateFileAsDownloaded(conn, id):
+    cur = conn.cursor()
+
+    sql="UPDATE refresher SET downloaded = %(dt)s WHERE id = %(id)s"
+
+    date = datetime.now()
+
+    data = {
+        "id": id,
+        "dt": date,
+    }
 
     cur.execute(sql, data)
-
-    conn.commit()        
-
+    conn.commit()
     cur.close()
+
+def updateFileAsDownloadError(conn, id, status):
+    cur = conn.cursor()
+
+    sql="UPDATE refresher SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+
+    data = {
+        "id": id,
+        "dt": datetime.now(),
+        "status": status
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+
+
+def insertOrUpdateFile(conn, id, hash, url, dt):
+    cur = conn.cursor()
+
+    sql1 = """
+        INSERT INTO refresher (id, hash, url, first_seen, last_seen) 
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s)
+        ON CONFLICT (id) DO 
+            UPDATE SET hash = %(hash)s,
+                url = %(url)s,
+                modified = %(dt)s,
+                downloaded = null,
+                download_error = null,
+                validation_request = null,
+                validation_api_error = null,
+                valid = null,
+                datastore_processing_start = null,
+                datastore_processing_end = null
+            WHERE refresher.id=%(id)s and refresher.hash != %(hash)s;
+    """
+
+    sql2 = """
+            UPDATE refresher SET
+            last_seen = %(dt)s
+            WHERE refresher.id=%(id)s;
+    """
+
+    data = {
+        "id": id,
+        "hash": hash,
+        "url": url,
+        "dt": dt,
+    }
+
+    cur.execute(sql1, data)
+    cur.execute(sql2, data)
+    conn.commit()
+    cur.close()
+
+def getFilesNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        SELECT id, hash, url FROM refresher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    results = cur.fetchall()
+    cur.close()
+    return results
+
+
+def removeFilesNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        DELETE FROM refresher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()    
