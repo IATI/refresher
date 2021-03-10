@@ -40,7 +40,7 @@ def get_current_db_version(conn):
         cursor.execute(sql)
         result = cursor.fetchall()
         cursor.close()
-    except psycopg2.errors.UndefinedTable as e:
+    except psycopg2.errors.UndefinedTable:
         return None
     
     if len(result) != 1:
@@ -127,7 +127,7 @@ def getUnvalidatedDatasets(conn):
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
-    return cur.fetchall()
+    return results
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
@@ -135,12 +135,36 @@ def getUnprocessedDatasets(conn):
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
-    return cur.fetchall()
+    return results
 
+def updateValidationRequestDate(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE refresher SET validation_request=%(dt)s WHERE hash=%(hash)s"
+
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def updateValidationError(conn, filehash, status):
+    cur = conn.cursor()
+    sql = "UPDATE refresher SET validation_api_error=%s WHERE hash=%s"
+
+    data = (status, filehash)
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
 
 def updateValidationState(conn, filehash, state):
     cur = conn.cursor()
     sql = "UPDATE refresher SET valid=%s WHERE hash=%s"
+
     data = (state, filehash)
     cur.execute(sql, data)
     conn.commit()

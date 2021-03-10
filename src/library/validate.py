@@ -30,14 +30,17 @@ def process_hash_list(hash_list):
 
             downloader = blob_client.download_blob()
             payload = downloader.content_as_text()
-
+            
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
+            db.updateValidationRequestDate(conn, file_hash[0])
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
+                    db.updateValidationError(conn, file_hash[0], response.status_code)
                     logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 elif response.status_code >= 500:
+                    db.updateValidationError(conn, file_hash[0], response.status_code)
                     logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
                     continue
                 else: 
@@ -80,7 +83,7 @@ def process_hash_list(hash_list):
 
 def service_loop():
     logger.info("Start service loop")
-    count = 0
+
     while True:
         main()            
         time.sleep(60)
