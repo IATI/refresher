@@ -39,7 +39,6 @@ def process_hash_list(hash_list):
 
 def service_loop():
     logger.info("Start service loop")
-    count = 0
     while True:
         main()            
         time.sleep(60)
@@ -49,13 +48,12 @@ def main():
 
     try:
         conn = db.getDirectConnection()
-    except Exception as e:
+    except Exception:
         logger.error('Failed to connect to Postgres')
         sys.exit()
 
     file_hashes = db.getUnprocessedDatasets(conn)
 
-    cur.close()
     conn.close()
 
     if config['DDS']['PARALLEL_PROCESSES'] == 1:
