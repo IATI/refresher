@@ -113,7 +113,7 @@ jobs:
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
               --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-ddsbuild" \
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
