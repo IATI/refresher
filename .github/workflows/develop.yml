@@ -119,8 +119,8 @@ jobs:
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "2" \
-              --cpu "1" \
+              --memory "4" \
+              --cpu "2" \
               --os-type "Linux" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
