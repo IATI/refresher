@@ -94,7 +94,7 @@ def migrateIfRequired():
 
     if current_db_version['number'] != "0.0.0":
         sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
-        cursor.execute(sql, (number, migration, current_number))
+        cursor.execute(sql, (__version__['number'], __version__['migration'], current_db_version['number']))
 
     cursor.close()
     conn.close()
