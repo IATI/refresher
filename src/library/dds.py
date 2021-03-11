@@ -1,7 +1,7 @@
 import os, sys, time, re
 from .logger import getLogger
 import json
-import datetime
+from datetime import datetime
 import requests
 from lxml import etree, objectify
 import library.db as db
@@ -19,7 +19,7 @@ class IATI_db:
         try:
             self._conn = db.getDirectConnection()
             self._cur = self._conn.cursor()
-        except Exception as e:
+        except Exception:
             logging.error('Failed to connect to Postgres')
             sys.exit()
 
@@ -156,7 +156,7 @@ class IATI_db:
         
         try:
             self._cur.execute(sql, (el_hash, el.tag, el.text, el.text, str(is_root)))
-        except psycopg2.IntegrityError as e:
+        except psycopg2.IntegrityError:
             self._conn.rollback()
             return el_hash
 
@@ -168,6 +168,17 @@ class IATI_db:
 
     def create_from_iati_xml(self, file_hash):
 
+        sql = "UPDATE refresher SET datastore_processing_start=%(dt)s WHERE hash = %(file_hash)s"
+        date = datetime.now()
+
+        data = {
+            "file_hash": file_hash,
+            "dt": date,
+        }
+
+        self._cur.execute(sql, data)
+        self._conn.commit()
+
         blob_name = file_hash + '.xml'
 
         blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
@@ -177,7 +188,7 @@ class IATI_db:
 
         try:
             root = etree.fromstring(downloader.content_as_text())
-        except ValueError as e:
+        except ValueError:
             xml = re.sub(r'\bencoding="[-\w]+"', '', downloader.content_as_text(), count=1)
             xml = re.sub(r'\bencoding=\'[-\w]+\'', '', xml, count=1)
             root = etree.fromstring(xml)
@@ -193,10 +204,18 @@ class IATI_db:
 
         self.upsert_child_elements_recursively(root, root_hash)
 
-        sql = "UPDATE refresher SET root_element_key = %s WHERE hash = %s"
+        sql = "UPDATE refresher SET datastore_root_element_key = %(root_hash)s, datastore_processing_end=%(dt)s WHERE hash = %(file_hash)s"
+
+        date = datetime.now()
+
+        data = {
+            "root_hash": root_hash,
+            "file_hash": file_hash,
+            "dt": date,
+        }
 
         try:
-            self._cur.execute(sql, (root_hash, file_hash))
+            self._cur.execute(sql, data)
             self._conn.commit()
         except psycopg2.IntegrityError:
             logging.warning('Integrity error on root el write where root el pk = ' + root_hash + ' and file hash = ' + file_hash)

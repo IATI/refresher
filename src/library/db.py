@@ -94,7 +94,7 @@ def migrateIfRequired():
 
     if current_db_version['number'] != "0.0.0":
         sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
-        cursor.execute(sql, (number, migration, current_number))
+        cursor.execute(sql, (__version__['number'], __version__['migration'], current_db_version['number']))
 
     cursor.close()
     conn.close()
@@ -131,7 +131,7 @@ def getUnvalidatedDatasets(conn):
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM refresher WHERE root_element_key is Null"
+    sql = "SELECT hash FROM refresher WHERE datastore_root_element_key is Null AND downloaded is not Null AND valid is true"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
