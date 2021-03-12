@@ -119,7 +119,7 @@ jobs:
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "4" \
+              --memory "2" \
               --cpu "2" \
               --os-type "Linux" \
               --secure-environment-variables \
