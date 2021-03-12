@@ -166,6 +166,19 @@ class IATI_db:
 
         return el_hash
 
+    def destroy_tree(self, root):
+        node_tracker = {root: [0, None]}
+        for node in root.iterdescendants():
+            parent = node.getparent()
+            node_tracker[node] = [node_tracker[parent][0] + 1, parent]
+        node_tracker = sorted([(depth, parent, child) for child, (depth, parent)
+                            in node_tracker.items()], key=lambda x: x[0], reverse=True)
+        for _, parent, child in node_tracker:
+            if parent is None:
+                break
+            parent.remove(child)
+        del root
+
     def create_from_iati_xml(self, file_hash):
 
         sql = "UPDATE refresher SET datastore_processing_start=%(dt)s WHERE hash = %(file_hash)s"
@@ -204,6 +217,8 @@ class IATI_db:
 
         self.upsert_child_elements_recursively(root, root_hash)
 
+        self.destroy_tree(root)
+
         sql = "UPDATE refresher SET datastore_root_element_key = %(root_hash)s, datastore_processing_end=%(dt)s WHERE hash = %(file_hash)s"
 
         date = datetime.now()
@@ -217,6 +232,8 @@ class IATI_db:
         try:
             self._cur.execute(sql, data)
             self._conn.commit()
+
         except psycopg2.IntegrityError:
             logging.warning('Integrity error on root el write where root el pk = ' + root_hash + ' and file hash = ' + file_hash)
             self._conn.rollback()
+            
