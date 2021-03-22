@@ -75,7 +75,7 @@ def refresh():
         try:
             container_client.delete_blob(hash + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
+            logger.warning('Can not delete blob as does not exist:' + hash + '.xml')
 
     #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
 
