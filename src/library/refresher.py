@@ -71,8 +71,9 @@ def refresh():
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
 
     for dataset in stale_datasets:
+        hash = dataset[1]
         try:
-            container_client.delete_blob(dataset['hash'] + '.xml')
+            container_client.delete_blob(hash + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Can not delete blob as does not exist:' + dataset['hash'] + '.xml')
 
@@ -93,8 +94,6 @@ def reload(retry_errors):
     chunked_datasets = list(split(datasets, config['PARALLEL_PROCESSES']))
 
     processes = []
-    
-    download_errors = 0
 
     logger.info('Downloading ' + str(len(datasets)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
     
