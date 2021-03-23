@@ -19,6 +19,6 @@ config = dict(DATA_SCHEMA = "public",
     ),
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
-        FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL')# + '?parallel=' + os.getenv('VALIDATOR_PARALLEL')
+        FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL')
     )
 )

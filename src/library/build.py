@@ -1,5 +1,5 @@
 import os, time, sys, traceback
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from library.logger import getLogger
 import datetime
 from library.dds import IATI_db
@@ -15,13 +15,37 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
-def process_hash_list(hash_list):
+def process_hash(hash):
     db = IATI_db()
 
+    try:
+        db.create_from_iati_xml(hash) 
+    except Exception as e:
+        logger.error('ERROR with ' + hash)
+        print(traceback.format_exc())
+        if hasattr(e, 'message'):                         
+            logger.error(e.message)
+
+        if hasattr(e, 'msg'):                         
+            logger.error(e.msg)
+        try:
+            logger.warning(e.args[0])
+        except:
+            pass
+
+    db.close()
+   
+
+def process_hash_list(hash_list):
     for file_hash in hash_list:
 
         try:
-            db.create_from_iati_xml(file_hash[0]) 
+            process = Process(target=process_hash, args=(file_hash[0],))
+            process.start()
+
+            while process.is_alive():
+                time.sleep(1)
+
         except Exception as e:
             logger.error('ERROR with ' + file_hash[0])
             print(traceback.format_exc())
@@ -35,13 +59,13 @@ def process_hash_list(hash_list):
             except:
                 pass
     
-    db.close()
+
 
 def service_loop():
     logger.info("Start service loop")
     while True:
         main()            
-        time.sleep(60)
+        time.sleep(10)
 
 def main():
     logger.info("Starting build...")
