@@ -8,7 +8,7 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  TAG: 0.1.1
+  TAG: 0.1.2
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   AZURE_STORAGE_CONTAINER_VALIDATION: ${{ secrets.AZURE_STORAGE_CONTAINER_VALIDATION }}
@@ -119,7 +119,7 @@ jobs:
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "2" \
+              --memory "4" \
               --cpu "2" \
               --os-type "Linux" \
               --secure-environment-variables \
