@@ -123,7 +123,7 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM refresher WHERE downloaded is not null AND valid is Null"
+    sql = "SELECT hash FROM refresher WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
