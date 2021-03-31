@@ -123,7 +123,7 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash, downloaded FROM refresher WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
+    sql = "SELECT hash, downloaded, id FROM refresher WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -190,6 +190,20 @@ def updateFileAsDownloaded(conn, id):
     cur.execute(sql, data)
     conn.commit()
     cur.close()
+
+def updateFileAsNotDownloaded(conn, id):
+    cur = conn.cursor()
+
+    sql="UPDATE refresher SET downloaded = null WHERE id = %(id)s"
+
+    data = {
+        "id": id,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 
 def updateFileAsDownloadError(conn, id, status):
     cur = conn.cursor()

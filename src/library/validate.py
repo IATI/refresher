@@ -31,7 +31,11 @@ def process_hash_list(hash_list):
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
-            payload = downloader.content_as_text()
+            try:
+                payload = downloader.content_as_text()
+            except UnicodeDecodeError as e:
+                logger.warning('Unicode decode error for source blob' + file_hash[0] + '.xml')
+                continue
             
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
             db.updateValidationRequestDate(conn, file_hash[0])
@@ -66,9 +70,9 @@ def process_hash_list(hash_list):
             
         except (AzureExceptions.ResourceExistsError) as e:
             db.updateValidationState(conn, file_hash[0], state)
-            pass
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Blob not found for hash ' + file_hash[0])
+            logger.warning('Blob not found for hash ' + file_hash[0] + ' - updating as Not Downloaded for the refresher to pick up.')
+            db.updateFileAsNotDownloaded(conn, file_hash[2])
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash[0])
             print(traceback.format_exc())
