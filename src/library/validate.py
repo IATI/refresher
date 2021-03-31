@@ -24,6 +24,7 @@ def process_hash_list(hash_list):
 
     for file_hash in hash_list:
         try:
+            logger.info('Validating file with hash ' + file_hash[0] + ', downloaded at ' + file_hash[1].isoformat())
             blob_name = file_hash[0] + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
