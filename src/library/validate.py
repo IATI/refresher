@@ -30,7 +30,6 @@ def get_text_from_blob(downloader):
 
     raise ValueError('Charset unknown, or not in the list.')
 
-
 def process_hash_list(hash_list):
 
     conn = db.getDirectConnection()
