@@ -18,6 +18,18 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
+def get_text_from_blob(downloader):
+    #In order of likelihood
+    charsets = ['UTF-8', 'latin-1', 'UTF-16', 'Windows-1252']
+
+    for charset in charsets:
+        try:
+            return downloader.content_as_text(encoding=charset)
+        except:
+            continue
+
+    raise ValueError('Charset unknown, or not in the list.')
+
 def process_hash_list(hash_list):
 
     conn = db.getDirectConnection()
@@ -31,10 +43,11 @@ def process_hash_list(hash_list):
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
+
             try:
-                payload = downloader.content_as_text()
-            except UnicodeDecodeError as e:
-                logger.warning('Unicode decode error for source blob' + file_hash[0] + '.xml')
+                payload = get_text_from_blob(downloader)
+            except:
+                logger.warning('Can not identify charset for ' + file_hash[0] + '.xml')
                 continue
             
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
