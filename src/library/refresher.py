@@ -41,13 +41,15 @@ def fetch_datasets():
     json_response = json.loads(response)
     full_count = json_response["result"]["count"]
     current_count = len(json_response["result"]["results"])
-    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "publisher": result["organization"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+
     while current_count < full_count:
         next_api_url = "{}&start={}".format(api_url, current_count)
         response = requests_retry_session().get(url=next_api_url, timeout=30).content
         json_response = json.loads(response)
         current_count += len(json_response["result"]["results"])
-        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "publisher": result["organization"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    
     return results
 
 def refresh():

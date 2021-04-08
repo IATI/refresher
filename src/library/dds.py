@@ -168,7 +168,7 @@ class IATI_db:
 
     def create_from_iati_xml(self, file_hash):
 
-        sql = "UPDATE refresher SET datastore_processing_start=%(dt)s WHERE hash = %(file_hash)s"
+        sql = "UPDATE document SET datastore_processing_start=%(dt)s WHERE hash = %(file_hash)s"
         date = datetime.now()
 
         data = {
@@ -204,7 +204,7 @@ class IATI_db:
 
         self.upsert_child_elements_recursively(root, root_hash)
 
-        sql = "UPDATE refresher SET datastore_root_element_key = %(root_hash)s, datastore_processing_end=%(dt)s WHERE hash = %(file_hash)s"
+        sql = "UPDATE document SET datastore_root_element_key = %(root_hash)s, datastore_processing_end=%(dt)s WHERE hash = %(file_hash)s"
 
         date = datetime.now()
 
