@@ -75,7 +75,12 @@ def migrateIfRequired():
         step = -1
 
     for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
-        migration = 'mig_' + str(i)
+        if upgrade:
+            mig_num = i
+        else:
+            mig_num = i + 1
+
+        migration = 'mig_' + str(mig_num)
 
         parent = str(pathlib.Path(__file__).parent.absolute())
         spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
@@ -220,14 +225,46 @@ def updateFileAsDownloadError(conn, id, status):
     conn.commit()
     cur.close()
 
+def insertOrUpdatePublisher(conn, organization, last_seen):
+    cur = conn.cursor()
 
+    sql = """
+        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen)  
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s)
+        ON CONFLICT (org_id) DO
+            UPDATE SET title = %(title)s,
+                state = %(state)s,
+                image_url = %(image_url)s,
+                description = %(description)s,
+                last_seen = %(last_seen)s
+            WHERE publisher.name=%(name)s
+    """
+    
+    data = {
+        "org_id": organization['id'],
+        "description": organization['publisher_description'],
+        "title": organization['title'],
+        "name": organization['name'],
+        "state": organization['state'],
+        "country_code": organization['publisher_country'],
+        "last_seen": last_seen
+    }
 
-def insertOrUpdateFile(conn, id, hash, url, dt):
+    try:
+        data["image_url"] = organization['image_url']
+    except:
+        data["image_url"] = None
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     cur = conn.cursor()
 
     sql1 = """
-        INSERT INTO document (id, hash, url, first_seen, last_seen) 
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s)
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher) 
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
         ON CONFLICT (id) DO 
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
@@ -244,7 +281,8 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
 
     sql2 = """
             UPDATE document SET
-            last_seen = %(dt)s
+            last_seen = %(dt)s,
+            publisher = %(publisher_id)s
             WHERE document.id=%(id)s;
     """
 
@@ -253,6 +291,7 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
         "hash": hash,
         "url": url,
         "dt": dt,
+        "publisher_id": publisher_id
     }
 
     cur.execute(sql1, data)
@@ -286,4 +325,17 @@ def removeFilesNotSeenAfter(conn, dt):
 
     cur.execute(sql, data)
     conn.commit()
-    cur.close()    
+    cur.close()
+
+def removePublishersNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        DELETE FROM publisher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close() 
