@@ -13,7 +13,7 @@ from library.logger import getLogger
 from constants.config import config
 from datetime import datetime
 
-logger = getLogger()
+logger = getLogger() #/action/organization_list
 
 def requests_retry_session(
     retries=10,
@@ -41,28 +41,62 @@ def fetch_datasets():
     json_response = json.loads(response)
     full_count = json_response["result"]["count"]
     current_count = len(json_response["result"]["results"])
-    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+
     while current_count < full_count:
         next_api_url = "{}&start={}".format(api_url, current_count)
         response = requests_retry_session().get(url=next_api_url, timeout=30).content
         json_response = json.loads(response)
         current_count += len(json_response["result"]["results"])
-        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    
     return results
 
-def refresh():
+def get_paginated_response(url, offset, limit, retval = []):
+    api_url = url + "?offset=" + str(offset) + "&limit=" + str(limit)
+    try:
+        response = requests_retry_session().get(url=api_url, timeout=30).content
+        json_response = json.loads(response)
 
-    start_dt = datetime.now()    
-    logger.info('Begin refresh at ' + start_dt.isoformat())
-    
+        if len(json_response['result']) != 0:
+            retval = retval + json_response['result']
+            offset = offset + limit
+            return get_paginated_response(url, offset, limit, retval)
+        else:
+            return retval
+    except Exception as e:
+        logger.error('IATI Registry returned other than 200 when getting the list of orgs')
+
+def sync_publishers():
     conn = db.getDirectConnection()
-    logger.info('Getting results from the Registry...')
+    start_dt = datetime.now()
+    publisher_list = get_paginated_response("https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
+
+    for publisher_name in publisher_list:
+        try:
+            api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
+            response = requests_retry_session().get(url=api_url, timeout=30).content
+            json_response = json.loads(response)
+            db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except Exception as e:
+            logger.error('Failed to sync publisher with name ' + publisher_name)
+    
+    db.removePublishersNotSeenAfter(conn, start_dt)
+    conn.close()
+
+def sync_documents():
+    conn = db.getDirectConnection()
+
+    start_dt = datetime.now()
     all_datasets = fetch_datasets()
     logger.info('...Registry result got. Updating DB...')
 
-    for dataset in all_datasets:
-        db.insertOrUpdateFile(conn, dataset['id'], dataset['hash'], dataset['url'], start_dt)
-
+    for dataset in all_datasets:   
+        try:    
+            db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
+        except Exception as e:
+            logger.error('Failed to sync document with url ' + dataset['url'])
+    
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
     blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
@@ -81,7 +115,19 @@ def refresh():
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 
-    conn.close()        
+    conn.close()
+
+def refresh():        
+    logger.info('Begin refresh')       
+
+    logger.info('Syncing publishers from the Registry...')
+    sync_publishers()
+    logger.info('Publishers synced. Updating publishers in DB...')
+
+    logger.info('Syncing documents from the Registry...')
+    sync_documents()
+    logger.info('Documents synced.')
+      
     logger.info('End refresh.')
 
 def reload(retry_errors):

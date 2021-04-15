@@ -75,7 +75,12 @@ def migrateIfRequired():
         step = -1
 
     for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
-        migration = 'mig_' + str(i)
+        if upgrade:
+            mig_num = i
+        else:
+            mig_num = i + 1
+
+        migration = 'mig_' + str(mig_num)
 
         parent = str(pathlib.Path(__file__).parent.absolute())
         spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
@@ -103,9 +108,9 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null"
+        sql = "SELECT id, hash, url FROM document WHERE downloaded is null"
     else:
-        sql = "SELECT id, hash, url FROM refresher WHERE downloaded is null AND download_error is null"
+        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
     
     cursor.execute(sql)
     results = cursor.fetchall()
@@ -123,7 +128,7 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash, downloaded, id FROM refresher WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
+    sql = "SELECT hash, downloaded, id FROM document WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -131,7 +136,7 @@ def getUnvalidatedDatasets(conn):
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM refresher WHERE datastore_root_element_key is Null AND downloaded is not Null AND valid is true"
+    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND valid is true"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -139,7 +144,7 @@ def getUnprocessedDatasets(conn):
 
 def updateValidationRequestDate(conn, filehash):
     cur = conn.cursor()
-    sql = "UPDATE refresher SET validation_request=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET validation_request=%(dt)s WHERE hash=%(hash)s"
 
     date = datetime.now()
 
@@ -154,7 +159,7 @@ def updateValidationRequestDate(conn, filehash):
 
 def updateValidationError(conn, filehash, status):
     cur = conn.cursor()
-    sql = "UPDATE refresher SET validation_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET validation_api_error=%s WHERE hash=%s"
 
     data = (status, filehash)
     cur.execute(sql, data)
@@ -165,10 +170,10 @@ def updateValidationState(conn, filehash, state):
     cur = conn.cursor()
 
     if state is not None:
-        sql = "UPDATE refresher SET valid=%s, validation_api_error = null WHERE hash=%s"
+        sql = "UPDATE document SET valid=%s, validation_api_error = null WHERE hash=%s"
         data = (state, filehash)
     else:
-        sql = "UPDATE refresher SET valid=null WHERE hash=%s"
+        sql = "UPDATE document SET valid=null WHERE hash=%s"
         data = (filehash)
     
     cur.execute(sql, data)
@@ -178,7 +183,7 @@ def updateValidationState(conn, filehash, state):
 def updateFileAsDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE refresher SET downloaded = %(dt)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = %(dt)s WHERE id = %(id)s"
 
     date = datetime.now()
 
@@ -194,7 +199,7 @@ def updateFileAsDownloaded(conn, id):
 def updateFileAsNotDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE refresher SET downloaded = null WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = null WHERE id = %(id)s"
 
     data = {
         "id": id,
@@ -208,7 +213,7 @@ def updateFileAsNotDownloaded(conn, id):
 def updateFileAsDownloadError(conn, id, status):
     cur = conn.cursor()
 
-    sql="UPDATE refresher SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
 
     data = {
         "id": id,
@@ -220,14 +225,46 @@ def updateFileAsDownloadError(conn, id, status):
     conn.commit()
     cur.close()
 
+def insertOrUpdatePublisher(conn, organization, last_seen):
+    cur = conn.cursor()
 
+    sql = """
+        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen)  
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s)
+        ON CONFLICT (org_id) DO
+            UPDATE SET title = %(title)s,
+                state = %(state)s,
+                image_url = %(image_url)s,
+                description = %(description)s,
+                last_seen = %(last_seen)s
+            WHERE publisher.name=%(name)s
+    """
+    
+    data = {
+        "org_id": organization['id'],
+        "description": organization['publisher_description'],
+        "title": organization['title'],
+        "name": organization['name'],
+        "state": organization['state'],
+        "country_code": organization['publisher_country'],
+        "last_seen": last_seen
+    }
 
-def insertOrUpdateFile(conn, id, hash, url, dt):
+    try:
+        data["image_url"] = organization['image_url']
+    except:
+        data["image_url"] = None
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     cur = conn.cursor()
 
     sql1 = """
-        INSERT INTO refresher (id, hash, url, first_seen, last_seen) 
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s)
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher) 
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
         ON CONFLICT (id) DO 
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
@@ -239,13 +276,14 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
                 valid = null,
                 datastore_processing_start = null,
                 datastore_processing_end = null
-            WHERE refresher.id=%(id)s and refresher.hash != %(hash)s;
+            WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
     sql2 = """
-            UPDATE refresher SET
-            last_seen = %(dt)s
-            WHERE refresher.id=%(id)s;
+            UPDATE document SET
+            last_seen = %(dt)s,
+            publisher = %(publisher_id)s
+            WHERE document.id=%(id)s;
     """
 
     data = {
@@ -253,6 +291,7 @@ def insertOrUpdateFile(conn, id, hash, url, dt):
         "hash": hash,
         "url": url,
         "dt": dt,
+        "publisher_id": publisher_id
     }
 
     cur.execute(sql1, data)
@@ -264,7 +303,7 @@ def getFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
-        SELECT id, hash, url FROM refresher WHERE last_seen < %s
+        SELECT id, hash, url FROM document WHERE last_seen < %s
     """
 
     data = (dt,)
@@ -279,11 +318,24 @@ def removeFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
-        DELETE FROM refresher WHERE last_seen < %s
+        DELETE FROM document WHERE last_seen < %s
     """
 
     data = (dt,)
 
     cur.execute(sql, data)
     conn.commit()
-    cur.close()    
+    cur.close()
+
+def removePublishersNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        DELETE FROM publisher WHERE last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close() 
