@@ -128,7 +128,7 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash, downloaded, id FROM document WHERE downloaded is not null AND valid is Null ORDER BY downloaded"
+    sql = "SELECT hash, downloaded, id, url FROM document WHERE downloaded is not null AND validation is Null ORDER BY downloaded"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -136,7 +136,7 @@ def getUnvalidatedDatasets(conn):
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND valid is true"
+    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND validation is true"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -166,17 +166,39 @@ def updateValidationError(conn, filehash, status):
     conn.commit()
     cur.close()
 
-def updateValidationState(conn, filehash, state):
+def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
     cur = conn.cursor()
 
-    if state is not None:
-        sql = "UPDATE document SET valid=%s, validation_api_error = null WHERE hash=%s"
-        data = (state, filehash)
-    else:
-        sql = "UPDATE document SET valid=null WHERE hash=%s"
-        data = (filehash)
+    if state is None:
+        sql = "UPDATE document SET validation=null WHERE hash=%s"
+        data = (doc_hash)
+        cur.execute(sql, data)
+        conn.commit()
+        cur.close()
+        return
     
+    sql = """
+        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report)  
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
+        ON CONFLICT (document_hash) DO
+            UPDATE SET report = %(report)s,
+                valid = %(valid)s
+            WHERE validation.document_hash=%(doc_hash)s;
+
+        UPDATE document SET validation=%(doc_hash)s WHERE hash=%(doc_hash)s;
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "doc_hash": doc_hash,
+        "doc_url": doc_url,
+        "created": datetime.now(),
+        "valid": state,
+        "report": report
+    }
+
     cur.execute(sql, data)
+    
     conn.commit()
     cur.close()
 
@@ -273,7 +295,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
-                valid = null,
+                validation = null,
                 datastore_processing_start = null,
                 datastore_processing_end = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;

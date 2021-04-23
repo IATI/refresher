@@ -30,14 +30,19 @@ def get_text_from_blob(downloader):
 
     raise ValueError('Charset unknown, or not in the list.')
 
-def process_hash_list(hash_list):
+def process_hash_list(document_datasets):
 
     conn = db.getDirectConnection()
 
-    for file_hash in hash_list:
+    for file_data in document_datasets:
         try:
-            logger.info('Validating file with hash ' + file_hash[0] + ', downloaded at ' + file_hash[1].isoformat())
-            blob_name = file_hash[0] + '.xml'
+            file_hash = file_data[0]
+            downloaded = file_data[1]
+            file_id = file_data[2]
+            file_url = file_data[3]
+
+            logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
+            blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
@@ -47,23 +52,23 @@ def process_hash_list(hash_list):
             try:
                 payload = get_text_from_blob(downloader)
             except:
-                logger.warning('Can not identify charset for ' + file_hash[0] + '.xml')
+                logger.warning('Can not identify charset for ' + file_hash + '.xml')
                 continue
             
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
-            db.updateValidationRequestDate(conn, file_hash[0])
+            db.updateValidationRequestDate(conn, file_hash)
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
-                    db.updateValidationError(conn, file_hash[0], response.status_code)
-                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    db.updateValidationError(conn, file_hash, response.status_code)
+                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
                     continue
                 elif response.status_code >= 500:
-                    db.updateValidationError(conn, file_hash[0], response.status_code)
-                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    db.updateValidationError(conn, hash, response.status_code)
+                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
                     continue
                 else: 
-                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash[0] + '.xml')
+                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
             
             report = response.json()
 
@@ -74,20 +79,13 @@ def process_hash_list(hash_list):
             else:
                 state = True
 
-            blob_name = file_hash[0] + '.json'
-            blob_client = blob_service_client.get_blob_client(container=config['VALIDATION_CONTAINER_NAME'], blob=blob_name)
-
-            blob_client.upload_blob(json.dumps(report))
-
-            db.updateValidationState(conn, file_hash[0], state)
+            db.updateValidationState(conn, file_id, file_hash, file_url, state, json.dumps(report))
             
-        except (AzureExceptions.ResourceExistsError) as e:
-            db.updateValidationState(conn, file_hash[0], state)
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Blob not found for hash ' + file_hash[0] + ' - updating as Not Downloaded for the refresher to pick up.')
-            db.updateFileAsNotDownloaded(conn, file_hash[2])
+            logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
+            db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
-            logger.error('ERROR with validating ' + file_hash[0])
+            logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
             if hasattr(e, 'message'):                         
                 logger.error(e.message)
