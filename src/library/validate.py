@@ -61,14 +61,14 @@ def process_hash_list(document_datasets):
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
                     db.updateValidationError(conn, file_hash, response.status_code)
-                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
+                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 elif response.status_code >= 500:
                     db.updateValidationError(conn, hash, response.status_code)
-                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
+                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 else: 
-                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + hash + '.xml')
+                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
             
             report = response.json()
 

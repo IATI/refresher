@@ -105,11 +105,11 @@ def sync_documents():
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
 
     for dataset in stale_datasets:
-        hash = dataset[1]
+        file_hash = dataset[1]
         try:
-            container_client.delete_blob(hash + '.xml')
+            container_client.delete_blob(file_hash + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Can not delete blob as does not exist:' + hash + '.xml')
+            logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
 
     #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
 
