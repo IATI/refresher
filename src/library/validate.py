@@ -64,7 +64,7 @@ def process_hash_list(document_datasets):
                     logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 elif response.status_code >= 500:
-                    db.updateValidationError(conn, hash, response.status_code)
+                    db.updateValidationError(conn, file_hash, response.status_code)
                     logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 else: 
