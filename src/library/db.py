@@ -251,14 +251,15 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     cur = conn.cursor()
 
     sql = """
-        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen)  
-        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s)
+        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)  
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
         ON CONFLICT (org_id) DO
             UPDATE SET title = %(title)s,
                 state = %(state)s,
                 image_url = %(image_url)s,
                 description = %(description)s,
-                last_seen = %(last_seen)s
+                last_seen = %(last_seen)s,
+                package_count = %(package_count)s
             WHERE publisher.name=%(name)s
     """
     
@@ -269,7 +270,9 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
         "name": organization['name'],
         "state": organization['state'],
         "country_code": organization['publisher_country'],
-        "last_seen": last_seen
+        "last_seen": last_seen,
+        "package_count": organization['package_count'],
+        "iati_id": organization['publisher_iati_id']
     }
 
     try:
