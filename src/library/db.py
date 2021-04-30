@@ -259,7 +259,8 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
                 image_url = %(image_url)s,
                 description = %(description)s,
                 last_seen = %(last_seen)s,
-                package_count = %(package_count)s
+                package_count = %(package_count)s,
+                iati_id = %(iati_id)s
             WHERE publisher.name=%(name)s
     """
     
