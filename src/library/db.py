@@ -136,7 +136,7 @@ def getUnvalidatedDatasets(conn):
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND validation not Null"
+    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND validation is not Null"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
