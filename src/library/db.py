@@ -136,7 +136,15 @@ def getUnvalidatedDatasets(conn):
 
 def getUnprocessedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash FROM document WHERE datastore_root_element_key is Null AND downloaded is not Null AND validation is not Null"
+    sql = """
+        SELECT doc.hash FROM document AS doc
+        LEFT JOIN validation AS val ON doc.validation = val.document_hash
+        WHERE datastore_root_element_key is Null 
+        AND doc.downloaded is not Null 
+        AND doc.validation is not Null
+        AND val.valid = true
+    """    
+    
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
