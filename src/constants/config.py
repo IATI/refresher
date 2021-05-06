@@ -14,7 +14,7 @@ config = dict(DATA_SCHEMA = "public",
     DB_NAME = os.getenv('DB_NAME'),
     DDS = dict(
         SKIP_EXISTING_FILES = True,
-        PARALLEL_PROCESSES = 30
+        PARALLEL_PROCESSES = 20
     ),
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
