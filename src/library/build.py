@@ -76,6 +76,9 @@ def main():
         logger.error('Failed to connect to Postgres')
         sys.exit()
 
+    logger.info("Resetting any unfinished document builds")
+    db.resetUnfinishedDatasets(conn)
+
     file_hashes = db.getUnprocessedDatasets(conn)
 
     conn.close()
@@ -87,7 +90,7 @@ def main():
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in up to " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
