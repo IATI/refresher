@@ -26,7 +26,7 @@ def main(args):
     elif args.type == "validateloop":
         validate.service_loop()    
     else:
-        print("Type is required - either refresh, reload, build, or validate.")
+        print("Type is required - either refresh, reload, build, validate, refreshLoop or validateLoop.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')
