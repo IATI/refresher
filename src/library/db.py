@@ -138,11 +138,12 @@ def resetUnfinishedDatasets(conn):
     cur = conn.cursor()
     sql = """
         UPDATE document
-        SET datastore_processing_start = null, datastore_processing_end = null
+        SET datastore_processing_start=null, datastore_processing_end=null
         WHERE datastore_root_element_key is Null
     """    
     
-    cur.execute(sql) 
+    cur.execute(sql)
+    conn.commit()
     cur.close()
 
 def getUnprocessedDatasets(conn):    
@@ -159,6 +160,7 @@ def getUnprocessedDatasets(conn):
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
+
     return results
 
 def updateValidationRequestDate(conn, filehash):
