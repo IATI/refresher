@@ -146,7 +146,7 @@ def resetUnfinishedDatasets(conn):
     conn.commit()
     cur.close()
 
-def getUnprocessedDatasets(conn):    
+def getUnprocessedDatasets(conn, size):    
     cur = conn.cursor()
     sql = """
         SELECT doc.hash FROM document AS doc
@@ -155,9 +155,12 @@ def getUnprocessedDatasets(conn):
         AND doc.downloaded is not Null 
         AND doc.validation is not Null
         AND val.valid = true
-    """    
+        ORDER BY doc.downloaded
+        LIMIT %(size)s
+    """
+    data = {"size" : size}
     
-    cur.execute(sql)    
+    cur.execute(sql, data)    
     results = cur.fetchall()
     cur.close()
 

@@ -79,7 +79,7 @@ def main():
     logger.info("Resetting any unfinished document builds")
     db.resetUnfinishedDatasets(conn)
 
-    file_hashes = db.getUnprocessedDatasets(conn)
+    file_hashes = db.getUnprocessedDatasets(conn, config['DDS']['PARALLEL_PROCESSES'])
 
     conn.close()
 
