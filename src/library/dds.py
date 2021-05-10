@@ -9,6 +9,7 @@ import hashlib
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
 import psycopg2
+import gc
 
 logging = getLogger()
 
@@ -40,6 +41,9 @@ class IATI_db:
 
             if parent_el.tag == "iati-activity":
                 self._parent_activity_hash = parent_hash 
+
+            del(parent_el)
+            gc.collect()
             
             for child_el in children:
 
@@ -77,7 +81,7 @@ class IATI_db:
                     except psycopg2.IntegrityError:
                         self._conn.rollback()
 
-                self.upsert_child_elements_recursively(child_el, child_hash)       
+                self.upsert_child_elements_recursively(child_el, child_hash)
             
 
     def get_attribute_hash(self, key,value):
