@@ -87,13 +87,18 @@ def migrateIfRequired():
         mig = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mig)
 
+        logmessage = "upgrade"
+
         if upgrade:
             sql = mig.upgrade
         else:
             sql = mig.downgrade
+            logmessage = "downgrade"
 
         sql = sql.replace('\n', ' ')
-        sql = sql.replace('\t', ' ')   
+        sql = sql.replace('\t', ' ')
+
+        logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num)) 
 
         cursor.execute(sql)
 
