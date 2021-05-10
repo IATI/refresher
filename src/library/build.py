@@ -16,24 +16,30 @@ def chunk_list(l, n):
         yield l[i::n]
 
 def process_hash(hash):
-    db = IATI_db()
+    dds = IATI_db()
 
     try:
-        db.create_from_iati_xml(hash) 
+        dds.create_from_iati_xml(hash) 
     except Exception as e:
-        logger.error('ERROR with ' + hash)
+        message = "unknown reason"
         print(traceback.format_exc())
-        if hasattr(e, 'message'):                         
-            logger.error(e.message)
-
+        if hasattr(e, 'message'):
+            message = e.message           
         if hasattr(e, 'msg'):                         
-            logger.error(e.msg)
+            message = e.msg
         try:
-            logger.warning(e.args[0])
+            message = e.args[0]
         except:
             pass
 
-    db.close()
+        logger.error('ERROR with ' + hash + ': ' + message)
+
+        conn = db.getDirectConnection()                       
+        logger.error(message)
+        db.writeDatastoreBuildError(conn, hash, message)
+        conn.close()
+
+    dds.close()
    
 
 def process_hash_list(hash_list):
@@ -49,15 +55,24 @@ def process_hash_list(hash_list):
         except Exception as e:
             logger.error('ERROR with ' + file_hash[0])
             print(traceback.format_exc())
-            if hasattr(e, 'message'):                         
-                logger.error(e.message)
 
+            message = "unknown reason"
+
+            if hasattr(e, 'message'):
+                message = e.message           
             if hasattr(e, 'msg'):                         
-                logger.error(e.msg)
+                message = e.msg
             try:
-                logger.warning(e.args[0])
+                message = e.args[0]
             except:
                 pass
+
+            logger.error('ERROR with ' + file_hash[0] + ': ' + message)
+
+            conn = db.getDirectConnection()                       
+            logger.error(message)
+            db.writeDatastoreBuildError(conn, file_hash[0], message)
+            conn.close()
     
 
 

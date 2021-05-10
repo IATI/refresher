@@ -151,7 +151,8 @@ def getUnprocessedDatasets(conn, size):
     sql = """
         SELECT doc.hash FROM document AS doc
         LEFT JOIN validation AS val ON doc.validation = val.document_hash
-        WHERE datastore_root_element_key is Null 
+        WHERE doc.datastore_root_element_key is Null
+        AND doc.datastore_build_error is Null
         AND doc.downloaded is not Null 
         AND doc.validation is not Null
         AND val.valid = true
@@ -388,4 +389,21 @@ def removePublishersNotSeenAfter(conn, dt):
 
     cur.execute(sql, data)
     conn.commit()
-    cur.close() 
+    cur.close()
+
+def writeDatastoreBuildError(conn, hash, error):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document SET datastore_build_error=%(error)s WHERE hash=%(hash)s
+    """
+
+    data = {
+        "error": error,
+        "hash": hash
+    }
+
+    cur.execute(sql, data)
+    results = cur.fetchall()
+    cur.close()
+    return results  
