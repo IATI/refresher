@@ -54,6 +54,7 @@ def process_hash_list(hash_list):
 
         except Exception as e:
             logger.error('ERROR with ' + file_hash[0])
+            db.writeDatastoreBuildError(conn, file_hash[0], message)
             print(traceback.format_exc())
 
             message = "unknown reason"
@@ -68,6 +69,7 @@ def process_hash_list(hash_list):
                 pass
 
             logger.error('ERROR with ' + file_hash[0] + ': ' + message)
+            db.writeDatastoreBuildError(conn, file_hash[0], message)
 
             conn = db.getDirectConnection()                       
             logger.error(message)

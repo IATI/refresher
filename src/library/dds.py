@@ -9,7 +9,6 @@ import hashlib
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
 import psycopg2
-import gc
 
 logging = getLogger()
 
@@ -41,9 +40,6 @@ class IATI_db:
 
             if parent_el.tag == "iati-activity":
                 self._parent_activity_hash = parent_hash 
-
-            del(parent_el)
-            gc.collect()
             
             for child_el in children:
 
