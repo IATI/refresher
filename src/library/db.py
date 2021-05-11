@@ -409,6 +409,5 @@ def writeDatastoreBuildError(conn, hash, error):
     }
 
     cur.execute(sql, data)
-    results = cur.fetchall()
+    conn.commit()
     cur.close()
-    return results  
