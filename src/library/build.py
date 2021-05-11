@@ -126,4 +126,3 @@ def main():
                     finished = False
 
     logger.info("Finished.")
-    sys.exit()
