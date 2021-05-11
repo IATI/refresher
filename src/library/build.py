@@ -101,7 +101,7 @@ def main():
     conn.close()
 
     if config['DDS']['PARALLEL_PROCESSES'] == 1:
-        process_hash_list(file_hashes)
+        process_hash_list(file_hashes)        
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['DDS']['PARALLEL_PROCESSES']))
 
@@ -126,3 +126,4 @@ def main():
                     finished = False
 
     logger.info("Finished.")
+    sys.exit()
