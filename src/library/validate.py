@@ -40,6 +40,10 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             file_id = file_data[2]
             file_url = file_data[3]
+            prior_error = file_data[4]
+
+            if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
+                continue
 
             logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'

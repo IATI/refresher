@@ -133,7 +133,7 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash, downloaded, id, url FROM document WHERE downloaded is not null AND validation is Null ORDER BY downloaded"
+    sql = "SELECT hash, downloaded, id, url, validation_api_error FROM document WHERE downloaded is not null AND validation is Null ORDER BY downloaded"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -206,6 +206,7 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         conn.commit()
         cur.close()
         return
+        
     
     sql = """
         INSERT INTO validation (document_id, document_hash, document_url, created, valid, report)  
@@ -215,7 +216,7 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
                 valid = %(valid)s
             WHERE validation.document_hash=%(doc_hash)s;
 
-        UPDATE document SET validation=%(doc_hash)s WHERE hash=%(doc_hash)s;
+        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
     """
 
     data = {
