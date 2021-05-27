@@ -20,5 +20,9 @@ config = dict(DATA_SCHEMA = "public",
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
         FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL')
+    ),
+    FLATTEN = dict(
+        PARALLEL_PROCESSES = 1,
+        FLATTENER_URL = os.getenv('FLATTENER_API_URL')
     )
 )

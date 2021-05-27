@@ -2,6 +2,7 @@ import argparse
 import library.refresher as refresher
 import library.build as build
 import library.validate as validate
+import library.flatten as flatten
 import library.db as db
 from datetime import datetime, timedelta
 from constants.config import config
@@ -19,12 +20,16 @@ def main(args):
         build.main()
     elif args.type == "validate":
         validate.main()
+    elif args.type == "flatten":
+        flatten.main()
     elif args.type == "refreshloop":
         refresher.service_loop()
     elif args.type == "buildloop":
         build.service_loop()
     elif args.type == "validateloop":
-        validate.service_loop()    
+        validate.service_loop()
+    elif args.type == "flattenloop":
+        flatten.service_loop()      
     else:
         print("Type is required - either refresh, reload, build, validate - or refreshLoop or validateLoop.")
 

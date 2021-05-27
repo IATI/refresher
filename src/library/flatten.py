@@ -38,12 +38,14 @@ def process_hash_list(document_datasets):
         try:
             file_hash = file_data[0]
             downloaded = file_data[1]
-            file_id = file_data[2]
+            doc_id = file_data[2]
             file_url = file_data[3]
             prior_error = file_data[4]
 
             if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
                 continue
+
+            db.startFlatten(conn, doc_id)
 
             logger.info('Flattening file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
@@ -59,31 +61,24 @@ def process_hash_list(document_datasets):
                 logger.warning('Can not identify charset for ' + file_hash + '.xml')
                 continue
             
-            response = requests.post(config['FLATTEN']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
+            response = requests.post(config['FLATTEN']['FLATTENER_URL'], data = payload.encode('utf-8'))
             db.updateValidationRequestDate(conn, file_hash)
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
-                    db.updateValidationError(conn, file_hash, response.status_code)
+                    db.updateFlattenError(conn, doc_id, response.status_code)
                     logger.warning('Flattener reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 elif response.status_code >= 500:
-                    db.updateValidationError(conn, file_hash, response.status_code)
+                    db.updateFlattenError(conn, doc_id, response.status_code)
                     logger.warning('Flattener reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 else: 
                     logger.warning('Flattener reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
             
-            report = response.json()
+            flattenedObject = response.json()
 
-            state = None
-
-            if report['summary']['critical'] > 0:
-                state = False
-            else:
-                state = True
-
-            db.updateValidationState(conn, file_id, file_hash, file_url, state, json.dumps(report))
+            db.completeFlatten(conn, doc_id, json.dumps(flattenedObject))
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
@@ -110,20 +105,20 @@ def service_loop():
         time.sleep(60)
 
 def main():
-    logger.info("Starting validation...")
+    logger.info("Starting to flatten...")
 
     conn = db.getDirectConnection()
 
-    file_hashes = db.getUnvalidatedDatasets(conn)
+    file_hashes = db.getUnflattenedDatasets(conn)
 
     if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
+        chunked_hash_lists = list(chunk_list(file_hashes, config['FLATTEN']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:

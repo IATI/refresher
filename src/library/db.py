@@ -139,6 +139,22 @@ def getUnvalidatedDatasets(conn):
     cur.close()
     return results
 
+def getUnflattenedDatasets(conn):    
+    cur = conn.cursor()
+    sql = """
+    SELECT hash, downloaded, id, url, flatten_api_error 
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    WHERE doc.downloaded is not null 
+    AND doc.flatten_start is Null
+    AND val.valid = true
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def resetUnfinishedDatasets(conn):
     cur = conn.cursor()
     sql = """
@@ -189,43 +205,65 @@ def updateValidationRequestDate(conn, filehash):
 
 def updateValidationError(conn, filehash, status):
     cur = conn.cursor()
-    sql = "UPDATE document SET validation_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET validation_api_error=%s, WHERE hash=%s"
 
     data = (status, filehash)
     cur.execute(sql, data)
     conn.commit()
     cur.close()
 
-def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
+def startFlatten(conn, doc_id):
     cur = conn.cursor()
 
-    if state is None:
-        sql = "UPDATE document SET validation=null WHERE hash=%s"
-        data = (doc_hash)
-        cur.execute(sql, data)
-        conn.commit()
-        cur.close()
-        return
-        
-    
     sql = """
-        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report)  
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
-        ON CONFLICT (document_hash) DO
-            UPDATE SET report = %(report)s,
-                valid = %(valid)s
-            WHERE validation.document_hash=%(doc_hash)s;
-
-        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
+        UPDATE document
+        SET flatten_start = %(now)s, flatten_api_error=null
+        WHERE id = %(doc_id)s
     """
 
     data = {
         "doc_id": doc_id,
-        "doc_hash": doc_hash,
-        "doc_url": doc_url,
-        "created": datetime.now(),
-        "valid": state,
-        "report": report
+        "now": datetime.now(),
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def updateFlattenError(conn, doc_id, error):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET flatten_api_error = %(error)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "error": error,
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+   
+
+def completeFlatten(conn, doc_id, flattened_activities):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET flatten_end = %(now)s, flattened_activities = %(flat_act)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+        "flat_act": flattened_activities
     }
 
     cur.execute(sql, data)
