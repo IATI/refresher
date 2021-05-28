@@ -13,6 +13,7 @@ env:
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   AZURE_STORAGE_CONTAINER_VALIDATION: ${{ secrets.AZURE_STORAGE_CONTAINER_VALIDATION }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
+  FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
   VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
@@ -43,6 +44,8 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
           docker build . -f ddsbuild-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-ddsbuild:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-ddsbuild:$TAG
+          docker build . -f flatten-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -133,7 +136,36 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}"
-
+      - name: "Deploy Flatten to Azure Container Instances"
+        uses: "azure/CLI@v1"
+        with:
+            azcliversion: 2.19.1
+            inlineScript: |
+              az container create \
+              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-flatten:${{ env.TAG }}" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "dev-iati-refresher" \
+              --subnet "default" \
+              --memory "2" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
+                AZURE_STORAGE_CONTAINER_VALIDATION="${{ env.AZURE_STORAGE_CONTAINER_VALIDATION }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}"
 
 
               
