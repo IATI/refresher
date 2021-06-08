@@ -42,7 +42,7 @@ def process_hash_list(document_datasets):
             file_url = file_data[3]
             prior_error = file_data[4]
 
-            if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
+            if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Flattener
                 continue
 
             db.startFlatten(conn, doc_id)
@@ -65,6 +65,11 @@ def process_hash_list(document_datasets):
             db.updateValidationRequestDate(conn, file_hash)
 
             if response.status_code != 200:
+                if response.status_code == 404:
+                    logger.warning('Flattener reports Client Error with status 404 for source blob ' + file_hash + '.xml - giving it a chance to come back up...')
+                    db.updateFlattenError(conn, doc_id, response.status_code)
+                    time.sleep(360) #give the thing time to come back up
+                    logger.warning('...and off we go again.')
                 if response.status_code >= 400 and response.status_code < 500:
                     db.updateFlattenError(conn, doc_id, response.status_code)
                     logger.warning('Flattener reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
@@ -108,6 +113,10 @@ def main():
     logger.info("Starting to flatten...")
 
     conn = db.getDirectConnection()
+
+    logger.info("Resetting those unfinished")
+
+    db.resetUnfinishedFlattens(conn)
 
     file_hashes = db.getUnflattenedDatasets(conn)
 

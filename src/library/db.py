@@ -155,6 +155,18 @@ def getUnflattenedDatasets(conn):
     cur.close()
     return results
 
+def resetUnfinishedFlattens(conn):
+    cur = conn.cursor()
+    sql = """
+        UPDATE document
+        SET flatten_start=null
+        WHERE flatten_end is null
+    """    
+    
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
+
 def resetUnfinishedDatasets(conn):
     cur = conn.cursor()
     sql = """
@@ -217,7 +229,7 @@ def startFlatten(conn, doc_id):
 
     sql = """
         UPDATE document
-        SET flatten_start = %(now)s, flatten_api_error=null
+        SET flatten_start = %(now)s, flatten_api_error = null
         WHERE id = %(doc_id)s
     """
 
@@ -256,7 +268,7 @@ def completeFlatten(conn, doc_id, flattened_activities):
 
     sql = """
         UPDATE document
-        SET flatten_end = %(now)s, flattened_activities = %(flat_act)s
+        SET flatten_end = %(now)s, flattened_activities = %(flat_act)s, flatten_api_error = null
         WHERE id = %(doc_id)s
     """
 
@@ -267,6 +279,21 @@ def completeFlatten(conn, doc_id, flattened_activities):
     }
 
     cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def resetFailedFlattens(conn):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET flatten_start = null
+        WHERE flatten_end is null
+        AND flatten_api_error != ANY(ARRAY[422, 413, 400])
+    """
+
+    cur.execute(sql)
     
     conn.commit()
     cur.close()
