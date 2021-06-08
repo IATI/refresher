@@ -87,7 +87,7 @@ def process_hash_list(document_datasets):
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
-            db.updateFileAsNotDownloaded(conn, file_id)
+            db.updateFileAsNotDownloaded(conn, doc_id)
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
