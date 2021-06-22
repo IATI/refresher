@@ -47,6 +47,8 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-ddsbuild:$TAG
           docker build . -f flatten-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
+          docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
