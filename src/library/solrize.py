@@ -23,7 +23,7 @@ def process_hash_list(document_datasets):
 
     conn = db.getDirectConnection()
 
-    solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/')  
+    solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True) 
 
     for file_data in document_datasets:
         try:
@@ -46,22 +46,19 @@ def process_hash_list(document_datasets):
 
             for fa in flattened_activities[0]:
                 fa['iati_activities_document_hash'] = file_hash
-
-            solr.add(flattened_activities[0])
-
-            response = solr.commit()
+                response = solr.add(fa)
             
-            if hasattr(response, 'status_code') and response.status_code != 200:
-                if response.status_code >= 400 and response.status_code < 500:
-                    db.updateSolrError(conn, file_hash, response.status_code)
-                    logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-                    continue
-                elif response.status_code >= 500:
-                    db.updateSolrError(conn, file_hash, response.status_code)
-                    logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-                    continue
-                else: 
-                    logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                if hasattr(response, 'status_code') and response.status_code != 200:
+                    if response.status_code >= 400 and response.status_code < 500:
+                        db.updateSolrError(conn, file_hash, response.status_code)
+                        logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                        continue
+                    elif response.status_code >= 500:
+                        db.updateSolrError(conn, file_hash, response.status_code)
+                        logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                        continue
+                    else: 
+                        logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
 
             db.completeSolrize(conn, file_hash)       
 

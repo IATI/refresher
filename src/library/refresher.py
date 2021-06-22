@@ -112,7 +112,7 @@ def sync_documents():
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
 
-        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/')
+        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
 
         try:
             solr.delete(q='iati_activities_document_hash:' + file_hash)
