@@ -169,18 +169,18 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}"
-      - name: "Deploy Solrizer to Azure Container Instances"
+      - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
             azcliversion: 2.19.1
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-solrizer:${{ env.TAG }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-solrize:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
               --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-solrizer" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
