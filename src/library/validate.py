@@ -45,7 +45,7 @@ def process_hash_list(document_datasets):
             if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
                 continue
 
-            logger.info('Flattening file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
+            logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
@@ -59,20 +59,20 @@ def process_hash_list(document_datasets):
                 logger.warning('Can not identify charset for ' + file_hash + '.xml')
                 continue
             
-            response = requests.post(config['FLATTEN']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
+            response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'))
             db.updateValidationRequestDate(conn, file_hash)
 
             if response.status_code != 200:
                 if response.status_code >= 400 and response.status_code < 500:
                     db.updateValidationError(conn, file_hash, response.status_code)
-                    logger.warning('Flattener reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 elif response.status_code >= 500:
                     db.updateValidationError(conn, file_hash, response.status_code)
-                    logger.warning('Flattener reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
                 else: 
-                    logger.warning('Flattener reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
             
             report = response.json()
 

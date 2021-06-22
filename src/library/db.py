@@ -264,7 +264,7 @@ def updateSolrizeStartDate(conn, filehash):
 
 def updateValidationError(conn, filehash, status):
     cur = conn.cursor()
-    sql = "UPDATE document SET validation_api_error=%s, WHERE hash=%s"
+    sql = "UPDATE document SET validation_api_error=%s WHERE hash=%s"
 
     data = (status, filehash)
     cur.execute(sql, data)
@@ -552,3 +552,36 @@ def writeDatastoreBuildError(conn, hash, error):
     cur.execute(sql, data)
     conn.commit()
     cur.close()
+
+def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
+
+    cur = conn.cursor()
+
+    if state is None:
+        sql = "UPDATE document SET validation=null WHERE hash=%s"
+        data = (doc_hash)
+        cur.execute(sql, data)
+        conn.commit()
+        cur.close()
+        return
+
+    sql = """
+        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report)  
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
+        ON CONFLICT (document_hash) DO
+            UPDATE SET report = %(report)s,
+                valid = %(valid)s
+            WHERE validation.document_hash=%(doc_hash)s;
+        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
+        """
+
+    data = {
+        "doc_id": doc_id,
+        "doc_hash": doc_hash,
+        "doc_url": doc_url,
+        "created": datetime.now(),
+        "valid": state,
+        "report": report
+    }
+
+    cur.execute(sql, data)

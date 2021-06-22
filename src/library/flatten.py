@@ -62,7 +62,7 @@ def process_hash_list(document_datasets):
                 continue
             
             response = requests.post(config['FLATTEN']['FLATTENER_URL'], data = payload.encode('utf-8'))
-            db.updateValidationRequestDate(conn, file_hash)
+            db.updateSolrizeStartDate(conn, file_hash)
 
             if response.status_code != 200:
                 if response.status_code == 404:
