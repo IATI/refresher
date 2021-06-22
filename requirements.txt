@@ -9,3 +9,4 @@ urllib3==1.25.9
 azure-core==1.9.0
 azure-storage-blob==12.6.0
 lxml==4.6.2
+pysolr==3.9.0
