@@ -14,6 +14,7 @@ import json
 import pysolr
 
 logger = getLogger()
+solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
 
 def chunk_list(l, n):
     for i in range(0, n):
@@ -21,9 +22,7 @@ def chunk_list(l, n):
 
 def process_hash_list(document_datasets):
 
-    conn = db.getDirectConnection()
-
-    solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True) 
+    conn = db.getDirectConnection()     
 
     for file_data in document_datasets:
         try:
@@ -44,21 +43,18 @@ def process_hash_list(document_datasets):
 
             solr.delete(q='iati_activities_document_hash:' + file_hash)
 
+            batch = []
+
             for fa in flattened_activities[0]:
                 fa['iati_activities_document_hash'] = file_hash
-                response = solr.add(fa)
-            
-                if hasattr(response, 'status_code') and response.status_code != 200:
-                    if response.status_code >= 400 and response.status_code < 500:
-                        db.updateSolrError(conn, file_hash, response.status_code)
-                        logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-                        continue
-                    elif response.status_code >= 500:
-                        db.updateSolrError(conn, file_hash, response.status_code)
-                        logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-                        continue
-                    else: 
-                        logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                batch.append(fa)
+
+                if len(batch) > 9: #todo - config this batch number
+                    addToSolr(conn, batch, file_hash)
+                    batch = []
+
+            if len(batch) > 0:
+                addToSolr(conn, batch, file_hash)
 
             db.completeSolrize(conn, file_hash)       
 
@@ -77,6 +73,19 @@ def process_hash_list(document_datasets):
                 pass        
 
     conn.close()
+
+def addToSolr(conn, batch, file_hash):
+    response = solr.add(batch)
+
+    if hasattr(response, 'status_code') and response.status_code != 200:
+        if response.status_code >= 400 and response.status_code < 500:
+            db.updateSolrError(conn, file_hash, response.status_code)
+            logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+        elif response.status_code >= 500:
+            db.updateSolrError(conn, file_hash, response.status_code)
+            logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+        else: 
+            logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
 
 def service_loop():
     logger.info("Start service loop")
