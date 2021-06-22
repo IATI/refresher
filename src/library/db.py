@@ -155,6 +155,38 @@ def getUnflattenedDatasets(conn):
     cur.close()
     return results
 
+def getFlattenedActivitiesForDoc(conn, hash):    
+    cur = conn.cursor()
+    sql = """
+    SELECT flattened_activities
+    FROM document as doc
+    WHERE doc.hash = %(hash)s 
+    """
+    data = {"hash" : hash}
+    
+    cur.execute(sql, data)    
+    results = cur.fetchall()
+    cur.close()
+
+    return results[0]
+
+def getUnsolrizedDatasets(conn):
+    cur = conn.cursor()
+    sql = """
+    SELECT doc.hash, doc.downloaded, doc.id, doc.url, doc.solr_api_error, val.report
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.hash = val.document_hash
+    WHERE downloaded is not null 
+    AND doc.flatten_end is not Null
+    AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%'
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def resetUnfinishedFlattens(conn):
     cur = conn.cursor()
     sql = """
@@ -215,9 +247,33 @@ def updateValidationRequestDate(conn, filehash):
     conn.commit()
     cur.close()
 
+def updateSolrizeStartDate(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"
+
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 def updateValidationError(conn, filehash, status):
     cur = conn.cursor()
     sql = "UPDATE document SET validation_api_error=%s, WHERE hash=%s"
+
+    data = (status, filehash)
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def updateSolrError(conn, filehash, error):
+    cur = conn.cursor()
+    sql = "UPDATE document SET solr_api_error=%s, WHERE hash=%s"
 
     data = (status, filehash)
     cur.execute(sql, data)
@@ -276,6 +332,25 @@ def completeFlatten(conn, doc_id, flattened_activities):
         "doc_id": doc_id,
         "now": datetime.now(),
         "flat_act": flattened_activities
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def completeSolrize(conn, doc_hash):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET solrize_end = %(now)s, solr_api_error = null
+        WHERE hash = %(doc_hash)s
+    """
+
+    data = {
+        "doc_hash": doc_hash,
+        "now": datetime.now(),
     }
 
     cur.execute(sql, data)

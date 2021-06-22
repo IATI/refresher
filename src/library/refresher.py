@@ -12,6 +12,7 @@ import library.db as db
 from library.logger import getLogger
 from constants.config import config
 from datetime import datetime
+import pysolr
 
 logger = getLogger() #/action/organization_list
 
@@ -110,6 +111,13 @@ def sync_documents():
             container_client.delete_blob(file_hash + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
+
+        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/')
+
+        try:
+            solr.delete(q='iati_activities_document_hash:' + file_hash)
+        except Exception as e:
+            logger.warning('Failed to remove documents from Solr with document hash ' + file_hash)
 
     #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
 

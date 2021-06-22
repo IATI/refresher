@@ -24,5 +24,9 @@ config = dict(DATA_SCHEMA = "public",
     FLATTEN = dict(
         PARALLEL_PROCESSES = 1,
         FLATTENER_URL = os.getenv('FLATTENER_API_URL')
+    ),
+    SOLRIZE = dict(
+        PARALLEL_PROCESSES = 1,
+        SOLR_API_URL = os.getenv('SOLR_API_URL')
     )
 )
