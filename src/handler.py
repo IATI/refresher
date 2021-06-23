@@ -3,7 +3,7 @@ import library.refresher as refresher
 import library.build as build
 import library.validate as validate
 import library.flatten as flatten
-import library.solrize as solrize
+
 import library.db as db
 from datetime import datetime, timedelta
 from constants.config import config
@@ -34,6 +34,7 @@ def main(args):
     elif args.type == "flattenloop":
         flatten.service_loop()
     elif args.type == "solrizeloop":
+        import library.solrize as solrize
         solrize.service_loop()  
     else:
         print("Type is required - either refresh, reload, build, validate - or refreshLoop or validateLoop.")
