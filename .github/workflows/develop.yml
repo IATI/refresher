@@ -79,6 +79,7 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -143,7 +144,8 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -173,7 +175,8 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -204,6 +207,4 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}"
-
-
               
