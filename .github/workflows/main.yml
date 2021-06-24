@@ -63,6 +63,7 @@ jobs:
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.PROD_AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.PROD_AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 DB_HOST="${{ env.PROD_DB_HOST }}" \
                 DB_PORT="${{ env.PROD_DB_PORT }}" \
                 DB_USER="${{ env.PROD_DB_USER }}" \
