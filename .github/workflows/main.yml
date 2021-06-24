@@ -61,8 +61,8 @@ jobs:
               --cpu "1" \
               --os-type "Linux" \
               --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.PROD_AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.PROD_AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \

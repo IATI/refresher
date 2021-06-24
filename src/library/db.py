@@ -8,11 +8,6 @@ from datetime import datetime
 logger = getLogger()
 
 def getDirectConnection():
-    print('DB_NAME:' + config['DB_NAME'])
-    print('DB_USER:' + config['DB_USER'])
-    print('DB_PASS:' + config['DB_PASS'])
-    print('DB_HOST:' + config['DB_HOST'])
-    print('DB_PORT:' + config['DB_PORT'])
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
 
 def convert_migration_to_version(migration_rev):
@@ -108,8 +103,8 @@ def migrateIfRequired():
         cursor.execute(sql)
 
     if current_db_version['number'] != "0.0.0":
-        sql = 'UPDATE version SET number = %s, migration = %s WHERE number = %s'
-        cursor.execute(sql, (__version__['number'], __version__['migration'], current_db_version['number']))
+        sql = 'UPDATE version SET number = %s, migration = %s'
+        cursor.execute(sql, (__version__['number'], __version__['migration']))
 
     cursor.close()
     conn.close()
