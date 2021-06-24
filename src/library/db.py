@@ -8,6 +8,11 @@ from datetime import datetime
 logger = getLogger()
 
 def getDirectConnection():
+    print('DB_NAME:' + config['DB_NAME'])
+    print('DB_USER:' + config['DB_USER'])
+    print('DB_PASS:' + config['DB_PASS'])
+    print('DB_HOST:' + config['DB_HOST'])
+    print('DB_PORT:' + config['DB_PORT'])
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
 
 def convert_migration_to_version(migration_rev):
