@@ -12,6 +12,8 @@ env:
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
+  FILE_VALIDATION_KEY_NAME: ${{ secrets.DEV_FILE_VALIDATION_KEY_NAME }}
+  FILE_VALIDATION_KEY_VALUE: ${{ secrets.DEV_FILE_VALIDATION_KEY_VALUE }}
   FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
   SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
   VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
@@ -76,6 +78,7 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -100,12 +103,15 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy DDS Builder to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -135,7 +141,8 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -164,7 +171,8 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -194,6 +202,4 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}"
-
-
               
