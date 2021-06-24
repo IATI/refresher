@@ -11,7 +11,6 @@ env:
   TAG: 0.1.2
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
-  AZURE_STORAGE_CONTAINER_VALIDATION: ${{ secrets.AZURE_STORAGE_CONTAINER_VALIDATION }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
   FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
   SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
@@ -102,7 +101,6 @@ jobs:
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                AZURE_STORAGE_CONTAINER_VALIDATION="${{ env.AZURE_STORAGE_CONTAINER_VALIDATION }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
@@ -133,7 +131,6 @@ jobs:
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                AZURE_STORAGE_CONTAINER_VALIDATION="${{ env.AZURE_STORAGE_CONTAINER_VALIDATION }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
@@ -163,7 +160,6 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
-                AZURE_STORAGE_CONTAINER_VALIDATION="${{ env.AZURE_STORAGE_CONTAINER_VALIDATION }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
@@ -193,7 +189,6 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                AZURE_STORAGE_CONTAINER_VALIDATION="${{ env.AZURE_STORAGE_CONTAINER_VALIDATION }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
