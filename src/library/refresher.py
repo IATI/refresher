@@ -100,9 +100,6 @@ def sync_documents():
     
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
-    print('AZURE_CONN:' + config['STORAGE_CONNECTION_STR'])
-    print('AZURE_SOURCE:' + config['SOURCE_CONTAINER_NAME'])
-
     blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
     container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
