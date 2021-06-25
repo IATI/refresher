@@ -202,6 +202,8 @@ def download_chunk(chunk, blob_service_client, datasets):
             download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
             blob_client.upload_blob(download_xml)
+            #MONDAY: why could the blob not be there?
+            #perhaps some double-check
             db.updateFileAsDownloaded(conn, id)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
