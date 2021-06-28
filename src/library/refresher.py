@@ -201,7 +201,7 @@ def download_chunk(chunk, blob_service_client, datasets):
         try:
             download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
-            blob_client.upload_blob(download_xml)
+            blob_client.upload_blob(download_xml, overwrite=True)
             db.updateFileAsDownloaded(conn, id)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
@@ -209,8 +209,6 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, e.response.status_code)       
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
-        except (AzureExceptions.ResourceExistsError) as e:
-            db.updateFileAsDownloaded(conn, id)
         except Exception as e:
             logger.warning('Failed to upload XML with url ' + url + ' - message: ' + e.message)
             

@@ -1,0 +1,71 @@
+name: Deploy_Refresher_To_Production_On_Push
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  STAGE: prod-aci-iati
+  NAME: refresher
+  TAG: 0.1.2
+  AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.PROD_AZURE_STORAGE_CONNECTION_STRING }}
+  AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.PROD_AZURE_STORAGE_CONTAINER_SOURCE }}
+  FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
+  FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
+  SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
+  VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
+  DB_USER: ${{ secrets.PROD_DB_USER }}
+  DB_PASS: ${{ secrets.PROD_DB_PASS }}
+  DB_HOST: ${{ secrets.PROD_DB_HOST }}
+  DB_NAME: ${{ secrets.PROD_DB_NAME }}
+  DB_PORT: ${{ secrets.PROD_DB_PORT }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v2
+      - name: "Login via Azure CLI"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: "Build and push image"
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - run: |
+          docker build . -f refresh-dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
+      - name: "Deploy Refresh to Azure Container Instances"
+        uses: "azure/CLI@v1"
+        with:
+            azcliversion: 2.19.1
+            inlineScript: |
+              az container create \
+              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-refresh:${{ env.TAG }}" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "dev-iati-refresher" \
+              --subnet "default" \
+              --memory "2" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
