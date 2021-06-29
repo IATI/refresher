@@ -7,6 +7,7 @@ Its responsibilities include:
 - Store and track changes in the source files
 - Validate the source files using the IATI Validator API
 - Store and index the normalised data in a compressed and performant Postgresql database.
+- Flattens the IATI data into documents which are then added to Solr.
 
 # Local setup
 ```

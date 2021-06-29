@@ -61,10 +61,11 @@ jobs:
               --cpu "1" \
               --os-type "Linux" \
               --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.PROD_AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.PROD_AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                DB_HOST="${{ env.PROD_DB_HOST }}" \
-                DB_PORT="${{ env.PROD_DB_PORT }}" \
-                DB_USER="${{ env.PROD_DB_USER }}" \
-                DB_PASS="${{ env.PROD_DB_PASS }}" \
-                DB_NAME="${{ env.PROD_DB_NAME }}" \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
