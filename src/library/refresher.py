@@ -212,5 +212,5 @@ def download_chunk(chunk, blob_service_client, datasets):
         except (AzureExceptions.ResourceExistsError) as e:
             db.updateFileAsDownloaded(conn, id)
         except Exception as e:
-            logger.warning('Failed to upload XML with url ' + url + ' - message: ' + e.message)
+            logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
             
