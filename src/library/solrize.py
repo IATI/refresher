@@ -34,17 +34,20 @@ def process_hash_list(document_datasets):
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
+            logger.info("Pinging Solr")
             solr.ping()
+            logger.info("Solr pinged.")
 
             db.updateSolrizeStartDate(conn, file_hash)
 
             #If doc_hash in Solr, delete and replace as transaction
             #Work out deletes
 
+            logger.info("Removing any linging docs for hash " + file_hash)            
             solr.delete(q='iati_activities_document_hash:' + file_hash)
 
             batch = []
-
+            logger.info("Adding docs for hash " + file_hash) 
             for fa in flattened_activities[0]:
                 fa['iati_activities_document_hash'] = file_hash
                 batch.append(fa)
@@ -56,7 +59,8 @@ def process_hash_list(document_datasets):
             if len(batch) > 0:
                 addToSolr(conn, batch, file_hash)
 
-            db.completeSolrize(conn, file_hash)       
+            logger.info("Updating DB for " + file_hash) 
+            db.completeSolrize(conn, file_hash)     
 
         except Exception as e:
             logger.error('ERROR with Solrizing ' + file_hash)
@@ -99,16 +103,21 @@ def main():
 
     conn = db.getDirectConnection()
 
+    logger.info("Got DB connection")
+
     file_hashes = db.getUnsolrizedDatasets(conn)
 
+    logger.info("Got unsolrized datasets")
+
     if config['SOLRIZE']['PARALLEL_PROCESSES'] == 1:
+        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a a single process")
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['SOLRIZE']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
