@@ -179,9 +179,10 @@ def getUnsolrizedDatasets(conn):
     RIGHT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 
     AND doc.flatten_end is not Null
+    AND doc.solrize_end is null
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
-    ORDER BY downloaded
+    ORDER BY doc.downloaded
     """
     cur.execute(sql)    
     results = cur.fetchall()
