@@ -28,6 +28,8 @@ config = dict(DATA_SCHEMA = "public",
     ),
     SOLRIZE = dict(
         PARALLEL_PROCESSES = 1,
-        SOLR_API_URL = os.getenv('SOLR_API_URL')
+        SOLR_API_URL = os.getenv('SOLR_API_URL'),
+        SOLR_USER = os.getenv('SOLR_USER'),
+        SOLR_PASSWORD = os.getenv('SOLR_PASSWORD'),
     )
 )

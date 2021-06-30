@@ -14,7 +14,7 @@ import json
 import pysolr
 
 logger = getLogger()
-solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
+solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
 
 def chunk_list(l, n):
     for i in range(0, n):
