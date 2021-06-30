@@ -27,7 +27,7 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
-            prior_error = file_data[4]
+            prior_error = file_data[1]
 
             if prior_error: #explicit error codes returned from Validator
                 continue
