@@ -105,6 +105,7 @@ def migrateIfRequired():
     if current_db_version['number'] != "0.0.0":
         sql = 'UPDATE version SET number = %s, migration = %s'
         cursor.execute(sql, (__version__['number'], __version__['migration']))
+        conn.commit()
 
     cursor.close()
     conn.close()
@@ -587,3 +588,4 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
     }
 
     cur.execute(sql, data)
+    conn.commit()
