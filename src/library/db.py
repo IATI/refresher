@@ -172,14 +172,14 @@ def getFlattenedActivitiesForDoc(conn, hash):
 
 def getUnsolrizedDatasets(conn):
     cur = conn.cursor()
-    #WED sort this out - can't get all the docs back in one result, obviously...
     sql = """
     SELECT doc.hash, doc.solr_api_error
     FROM document as doc
-    RIGHT JOIN validation as val ON doc.hash = val.document_hash
+    LEFT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 
-    AND doc.flatten_end is not Null
+    AND doc.flatten_end is not null
     AND doc.solrize_end is null
+	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
     ORDER BY doc.downloaded
