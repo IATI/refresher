@@ -27,13 +27,10 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
-            prior_error = file_data[1]
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
-            logger.info("Pinging Solr")
             solr.ping()
-            logger.info("Solr pinged.")
 
             db.updateSolrizeStartDate(conn, file_hash)
 
