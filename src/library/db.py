@@ -589,3 +589,37 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
 
     cur.execute(sql, data)
     conn.commit()
+
+def updateAdhocValidationState(conn, doc_hash, state, report):
+
+    cur = conn.cursor()
+
+    if state is None:
+        sql = "UPDATE adhoc_validation SET validated_date=null WHERE hash=%s"
+        data = (doc_hash)
+        cur.execute(sql, data)
+        conn.commit()
+        cur.close()
+        return
+
+    sql = """
+        UPDATE adhoc_validation (hash, valid, report)  
+        SET valid=%(state)s, report=%(report)s (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
+        ON CONFLICT (document_hash) DO
+            UPDATE SET report = %(report)s,
+                valid = %(valid)s
+            WHERE validation.document_hash=%(doc_hash)s;
+        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
+        """
+
+    data = {
+        "doc_id": doc_id,
+        "doc_hash": doc_hash,
+        "doc_url": doc_url,
+        "created": datetime.now(),
+        "valid": state,
+        "report": report
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
