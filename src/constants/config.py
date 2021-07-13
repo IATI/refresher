@@ -18,6 +18,7 @@ config = dict(DATA_SCHEMA = "public",
     ),
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
+        ADHOC_PARALLEL_PROCESSES = 1,
         FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL'),
         FILE_VALIDATION_KEY_NAME = os.getenv('VALIDATOR_API_KEY_NAME'),
         FILE_VALIDATION_KEY_VALUE = os.getenv('VALIDATOR_API_KEY_VALUE')

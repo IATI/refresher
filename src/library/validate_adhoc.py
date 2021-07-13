@@ -37,7 +37,7 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
-            prior_error = file_data[4]
+            prior_error = file_data[2]
 
             if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
                 continue
@@ -84,7 +84,7 @@ def process_hash_list(document_datasets):
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
-            db.updateFileAsNotDownloaded(conn, file_id)
+            db.updateAdhocFileAsUnavailable(conn, file_hash)
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
@@ -107,20 +107,20 @@ def service_loop():
         time.sleep(60)
 
 def main():
-    logger.info("Starting validation...")
+    logger.info("Starting adhoc validation...")
 
     conn = db.getDirectConnection()
 
-    file_hashes = db.getUnvalidatedDatasets(conn)
+    file_hashes = db.getUnvalidatedAdhocDocs(conn)
 
-    if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
+    if config['VALIDATION']['ADHOC_PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Processing " + str(len(file_hashes)) + " adhoc IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
