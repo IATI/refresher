@@ -2,6 +2,7 @@ import argparse
 import library.refresher as refresher
 import library.build as build
 import library.validate as validate
+import library.validate_adhoc as validate_adhoc
 import library.flatten as flatten
 import library.solrize as solrize
 import library.db as db
@@ -21,6 +22,8 @@ def main(args):
         build.main()
     elif args.type == "validate":
         validate.main()
+    elif args.type == "adhocvalidate":
+        validate_adhoc.main()
     elif args.type == "flatten":
         flatten.main()
     elif args.type == "solrize":
@@ -31,6 +34,8 @@ def main(args):
         build.service_loop()
     elif args.type == "validateloop":
         validate.service_loop()
+    elif args.type == "adhocvalidateloop":
+        validate_adhoc.service_loop()
     elif args.type == "flattenloop":
         flatten.service_loop()
     elif args.type == "solrizeloop":
