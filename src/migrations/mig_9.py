@@ -2,9 +2,10 @@ upgrade = """
 CREATE TABLE public.adhoc_validation (
     id SERIAL,  
     hash character varying PRIMARY KEY,
+    filename character varying,
     user_email character varying,
     created timestamp without time zone NOT NULL,
-    validated timestamp without time zone NOT NULL,
+    validated timestamp without time zone,
     validation_api_error character varying,
     valid boolean,
     report jsonb
