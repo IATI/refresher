@@ -3,7 +3,6 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
-from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
@@ -127,7 +126,7 @@ def main():
 
         processes = []
 
-        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['FLATTEN']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:

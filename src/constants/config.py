@@ -11,11 +11,6 @@ config = dict(DATA_SCHEMA = "public",
     DB_HOST = os.getenv('DB_HOST'),
     DB_PORT = os.getenv('DB_PORT'),
     DB_NAME = os.getenv('DB_NAME'),
-    DDS = dict(
-        SKIP_EXISTING_FILES = True,
-        PARALLEL_PROCESSES = 100,
-        BUILD_BATCH_LIMIT = 10000
-    ),
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
         FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL'),
