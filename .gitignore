@@ -139,3 +139,7 @@ cython_debug/
 
 .vscode
 pyenv
+
+# environment
+
+.env
