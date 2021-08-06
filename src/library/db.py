@@ -140,6 +140,14 @@ def getUnvalidatedDatasets(conn):
     cur.close()
     return results
 
+def getUnvalidatedAdhocDocs(conn):    
+    cur = conn.cursor()
+    sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def getUnflattenedDatasets(conn):    
     cur = conn.cursor()
     sql = """
@@ -388,6 +396,21 @@ def updateFileAsDownloadError(conn, id, status):
     conn.commit()
     cur.close()
 
+def updateAdhocFileAsUnavailable(conn, hash, status):
+    cur = conn.cursor()
+
+    sql="UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+
+    data = {
+        "id": id,
+        "dt": datetime.now(),
+        "status": status
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 def insertOrUpdatePublisher(conn, organization, last_seen):
     cur = conn.cursor()
 
@@ -532,6 +555,34 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         "doc_hash": doc_hash,
         "doc_url": doc_url,
         "created": datetime.now(),
+        "valid": state,
+        "report": report
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+
+def updateAdhocValidationState(conn, doc_hash, state, report):
+
+    cur = conn.cursor()
+
+    if state is None:
+        sql = "UPDATE adhoc_validation SET validated=null, report=null, validated=null WHERE hash=%s"
+        data = (doc_hash)
+        cur.execute(sql, data)
+        conn.commit()
+        cur.close()
+        return
+
+    sql = """
+        UPDATE adhoc_validation (hash, valid, report)  
+        SET valid=%(state)s, report=%(report)s, validated = %(validated)s
+        WHERE hash=%(doc_hash)s;
+        """
+
+    data = {
+        "doc_hash": doc_hash,
+        "validated": datetime.now(),
         "valid": state,
         "report": report
     }

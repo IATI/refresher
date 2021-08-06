@@ -3,6 +3,7 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
+from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
@@ -10,7 +11,6 @@ from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
 import json
-import chardet
 
 logger = getLogger()
 
@@ -18,24 +18,17 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
-def get_text_from_blob(downloader, file_hash):  
-    # save off bytes if we need to detect charset later
-    downloadBytes = downloader.content_as_bytes()
-    try:
-        return downloader.content_as_text()
-    except UnicodeDecodeError:
-        logger.info('File is not UTF-8, trying to detect encoding for file with hash' + file_hash)
-        pass
-    
-    # If not UTF-8 try to detect charset and decode
-    try:
-        detect_result = chardet.detect(downloadBytes)
-        charset = detect_result['encoding']
-        logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash' + file_hash)
-        return downloader.content_as_text(encoding=charset)
-    except:
-        logger.warning('Could not determine charset to decode for file with hash' + file_hash)
-        raise
+def get_text_from_blob(downloader):
+    #In order of likelihood
+    charsets = ['UTF-8', 'latin-1', 'UTF-16', 'Windows-1252']
+
+    for charset in charsets:
+        try:
+            return downloader.content_as_text(encoding=charset)
+        except:
+            continue
+
+    raise ValueError('Charset unknown, or not in the list.')
 
 def process_hash_list(document_datasets):
 
@@ -44,26 +37,23 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
-            downloaded = file_data[1]
-            file_id = file_data[2]
-            file_url = file_data[3]
-            prior_error = file_data[4]
+            prior_error = file_data[2]
 
             if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
                 continue
 
-            logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
+            logger.info('Validating adhoc file with hash ' + file_hash )
             blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+            blob_client = blob_service_client.get_blob_client(container=config['ADHOC_SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
 
             try:
-                payload = get_text_from_blob(downloader, file_hash)
+                payload = get_text_from_blob(downloader)
             except:
-                logger.warning('Could not identify charset for ' + file_hash + '.xml')
+                logger.warning('Can not identify charset for ' + file_hash + '.xml')
                 continue
             headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
@@ -90,11 +80,11 @@ def process_hash_list(document_datasets):
             else:
                 state = True
 
-            db.updateValidationState(conn, file_id, file_hash, file_url, state, json.dumps(report))
+            db.updateAdhocValidationState(conn, file_hash, state, json.dumps(report))
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
-            db.updateFileAsNotDownloaded(conn, file_id)
+            db.updateAdhocFileAsUnavailable(conn, file_hash)
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
@@ -117,20 +107,20 @@ def service_loop():
         time.sleep(60)
 
 def main():
-    logger.info("Starting validation...")
+    logger.info("Starting adhoc validation...")
 
     conn = db.getDirectConnection()
 
-    file_hashes = db.getUnvalidatedDatasets(conn)
+    file_hashes = db.getUnvalidatedAdhocDocs(conn)
 
-    if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
+    if config['VALIDATION']['ADHOC_PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Processing " + str(len(file_hashes)) + " adhoc IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
