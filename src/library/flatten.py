@@ -119,7 +119,7 @@ def main():
 
     file_hashes = db.getUnflattenedDatasets(conn)
 
-    if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
+    if config['FLATTEN']['PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['FLATTEN']['PARALLEL_PROCESSES']))
