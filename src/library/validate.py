@@ -11,6 +11,7 @@ from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
 import json
+import chardet
 
 logger = getLogger()
 
@@ -18,17 +19,24 @@ def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
-def get_text_from_blob(downloader):
-    #In order of likelihood
-    charsets = ['UTF-8', 'latin-1', 'UTF-16', 'Windows-1252']
-
-    for charset in charsets:
-        try:
-            return downloader.content_as_text(encoding=charset)
-        except:
-            continue
-
-    raise ValueError('Charset unknown, or not in the list.')
+def get_text_from_blob(downloader, file_hash):  
+    # save off bytes if we need to detect charset later
+    downloadBytes = downloader.content_as_bytes()
+    try:
+        return downloader.content_as_text()
+    except UnicodeDecodeError:
+        logger.info('File is not UTF-8, trying to detect encoding for file with hash' + file_hash)
+        pass
+    
+    # If not UTF-8 try to detect charset and decode
+    try:
+        detect_result = chardet.detect(downloadBytes)
+        charset = detect_result['encoding']
+        logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash' + file_hash)
+        return downloader.content_as_text(encoding=charset)
+    except:
+        logger.warning('Could not determine charset to decode for file with hash' + file_hash)
+        raise
 
 def process_hash_list(document_datasets):
 
@@ -54,9 +62,9 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                payload = get_text_from_blob(downloader)
+                payload = get_text_from_blob(downloader, file_hash)
             except:
-                logger.warning('Can not identify charset for ' + file_hash + '.xml')
+                logger.warning('Could not identify charset for ' + file_hash + '.xml')
                 continue
             headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
