@@ -13,6 +13,7 @@ ALTER TABLE public.document DROP CONSTRAINT file_root_element;
 ALTER TABLE public.document DROP COLUMN datastore_root_element_key;
 ALTER TABLE public.document DROP COLUMN datastore_processing_start;
 ALTER TABLE public.document DROP COLUMN datastore_processing_end;
+ALTER TABLE public.document DROP COLUMN datastore_build_error;
 
 DROP TABLE public.attribute;
 DROP TABLE public.attribute_type;
@@ -69,6 +70,7 @@ CREATE TABLE public.element_to_parent (
 ALTER TABLE public.document ADD COLUMN datastore_processing_start timestamp without time zone;
 ALTER TABLE public.document ADD COLUMN datastore_processing_end timestamp without time zone;
 ALTER TABLE public.document ADD COLUMN datastore_root_element_key uuid;
+ALTER TABLE public.document ADD COLUMN datastore_build_error character varying;
 
 INSERT INTO public.attribute_type VALUES ('version', 'string');
 INSERT INTO public.attribute_type VALUES ('generated-datetime', 'date');
