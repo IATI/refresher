@@ -10,7 +10,10 @@ from datetime import datetime, timedelta
 from constants.config import config
 
 def main(args):
-    db.migrateIfRequired()
+    if args.type == "migrate":
+        db.migrateIfRequired()
+    else:
+        db.checkVersionMatch()
 
     if args.type == "refresh":
         refresher.refresh()

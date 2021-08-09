@@ -50,6 +50,19 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
+      - name: "Migrate database if necessary"
+        run: |
+          docker run \
+            -e AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+            -e AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+            -e DB_HOST="${{ env.DB_HOST }}" \
+            -e DB_PORT="${{ env.DB_PORT }}" \
+            -e DB_USER="${{ env.DB_USER }}" \
+            -e DB_PASS="${{ env.DB_PASS }}" \
+            -e DB_NAME="${{ env.DB_NAME }}" \
+            -e SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG \
+            /usr/local/bin/python /code/handler.py -t migrate
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
