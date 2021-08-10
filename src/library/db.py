@@ -11,11 +11,6 @@ logger = getLogger()
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
 
-def convert_migration_to_version(migration_rev):
-    return migration_rev.replace('BR_', '').replace('_','.')
-
-def convert_version_to_migration(version):
-    return 'BR_' + version.replace('.', '_')
 
 def isUpgrade(fromVersion, toVersion):
     fromSplit = fromVersion.split('.')
@@ -116,14 +111,18 @@ def migrateIfRequired():
         logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num)) 
 
         cursor.execute(sql)
-
-    if current_db_version['number'] != "0.0.0":
-        sql = 'UPDATE version SET number = %s, migration = %s'
-        cursor.execute(sql, (__version__['number'], __version__['migration']))
         conn.commit()
 
     cursor.close()
     conn.close()
+
+    conn = getDirectConnection()
+    conn.set_session(autocommit=True)
+    cursor = conn.cursor()
+
+    sql = 'UPDATE version SET number = %s, migration = %s'
+    cursor.execute(sql, (__version__['number'], __version__['migration']))
+    conn.commit()
 
 def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
