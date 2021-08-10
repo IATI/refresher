@@ -8,7 +8,7 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  TAG: 0.1.3
+  TAG: ${{ github.sha }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
@@ -79,15 +79,6 @@ jobs:
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" 
-      - name: "Migrate database if needed"
-        uses: "azure/CLI@v1"
-        with:
-            azcliversion: 2.19.1
-            inlineScript: |
-              az container exec \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --exec-command "/code/migrate.sh"
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:

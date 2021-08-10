@@ -10,41 +10,40 @@ from datetime import datetime, timedelta
 from constants.config import config
 
 def main(args):
-    if args.type == "migrate":
+    if args.type == "refresh":
         db.migrateIfRequired()
+        refresher.refresh()
     else:
         db.checkVersionMatch()
 
-    if args.type == "refresh":
-        refresher.refresh()
-    elif args.type == "reload":
-        refresher.reload(
-            args.errors
-        )
-    elif args.type == "build": 
-        build.main()
-    elif args.type == "validate":
-        validate.main()
-    elif args.type == "adhocvalidate":
-        validate_adhoc.main()
-    elif args.type == "flatten":
-        flatten.main()
-    elif args.type == "solrize":
-        solrize.main()
-    elif args.type == "refreshloop":
-        refresher.service_loop()
-    elif args.type == "buildloop":
-        build.service_loop()
-    elif args.type == "validateloop":
-        validate.service_loop()
-    elif args.type == "adhocvalidateloop":
-        validate_adhoc.service_loop()
-    elif args.type == "flattenloop":
-        flatten.service_loop()
-    elif args.type == "solrizeloop":
-        solrize.service_loop()  
-    else:
-        print("Type is required - either refresh, reload, build, validate - or refreshLoop or validateLoop.")
+        if args.type == "reload":
+            refresher.reload(
+                args.errors
+            )
+        elif args.type == "build":
+            build.main()
+        elif args.type == "validate":
+            validate.main()
+        elif args.type == "adhocvalidate":
+            validate_adhoc.main()
+        elif args.type == "flatten":
+            flatten.main()
+        elif args.type == "solrize":
+            solrize.main()
+        elif args.type == "refreshloop":
+            refresher.service_loop()
+        elif args.type == "buildloop":
+            build.service_loop()
+        elif args.type == "validateloop":
+            validate.service_loop()
+        elif args.type == "adhocvalidateloop":
+            validate_adhoc.service_loop()
+        elif args.type == "flattenloop":
+            flatten.service_loop()
+        elif args.type == "solrizeloop":
+            solrize.service_loop()
+        else:
+            print("Type is required - either refresh, reload, build, validate - or refreshLoop or validateLoop.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')
