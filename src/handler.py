@@ -9,37 +9,39 @@ from datetime import datetime, timedelta
 from constants.config import config
 
 def main(args):
-    db.migrateIfRequired()
-
     if args.type == "refresh":
+        db.migrateIfRequired()
         refresher.refresh()
-    elif args.type == "reload":
-        refresher.reload(
-            args.errors
-        )
-    elif args.type == "validate":
-        validate.main()
-    elif args.type == "adhocvalidate":
-        validate_adhoc.main()
-    elif args.type == "flatten":
-        flatten.main()
-    elif args.type == "solrize":
-        solrize.main()
-    elif args.type == "refreshloop":
-        refresher.service_loop()
-    elif args.type == "validateloop":
-        validate.service_loop()
-    elif args.type == "adhocvalidateloop":
-        validate_adhoc.service_loop()
-    elif args.type == "flattenloop":
-        flatten.service_loop()
-    elif args.type == "solrizeloop":
-        solrize.service_loop()  
     else:
-        print("Type is required - either refresh, reload, validate - or refreshLoop or validateLoop.")
+        db.checkVersionMatch()
+
+        if args.type == "reload":
+            refresher.reload(
+                args.errors
+            )
+        elif args.type == "validate":
+            validate.main()
+        elif args.type == "adhocvalidate":
+            validate_adhoc.main()
+        elif args.type == "flatten":
+            flatten.main()
+        elif args.type == "solrize":
+            solrize.main()
+        elif args.type == "refreshloop":
+            refresher.service_loop()
+        elif args.type == "validateloop":
+            validate.service_loop()
+        elif args.type == "adhocvalidateloop":
+            validate_adhoc.service_loop()
+        elif args.type == "flattenloop":
+            flatten.service_loop()
+        elif args.type == "solrizeloop":
+            solrize.service_loop()
+        else:
+            print("Type is required - either refresh, reload, validate - or refreshLoop or validateLoop.")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Refresh/Build from IATI Registry')
+    parser = argparse.ArgumentParser(description='Refresh from IATI Registry')
     parser.add_argument('-t', '--type', dest='type', default="refresh", help="Trigger 'refresh' or 'validate'")
     parser.add_argument('-e', '--errors', dest='errors', action='store_true', default=False, help="Attempt to download previous errors")
     args = parser.parse_args()
