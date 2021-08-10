@@ -87,7 +87,7 @@ jobs:
               az container exec \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --exec-command "/usr/local/bin/python /code/handler.py -t migrate"
+              --exec-command "/code/migrate.sh"
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
