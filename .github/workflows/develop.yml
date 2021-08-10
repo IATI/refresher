@@ -79,6 +79,15 @@ jobs:
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" 
+      - name: "Migrate database if needed"
+        uses: "azure/CLI@v1"
+        with:
+            azcliversion: 2.19.1
+            inlineScript: |
+              az container exec \
+              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+              --exec-command "/usr/local/bin/python /code/handler.py -t migrate"
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:

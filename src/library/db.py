@@ -4,6 +4,7 @@ from constants.config import config
 import psycopg2
 from library.logger import getLogger
 from datetime import datetime
+import time
 
 logger = getLogger()
 
@@ -47,6 +48,20 @@ def get_current_db_version(conn):
         return None
     else:
         return {'number': result[0][0], 'migration': result[0][1]}
+
+
+def checkVersionMatch():
+    conn = getDirectConnection()
+    conn.set_session(autocommit=True)
+    cursor = conn.cursor()
+    current_db_version = get_current_db_version(conn)
+
+    while current_db_version['number'] != __version__['number']:
+        logger.info('DB version incorrect. Sleeping...')
+        time.sleep(60)
+        current_db_version = get_current_db_version(conn)
+
+    return
 
 
 def migrateIfRequired():
