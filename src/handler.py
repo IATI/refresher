@@ -12,6 +12,9 @@ def main(args):
     if args.type == "refresh":
         db.migrateIfRequired()
         refresher.refresh()
+    elif args.type == "refreshloop":
+        db.migrateIfRequired()
+        refresher.service_loop()
     else:
         db.checkVersionMatch()
 
@@ -27,8 +30,6 @@ def main(args):
             flatten.main()
         elif args.type == "solrize":
             solrize.main()
-        elif args.type == "refreshloop":
-            refresher.service_loop()
         elif args.type == "validateloop":
             validate.service_loop()
         elif args.type == "adhocvalidateloop":
