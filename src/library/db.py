@@ -224,39 +224,6 @@ def resetUnfinishedFlattens(conn):
     conn.commit()
     cur.close()
 
-def resetUnfinishedDatasets(conn):
-    cur = conn.cursor()
-    sql = """
-        UPDATE document
-        SET datastore_processing_start=null, datastore_processing_end=null
-        WHERE datastore_root_element_key is Null
-    """    
-    
-    cur.execute(sql)
-    conn.commit()
-    cur.close()
-
-def getUnprocessedDatasets(conn, size):    
-    cur = conn.cursor()
-    sql = """
-        SELECT doc.hash FROM document AS doc
-        LEFT JOIN validation AS val ON doc.validation = val.document_hash
-        WHERE doc.datastore_root_element_key is Null
-        AND doc.datastore_build_error is Null
-        AND doc.downloaded is not Null 
-        AND doc.validation is not Null
-        AND val.valid = true
-        ORDER BY doc.downloaded
-        LIMIT %(size)s
-    """
-    data = {"size" : size}
-    
-    cur.execute(sql, data)    
-    results = cur.fetchall()
-    cur.close()
-
-    return results
-
 def updateValidationRequestDate(conn, filehash):
     cur = conn.cursor()
     sql = "UPDATE document SET validation_request=%(dt)s WHERE hash=%(hash)s"
@@ -510,9 +477,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
-                validation = null,
-                datastore_processing_start = null,
-                datastore_processing_end = null
+                validation = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
@@ -572,22 +537,6 @@ def removePublishersNotSeenAfter(conn, dt):
     """
 
     data = (dt,)
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-def writeDatastoreBuildError(conn, hash, error):
-    cur = conn.cursor()
-
-    sql = """
-        UPDATE document SET datastore_build_error=%(error)s WHERE hash=%(hash)s
-    """
-
-    data = {
-        "error": error,
-        "hash": hash
-    }
 
     cur.execute(sql, data)
     conn.commit()

@@ -3,7 +3,6 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
-from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice

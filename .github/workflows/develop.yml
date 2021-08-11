@@ -44,8 +44,6 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
           docker build . -f validate-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
-          docker build . -f ddsbuild-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-ddsbuild:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-ddsbuild:$TAG
           docker build . -f flatten-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
@@ -112,37 +110,6 @@ jobs:
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}"
-#      - name: "Deploy DDS Builder to Azure Container Instances"
-#        uses: "azure/CLI@v1"
-#        with:
-#            azcliversion: 2.19.1
-#            inlineScript: |
-#              az container create \
-#              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
-#              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-ddsbuild:${{ env.TAG }}" \
-#              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-#              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-#              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-#              --name "${{ env.STAGE }}-${{ env.NAME }}-ddsbuild" \
-#              --location "uksouth" \
-#              --restart-policy "Always" \
-#              --ip-address "Private" \
-#              --vnet "dev-iati-refresher" \
-#              --subnet "default" \
-#              --memory "16" \
-#              --cpu "4" \
-#              --os-type "Linux" \
-#              --secure-environment-variables \
-#                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-#                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-#                VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
-#                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-#                DB_HOST="${{ env.DB_HOST }}" \
-#                DB_PORT="${{ env.DB_PORT }}" \
-#                DB_USER="${{ env.DB_USER }}" \
-#                DB_PASS="${{ env.DB_PASS }}" \
-#                DB_NAME="${{ env.DB_NAME }}" \
-#                SOLR_API_URL="${{ env.SOLR_API_URL }}"
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:

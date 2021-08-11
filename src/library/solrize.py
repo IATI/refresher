@@ -3,7 +3,6 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
-from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
@@ -101,7 +100,7 @@ def main():
 
         processes = []
 
-        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['SOLRIZE']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
