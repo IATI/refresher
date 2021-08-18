@@ -49,9 +49,6 @@ def process_hash_list(document_datasets):
             file_url = file_data[3]
             prior_error = file_data[4]
 
-            if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Validator
-                continue
-
             logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
@@ -70,11 +67,16 @@ def process_hash_list(document_datasets):
             db.updateValidationRequestDate(conn, file_hash)
 
             if response.status_code != 200:
-                if response.status_code >= 400 and response.status_code < 500:
+                if response.status_code == 400 or response.status_code == 413 or response.status_code == 422: # 'expected' error codes returned from Validator
+                    # log db and move on to save the validation report
+                    db.updateValidationError(conn, file_hash, response.status_code)
+                elif response.status_code >= 400 and response.status_code < 500: # unexpected client errors
+                    # log in db and 'continue' to break out of for loop for this file
                     db.updateValidationError(conn, file_hash, response.status_code)
                     logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
-                elif response.status_code >= 500:
+                elif response.status_code >= 500: # server errors
+                    # log in db and 'continue' to break out of for loop for this file
                     db.updateValidationError(conn, file_hash, response.status_code)
                     logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
                     continue
@@ -83,14 +85,7 @@ def process_hash_list(document_datasets):
             
             report = response.json()
 
-            state = None
-
-            if report['summary']['critical'] > 0:
-                state = False
-            else:
-                state = True
-
-            db.updateValidationState(conn, file_id, file_hash, file_url, state, json.dumps(report))
+            db.updateValidationState(conn, file_id, file_hash, file_url, True, json.dumps(report))
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
