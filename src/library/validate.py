@@ -24,17 +24,17 @@ def get_text_from_blob(downloader, file_hash):
     try:
         return downloader.content_as_text()
     except UnicodeDecodeError:
-        logger.info('File is not UTF-8, trying to detect encoding for file with hash' + file_hash)
+        logger.info('File is not UTF-8, trying to detect encoding for file with hash ' + file_hash)
         pass
     
     # If not UTF-8 try to detect charset and decode
     try:
         detect_result = chardet.detect(downloadBytes)
         charset = detect_result['encoding']
-        logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash' + file_hash)
+        logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash ' + file_hash)
         return downloader.content_as_text(encoding=charset)
     except:
-        logger.warning('Could not determine charset to decode for file with hash' + file_hash)
+        logger.warning('Could not determine charset to decode for file with hash ' + file_hash)
         raise
 
 def process_hash_list(document_datasets):
