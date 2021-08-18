@@ -561,7 +561,7 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
             UPDATE SET report = %(report)s,
                 valid = %(valid)s
             WHERE validation.document_hash=%(doc_hash)s;
-        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
+        UPDATE document SET validation=%(doc_hash)s WHERE hash=%(doc_hash)s;
         """
 
     data = {
