@@ -559,7 +559,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
         ON CONFLICT (document_hash) DO
             UPDATE SET report = %(report)s,
-                valid = %(valid)s
+                valid = %(valid)s,
+                created = %(created)s
             WHERE validation.document_hash=%(doc_hash)s;
         UPDATE document SET validation=%(doc_hash)s WHERE hash=%(doc_hash)s;
         """
