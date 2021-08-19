@@ -60,10 +60,14 @@ def checkVersionMatch():
 
 
 def migrateIfRequired():
+    check_conn = getDirectConnection()
+    check_conn.set_session(autocommit=True)
+    current_db_version = get_current_db_version(check_conn)
+    check_conn.close()
+
     conn = getDirectConnection()
-    conn.set_session(autocommit=True)
+    conn.set_session(autocommit=False)
     cursor = conn.cursor()
-    current_db_version = get_current_db_version(conn)
 
     if current_db_version is None:
         current_db_version = {
@@ -84,45 +88,43 @@ def migrateIfRequired():
         logger.info('DB downgrading to version ' + __version__['number'])
         step = -1
 
-    for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
-        if upgrade:
-            mig_num = i
-        else:
-            mig_num = i + 1
+    try:
+        for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
+            if upgrade:
+                mig_num = i
+            else:
+                mig_num = i + 1
 
-        migration = 'mig_' + str(mig_num)
+            migration = 'mig_' + str(mig_num)
 
-        parent = str(pathlib.Path(__file__).parent.absolute())
-        spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
-        mig = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mig)
+            parent = str(pathlib.Path(__file__).parent.absolute())
+            spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
+            mig = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mig)
 
-        logmessage = "upgrade"
+            logmessage = "upgrade"
 
-        if upgrade:
-            sql = mig.upgrade
-        else:
-            sql = mig.downgrade
-            logmessage = "downgrade"
+            if upgrade:
+                sql = mig.upgrade
+            else:
+                sql = mig.downgrade
+                logmessage = "downgrade"
 
-        sql = sql.replace('\n', ' ')
-        sql = sql.replace('\t', ' ')
+            sql = sql.replace('\n', ' ')
+            sql = sql.replace('\t', ' ')
 
-        logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num)) 
+            logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num))
 
-        cursor.execute(sql)
+            cursor.execute(sql)
+
+        sql = 'UPDATE public.version SET number = %s, migration = %s'
+        cursor.execute(sql, (__version__['number'], __version__['migration']))
         conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    conn = getDirectConnection()
-    conn.set_session(autocommit=True)
-    cursor = conn.cursor()
-
-    sql = 'UPDATE version SET number = %s, migration = %s'
-    cursor.execute(sql, (__version__['number'], __version__['migration']))
-    conn.commit()
+    except Exception as e:
+        logger.warning('Encountered unexpected exemption during migration... Rolling back...')
+        conn.rollback()
+        conn.close()
+        raise e
 
 def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
