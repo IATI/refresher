@@ -31,8 +31,11 @@ def get_text_from_blob(downloader, file_hash):
     try:
         detect_result = chardet.detect(downloadBytes)
         charset = detect_result['encoding']
-        logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash' + file_hash)
-        return downloader.content_as_text(encoding=charset)
+        if charset:
+            logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash ' + file_hash)
+            return downloader.content_as_text(encoding=charset)
+        logger.warning('No Charset detected for file with hash ' + file_hash + '. Likely a non-text file.')
+        raise
     except:
         logger.warning('Could not determine charset to decode for file with hash' + file_hash)
         raise
