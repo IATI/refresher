@@ -121,7 +121,6 @@ def migrateIfRequired():
         cursor.execute(sql, (__version__['number'], __version__['migration']))
         conn.commit()
     except Exception as e:
-        import pdb; pdb.set_trace()
         logger.warning('Encountered unexpected exemption during migration... Rolling back...')
         conn.rollback()
         conn.close()
