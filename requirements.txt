@@ -6,7 +6,7 @@ python-utils==2.4.0
 requests==2.24.0
 six==1.15.0
 urllib3==1.25.9
-azure-core==1.9.0
-azure-storage-blob==12.6.0
+azure-core==1.17.0
+azure-storage-blob==12.8.1
 lxml==4.6.2
 pysolr==3.9.0
