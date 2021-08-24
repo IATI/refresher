@@ -13,6 +13,8 @@ from library.logger import getLogger
 from constants.config import config
 from datetime import datetime
 import pysolr
+import chardet
+
 
 logger = getLogger() #/action/organization_list
 
@@ -203,7 +205,26 @@ def download_chunk(chunk, blob_service_client, datasets):
             blob_client.upload_blob_from_url(url, overwrite=True)
             db.updateFileAsDownloaded(conn, id)
         except (AzureExceptions.ResourceNotFoundError) as e:
-            db.updateFileAsDownloadError(conn, id, e.status_code)
+            if '301' in e.reason:
+                try:
+                    download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
+                    try:
+                        detect_result = chardet.detect(download_xml)
+                        charset = detect_result['encoding']
+                    except:
+                        charset = 'UTF-8'
+                    blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
+                    db.updateFileAsDownloaded(conn, id)
+                except (requests.exceptions.ConnectionError) as e2:
+                    db.updateFileAsDownloadError(conn, id, 0)
+                except (AzureExceptions.ResourceNotFoundError) as e2:
+                    db.updateFileAsDownloadError(conn, id, e2.status_code)
+                except (AzureExceptions.ServiceResponseError) as e2:
+                    logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e2.message)
+                except Exception as e2:
+                    logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
+            else:
+                db.updateFileAsDownloadError(conn, id, e.status_code)
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except Exception as e:
