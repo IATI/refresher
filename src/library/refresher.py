@@ -13,6 +13,8 @@ from library.logger import getLogger
 from constants.config import config
 from datetime import datetime
 import pysolr
+import chardet
+
 
 logger = getLogger() #/action/organization_list
 
@@ -206,7 +208,12 @@ def download_chunk(chunk, blob_service_client, datasets):
             if '301' in e.reason:
                 try:
                     download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
-                    blob_client.upload_blob(download_xml, overwrite=True)
+                    try:
+                        detect_result = chardet.detect(download_xml)
+                        charset = detect_result['encoding']
+                    except:
+                        charset = 'UTF-8'
+                    blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
                     db.updateFileAsDownloaded(conn, id)
                 except (requests.exceptions.ConnectionError) as e2:
                     db.updateFileAsDownloadError(conn, id, 0)
