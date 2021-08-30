@@ -202,29 +202,22 @@ def download_chunk(chunk, blob_service_client, datasets):
 
         try:
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
-            blob_client.upload_blob_from_url(url, overwrite=True)
-            db.updateFileAsDownloaded(conn, id)
-        except (AzureExceptions.ResourceNotFoundError) as e:
-            if '301' in e.reason:
+            download_response = requests_retry_session(retries=3).get(url=url, timeout=5)
+            download_xml = download_response.content
+            if download_response.status_code == 200:
                 try:
-                    download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
-                    try:
-                        detect_result = chardet.detect(download_xml)
-                        charset = detect_result['encoding']
-                    except:
-                        charset = 'UTF-8'
-                    blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
-                    db.updateFileAsDownloaded(conn, id)
-                except (requests.exceptions.ConnectionError) as e2:
-                    db.updateFileAsDownloadError(conn, id, 0)
-                except (AzureExceptions.ResourceNotFoundError) as e2:
-                    db.updateFileAsDownloadError(conn, id, e2.status_code)
-                except (AzureExceptions.ServiceResponseError) as e2:
-                    logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e2.message)
-                except Exception as e2:
-                    logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
+                    detect_result = chardet.detect(download_xml)
+                    charset = detect_result['encoding']
+                except:
+                    charset = 'UTF-8'
+                blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
+                db.updateFileAsDownloaded(conn, id)
             else:
-                db.updateFileAsDownloadError(conn, id, e.status_code)
+                db.updateFileAsDownloadError(conn, id, download_response.status_code)
+        except (requests.exceptions.ConnectionError) as e:
+            db.updateFileAsDownloadError(conn, id, 0)
+        except (AzureExceptions.ResourceNotFoundError) as e:
+            db.updateFileAsDownloadError(conn, id, e.status_code)
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except Exception as e:
