@@ -1,9 +1,8 @@
 name: Deploy_Refresher_To_Production_On_Push
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 env:
   STAGE: prod-aci-iati
