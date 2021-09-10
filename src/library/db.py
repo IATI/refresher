@@ -436,8 +436,8 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     cur = conn.cursor()
 
     sql = """
-        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)  
-        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
+        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id, type_code, contact, contact_email, first_publish_date)
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s, %(type_code)s, %(contact)s, %(contact_email)s, %(first_publish_date)s)
         ON CONFLICT (org_id) DO
             UPDATE SET title = %(title)s,
                 state = %(state)s,
@@ -445,7 +445,11 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
                 description = %(description)s,
                 last_seen = %(last_seen)s,
                 package_count = %(package_count)s,
-                iati_id = %(iati_id)s
+                iati_id = %(iati_id)s,
+                type_code = %(type_code)s,
+                contact = %(contact)s,
+                contact_email = %(contact_email)s,
+                first_publish_date = %(first_publish_date)s
             WHERE publisher.name=%(name)s
     """
     
@@ -458,13 +462,25 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
         "country_code": organization['publisher_country'],
         "last_seen": last_seen,
         "package_count": organization['package_count'],
-        "iati_id": organization['publisher_iati_id']
+        "iati_id": organization['publisher_iati_id'],
+        "type_code": organization['publisher_organization_type'],
+        "contact": organization['publisher_contact']
     }
 
     try:
         data["image_url"] = organization['image_url']
-    except:
+    except KeyError:
         data["image_url"] = None
+
+    try:
+        data["contact_email"] = organization['publisher_contact_email']
+    except KeyError:
+        data["contact_email"] = None
+
+    if 'publisher_first_publish_date' in organization and organization['publisher_first_publish_date']:
+        data["first_publish_date"] = organization['publisher_first_publish_date']
+    else:
+        data["first_publish_date"] = None
 
     cur.execute(sql, data)
     conn.commit()
