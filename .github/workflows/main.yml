@@ -21,6 +21,8 @@ env:
   DB_HOST: ${{ secrets.PROD_DB_HOST }}
   DB_NAME: ${{ secrets.PROD_DB_NAME }}
   DB_PORT: ${{ secrets.PROD_DB_PORT }}
+  LOG_WORKSPACE_ID: ${{ secrets.PROD_LOG_WORKSPACE_ID }}
+  LOG_WORKSPACE_KEY: ${{ secrets.PROD_LOG_WORKSPACE_KEY }}
 
 jobs:
   build-and-deploy:
@@ -60,9 +62,11 @@ jobs:
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "2" \
+              --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -72,6 +76,7 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}"
+
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -92,6 +97,8 @@ jobs:
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
