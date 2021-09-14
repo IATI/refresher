@@ -477,9 +477,9 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     except KeyError:
         data["contact_email"] = None
 
-    if 'publisher_first_publish_date' in organization and organization['publisher_first_publish_date']:
+    try:
         data["first_publish_date"] = organization['publisher_first_publish_date']
-    else:
+    except KeyError:
         data["first_publish_date"] = None
 
     cur.execute(sql, data)
