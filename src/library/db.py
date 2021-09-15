@@ -478,8 +478,8 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
         data["contact_email"] = None
 
     try:
-        data["first_publish_date"] = organization['publisher_first_publish_date']
-    except KeyError:
+        data["first_publish_date"] = datetime.fromisoformat(organization['publisher_first_publish_date'])
+    except (KeyError, ValueError, TypeError) as e:
         data["first_publish_date"] = None
 
     cur.execute(sql, data)

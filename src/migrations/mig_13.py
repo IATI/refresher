@@ -2,10 +2,8 @@ upgrade = """
 ALTER TABLE public.publisher ADD COLUMN type_code integer;
 ALTER TABLE public.publisher ADD COLUMN contact character varying;
 ALTER TABLE public.publisher ADD COLUMN contact_email character varying;
-ALTER TABLE public.publisher ADD COLUMN first_publish_date character varying;
+ALTER TABLE public.publisher ADD COLUMN first_publish_date timestamp without time zone;
 """
-
-# Wanted to make first_publish_date a timestamp, but date format varies too widely
 
 downgrade = """
     ALTER TABLE public.publisher
