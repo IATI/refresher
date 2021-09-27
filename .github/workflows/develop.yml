@@ -24,6 +24,7 @@ env:
   DB_PORT: ${{ secrets.DB_PORT }}
   LOG_WORKSPACE_ID: ${{ secrets.DEV_LOG_WORKSPACE_ID }}
   LOG_WORKSPACE_KEY: ${{ secrets.DEV_LOG_WORKSPACE_KEY }}
+  ACTIVITIES_LAKE_CONTAINER_NAME: ${{ secrets.DEV_ACTIVITIES_LAKE_CONTAINER_NAME }}
 
 jobs:
   build-and-deploy:
@@ -80,7 +81,8 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" 
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME=${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
