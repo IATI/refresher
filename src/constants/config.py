@@ -26,5 +26,8 @@ config = dict(DATA_SCHEMA = "public",
     SOLRIZE = dict(
         PARALLEL_PROCESSES = 10,
         SOLR_API_URL = os.getenv('SOLR_API_URL')
+    ),
+    LAKIFY = dict(
+        PARALLEL_PROCESSES = 1,
     )
 )

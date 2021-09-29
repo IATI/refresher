@@ -16,7 +16,6 @@ import hashlib
 import chardet
 
 logger = getLogger()
-solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
 
 def chunk_list(l, n):
     for i in range(0, n):
@@ -51,7 +50,7 @@ def process_hash_list(document_datasets):
 
             db.startLakify(conn, doc_id)
 
-            logger.info('Flattening file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
+            logger.info('Lakifying file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
@@ -67,7 +66,7 @@ def process_hash_list(document_datasets):
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
 
-            context = etree.iterparse(xml_string, tag='iati-activity', huge_tree=True)
+            context = etree.iterparse(etree.fromstring(xml_string.encode('utf-8')), tag='iati-activity', huge_tree=True)
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
                 if identifiers:
@@ -96,7 +95,6 @@ def process_hash_list(document_datasets):
             db.lakifyError(conn, doc_id, 'Failed to extract activities')
         except Exception as e:
             logger.error('ERROR with Lakifiying ' + file_hash)
-            db.lakifyError(conn, doc_id, 'Failed to extract activities')
             print(traceback.format_exc())
             err_message = "Unkown error"
             if hasattr(e, 'args'):
@@ -107,7 +105,7 @@ def process_hash_list(document_datasets):
                 err_message = e.msg 
 
             logger.error(err_message)
-            db.lakifyError(conn, doc_id, 'Failed to extract activities')     
+            db.lakifyError(conn, doc_id, err_message)     
 
     conn.close()
 
@@ -142,15 +140,15 @@ def main():
 
     logger.info("Got unlakified datasets")
 
-    if config['SOLRIZE']['PARALLEL_PROCESSES'] == 1:
+    if config['LAKIFY']['PARALLEL_PROCESSES'] == 1:
         logger.info("Lakifiying " + str(len(file_hashes)) + " IATI docs in a a single process")
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(file_hashes, config['SOLRIZE']['PARALLEL_PROCESSES']))
+        chunked_hash_lists = list(chunk_list(file_hashes, config['LAKIFY']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Lakifiying " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['SOLRIZE']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info("Lakifiying " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['LAKIFY']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:

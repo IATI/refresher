@@ -385,7 +385,8 @@ def lakifyError(conn, doc_id, msg):
     data = {
         "doc_id": doc_id,
         "msg": msg
-
+    }
+    
     cur.execute(sql, data)
     
     conn.commit()
