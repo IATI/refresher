@@ -88,7 +88,7 @@ def process_hash_list(document_datasets):
             
             report = response.json()
 
-            db.updateValidationState(conn, file_id, file_hash, file_url, True, json.dumps(report))
+            db.updateValidationState(conn, file_id, file_hash, file_url, report.get('valid'), json.dumps(report))
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
