@@ -219,6 +219,22 @@ def getUnsolrizedDatasets(conn):
     cur.close()
     return results
 
+def getUnlakifiedDatasets(conn):
+    cur = conn.cursor()
+    sql = """
+    SELECT hash, downloaded, id, url, lakify_error 
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    WHERE doc.downloaded is not null 
+    AND doc.lakify_start is Null
+    AND val.valid = true
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def resetUnfinishedFlattens(conn):
     cur = conn.cursor()
     sql = """
@@ -298,6 +314,25 @@ def startFlatten(conn, doc_id):
     conn.commit()
     cur.close()
 
+def startLakify(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_start = %(now)s, lakify_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
 def updateFlattenError(conn, doc_id, error):
     cur = conn.cursor()
 
@@ -331,6 +366,43 @@ def completeFlatten(conn, doc_id, flattened_activities):
         "doc_id": doc_id,
         "now": datetime.now(),
         "flat_act": flattened_activities
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def lakifyError(conn, doc_id, msg):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_error = %(msg)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "msg": msg
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def completeLakify(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_end = %(now)s, lakify_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
     }
 
     cur.execute(sql, data)
