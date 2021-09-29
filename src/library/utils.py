@@ -24,3 +24,4 @@ def get_text_from_blob(downloader, file_hash):
     except:
         logger.warning('Could not determine charset to decode for file with hash ' + file_hash)
         raise
+    
