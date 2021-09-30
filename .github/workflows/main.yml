@@ -73,7 +73,7 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \ 
+                SOLR_USER="${{ env.SOLR_USER }}" \
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
@@ -115,6 +115,6 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \ 
-                SOLR_USER="${{ env.SOLR_USER }}" \ 
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
