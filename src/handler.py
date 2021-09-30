@@ -3,6 +3,7 @@ import library.refresher as refresher
 import library.validate as validate
 import library.validate_adhoc as validate_adhoc
 import library.flatten as flatten
+import library.lakify as lakify
 import library.solrize as solrize
 import library.db as db
 from datetime import datetime, timedelta
@@ -28,6 +29,8 @@ def main(args):
             validate_adhoc.main()
         elif args.type == "flatten":
             flatten.main()
+        elif args.type == "lakify":
+            lakify.main()
         elif args.type == "solrize":
             solrize.main()
         elif args.type == "validateloop":
@@ -36,10 +39,12 @@ def main(args):
             validate_adhoc.service_loop()
         elif args.type == "flattenloop":
             flatten.service_loop()
+        elif args.type == "lakifyloop":
+            lakify.service_loop()           
         elif args.type == "solrizeloop":
             solrize.service_loop()
         else:
-            print("Type is required - either refresh, reload, validate - or refreshLoop or validateLoop.")
+            print("Type is required - either refresh, reload, validate, flatten, lakify, or solrize - or their related service loop.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh from IATI Registry')

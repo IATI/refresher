@@ -124,8 +124,6 @@ def sync_documents():
         except Exception as e:
             logger.warning('Failed to remove documents from Solr with document hash ' + file_hash)
 
-    #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
-
     db.removeFilesNotSeenAfter(conn, start_dt)
 
     conn.close()
@@ -215,31 +213,6 @@ def download_chunk(chunk, blob_service_client, datasets):
                     charset = 'UTF-8'
                 blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
                 db.updateFileAsDownloaded(conn, id)
-
-                try:
-                    context = etree.iterparse(BytesIO(download_xml), tag='iati-activity', huge_tree=True)
-                    for _, activity in context:
-                        identifiers = activity.xpath("iati-identifier/text()")
-                        if identifiers:
-                            identifier = identifiers[0]
-                            identifier_hash = hashlib.sha1()
-                            identifier_hash.update(identifier.encode())
-                            identifier_hash_hex = identifier_hash.hexdigest()
-                            activity_xml = etree.tostring(activity)
-                            act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(identifier_hash_hex))
-                            act_blob_client.upload_blob(activity_xml, overwrite=True, encoding=charset)
-                            act_blob_client.set_blob_tags({"dataset_hash": hash})
-                        # Free memory
-                        activity.clear()
-                        for ancestor in activity.xpath('ancestor-or-self::*'):
-                            while ancestor.getprevious() is not None:
-                                try:
-                                    del ancestor.getparent()[0]
-                                except TypeError:
-                                    break
-                    del context
-                except (etree.XMLSyntaxError, etree.SerialisationError) as e:
-                    logger.warning('Failed to extract activities to lake with url ' + url + ' and hash ' + hash)
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
         except (requests.exceptions.ConnectionError) as e:
