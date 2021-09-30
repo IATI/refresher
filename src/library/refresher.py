@@ -124,8 +124,6 @@ def sync_documents():
         except Exception as e:
             logger.warning('Failed to remove documents from Solr with document hash ' + file_hash)
 
-    #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
-
     db.removeFilesNotSeenAfter(conn, start_dt)
 
     conn.close()
