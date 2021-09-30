@@ -208,6 +208,7 @@ def getUnsolrizedDatasets(conn):
     LEFT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 
     AND doc.flatten_end is not null
+    AND doc.lakify_end is not null
     AND doc.solrize_end is null
 	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''

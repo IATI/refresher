@@ -51,6 +51,8 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
+          docker build . -f lakify-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -162,6 +164,38 @@ jobs:
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
               --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "dev-iati-refresher" \
+              --subnet "default" \
+              --memory "2" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}"
+
+      - name: "Deploy Lakify to Azure Container Instances"
+        uses: "azure/CLI@v1"
+        with:
+            azcliversion: 2.19.1
+            inlineScript: |
+              az container create \
+              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-lakify:${{ env.TAG }}" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \

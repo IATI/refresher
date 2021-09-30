@@ -14,24 +14,13 @@ import pysolr
 from lxml import etree
 import hashlib
 import chardet
+from io import BytesIO
 
 logger = getLogger()
 
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
-
-def get_text_from_blob(downloader):
-    #In order of likelihood
-    charsets = ['UTF-8', 'latin-1', 'UTF-16', 'Windows-1252']
-
-    for charset in charsets:
-        try:
-            return downloader.content_as_text(encoding=charset)
-        except:
-            continue
-
-    raise ValueError('Charset unknown, or not in the list.')
 
 def process_hash_list(document_datasets):
 
@@ -58,15 +47,8 @@ def process_hash_list(document_datasets):
 
             downloader = blob_client.download_blob()
 
-            try:
-                xml_string = get_text_from_blob(downloader)
-            except:
-                logger.warning('Can not identify charset for ' + file_hash + '.xml')
-                continue
+            context = etree.iterparse(BytesIO(downloader.content_as_bytes().encode()), tag='iati-activity', huge_tree=True)
 
-            blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-
-            context = etree.iterparse(etree.fromstring(xml_string.encode('utf-8')), tag='iati-activity', huge_tree=True)
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
                 if identifiers:
@@ -77,7 +59,7 @@ def process_hash_list(document_datasets):
                     activity_xml = etree.tostring(activity)
                     act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(identifier_hash_hex))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
-                    act_blob_client.set_blob_tags({"dataset_hash": hash})
+                    act_blob_client.set_blob_tags({"dataset_hash": file_hash})
                 # Free memory
                 activity.clear()
                 for ancestor in activity.xpath('ancestor-or-self::*'):
@@ -108,19 +90,6 @@ def process_hash_list(document_datasets):
             db.lakifyError(conn, doc_id, err_message)     
 
     conn.close()
-
-def addToSolr(conn, batch, file_hash):
-    response = solr.add(batch)
-
-    if hasattr(response, 'status_code') and response.status_code != 200:
-        if response.status_code >= 400 and response.status_code < 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        elif response.status_code >= 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        else: 
-            logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
 
 def service_loop():
     logger.info("Start service loop")
