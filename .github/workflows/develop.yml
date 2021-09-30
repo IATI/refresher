@@ -86,7 +86,8 @@ jobs:
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \ 
                 SOLR_USER="${{ env.SOLR_USER }}" \ 
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME=${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}"
+                
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
