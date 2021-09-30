@@ -16,6 +16,8 @@ env:
   FILE_VALIDATION_KEY_VALUE: ${{ secrets.DEV_FILE_VALIDATION_KEY_VALUE }}
   FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
   SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
+  SOLR_USER: ${{ secrets.SOLR_USER }}
+  SOLR_PASSWORD: ${{ secrets.SOLR_PASSWORD }}
   VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
@@ -84,7 +86,10 @@ jobs:
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME=${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}"
+                
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -119,7 +124,10 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}"
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+     
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -151,7 +159,10 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}"
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+                
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@v1"
         with:
@@ -178,6 +189,8 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \

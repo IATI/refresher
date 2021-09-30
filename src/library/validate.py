@@ -10,35 +10,13 @@ from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
 import json
-import chardet
+import library.utils as utils
 
 logger = getLogger()
 
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
-
-def get_text_from_blob(downloader, file_hash):  
-    # save off bytes if we need to detect charset later
-    downloadBytes = downloader.content_as_bytes()
-    try:
-        return downloader.content_as_text()
-    except UnicodeDecodeError:
-        logger.info('File is not UTF-8, trying to detect encoding for file with hash ' + file_hash)
-        pass
-    
-    # If not UTF-8 try to detect charset and decode
-    try:
-        detect_result = chardet.detect(downloadBytes)
-        charset = detect_result['encoding']
-        if charset:
-            logger.info('Charset detected: ' + charset + ' Confidence: ' + str(detect_result['confidence']) + ' Language: ' + detect_result['language'] + ' for file with hash ' + file_hash)
-            return downloader.content_as_text(encoding=charset)
-        logger.warning('No Charset detected for file with hash ' + file_hash + '. Likely a non-text file.')
-        raise
-    except:
-        logger.warning('Could not determine charset to decode for file with hash ' + file_hash)
-        raise
 
 def process_hash_list(document_datasets):
 
@@ -61,7 +39,7 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                payload = get_text_from_blob(downloader, file_hash)
+                payload = utils.get_text_from_blob(downloader, file_hash)
             except:
                 logger.warning('Could not identify charset for ' + file_hash + '.xml')
                 continue
@@ -88,7 +66,9 @@ def process_hash_list(document_datasets):
             
             report = response.json()
 
-            db.updateValidationState(conn, file_id, file_hash, file_url, True, json.dumps(report))
+            state = report.get('valid', None)
+
+            db.updateValidationState(conn, file_id, file_hash, file_url, state, json.dumps(report))
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
