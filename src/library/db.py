@@ -4,17 +4,13 @@ from constants.config import config
 import psycopg2
 from library.logger import getLogger
 from datetime import datetime
+import time
 
 logger = getLogger()
 
 def getDirectConnection():
     return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
 
-def convert_migration_to_version(migration_rev):
-    return migration_rev.replace('BR_', '').replace('_','.')
-
-def convert_version_to_migration(version):
-    return 'BR_' + version.replace('.', '_')
 
 def isUpgrade(fromVersion, toVersion):
     fromSplit = fromVersion.split('.')
@@ -49,11 +45,29 @@ def get_current_db_version(conn):
         return {'number': result[0][0], 'migration': result[0][1]}
 
 
-def migrateIfRequired():
+def checkVersionMatch():
     conn = getDirectConnection()
     conn.set_session(autocommit=True)
     cursor = conn.cursor()
     current_db_version = get_current_db_version(conn)
+
+    while current_db_version['number'] != __version__['number']:
+        logger.info('DB version incorrect. Sleeping...')
+        time.sleep(60)
+        current_db_version = get_current_db_version(conn)
+
+    return
+
+
+def migrateIfRequired():
+    check_conn = getDirectConnection()
+    check_conn.set_session(autocommit=True)
+    current_db_version = get_current_db_version(check_conn)
+    check_conn.close()
+
+    conn = getDirectConnection()
+    conn.set_session(autocommit=False)
+    cursor = conn.cursor()
 
     if current_db_version is None:
         current_db_version = {
@@ -74,40 +88,43 @@ def migrateIfRequired():
         logger.info('DB downgrading to version ' + __version__['number'])
         step = -1
 
-    for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
-        if upgrade:
-            mig_num = i
-        else:
-            mig_num = i + 1
+    try:
+        for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
+            if upgrade:
+                mig_num = i
+            else:
+                mig_num = i + 1
 
-        migration = 'mig_' + str(mig_num)
+            migration = 'mig_' + str(mig_num)
 
-        parent = str(pathlib.Path(__file__).parent.absolute())
-        spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
-        mig = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mig)
+            parent = str(pathlib.Path(__file__).parent.absolute())
+            spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
+            mig = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mig)
 
-        logmessage = "upgrade"
+            logmessage = "upgrade"
 
-        if upgrade:
-            sql = mig.upgrade
-        else:
-            sql = mig.downgrade
-            logmessage = "downgrade"
+            if upgrade:
+                sql = mig.upgrade
+            else:
+                sql = mig.downgrade
+                logmessage = "downgrade"
 
-        sql = sql.replace('\n', ' ')
-        sql = sql.replace('\t', ' ')
+            sql = sql.replace('\n', ' ')
+            sql = sql.replace('\t', ' ')
 
-        logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num)) 
+            logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num))
 
-        cursor.execute(sql)
+            cursor.execute(sql)
 
-    if current_db_version['number'] != "0.0.0":
-        sql = 'UPDATE version SET number = %s, migration = %s'
+        sql = 'UPDATE public.version SET number = %s, migration = %s'
         cursor.execute(sql, (__version__['number'], __version__['migration']))
-
-    cursor.close()
-    conn.close()
+        conn.commit()
+    except Exception as e:
+        logger.warning('Encountered unexpected exemption during migration... Rolling back...')
+        conn.rollback()
+        conn.close()
+        raise e
 
 def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
@@ -133,7 +150,20 @@ def getCursor(conn, itersize, sql):
 
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
-    sql = "SELECT hash, downloaded, id, url, validation_api_error FROM document WHERE downloaded is not null AND validation is Null ORDER BY downloaded"
+    sql = """
+    SELECT hash, downloaded, id, url, validation_api_error 
+    FROM document 
+    WHERE downloaded is not null AND (validation is Null OR regenerate_validation_report is True) 
+    ORDER BY regenerate_validation_report DESC, downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
+def getUnvalidatedAdhocDocs(conn):    
+    cur = conn.cursor()
+    sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
     cur.execute(sql)    
     results = cur.fetchall()
     cur.close()
@@ -148,6 +178,7 @@ def getUnflattenedDatasets(conn):
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
     AND val.valid = true
+    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)    
@@ -172,14 +203,14 @@ def getFlattenedActivitiesForDoc(conn, hash):
 
 def getUnsolrizedDatasets(conn):
     cur = conn.cursor()
-    #WED sort this out - can't get all the docs back in one result, obviously...
     sql = """
     SELECT doc.hash, doc.solr_api_error
     FROM document as doc
-    RIGHT JOIN validation as val ON doc.hash = val.document_hash
+    LEFT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 
-    AND doc.flatten_end is not Null
+    AND doc.flatten_end is not null
     AND doc.solrize_end is null
+	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
     ORDER BY doc.downloaded
@@ -200,39 +231,6 @@ def resetUnfinishedFlattens(conn):
     cur.execute(sql)
     conn.commit()
     cur.close()
-
-def resetUnfinishedDatasets(conn):
-    cur = conn.cursor()
-    sql = """
-        UPDATE document
-        SET datastore_processing_start=null, datastore_processing_end=null
-        WHERE datastore_root_element_key is Null
-    """    
-    
-    cur.execute(sql)
-    conn.commit()
-    cur.close()
-
-def getUnprocessedDatasets(conn, size):    
-    cur = conn.cursor()
-    sql = """
-        SELECT doc.hash FROM document AS doc
-        LEFT JOIN validation AS val ON doc.validation = val.document_hash
-        WHERE doc.datastore_root_element_key is Null
-        AND doc.datastore_build_error is Null
-        AND doc.downloaded is not Null 
-        AND doc.validation is not Null
-        AND val.valid = true
-        ORDER BY doc.downloaded
-        LIMIT %(size)s
-    """
-    data = {"size" : size}
-    
-    cur.execute(sql, data)    
-    results = cur.fetchall()
-    cur.close()
-
-    return results
 
 def updateValidationRequestDate(conn, filehash):
     cur = conn.cursor()
@@ -420,6 +418,21 @@ def updateFileAsDownloadError(conn, id, status):
     conn.commit()
     cur.close()
 
+def updateAdhocFileAsUnavailable(conn, hash, status):
+    cur = conn.cursor()
+
+    sql="UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+
+    data = {
+        "id": id,
+        "dt": datetime.now(),
+        "status": status
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 def insertOrUpdatePublisher(conn, organization, last_seen):
     cur = conn.cursor()
 
@@ -472,9 +485,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
-                validation = null,
-                datastore_processing_start = null,
-                datastore_processing_end = null
+                validation = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
@@ -539,22 +550,6 @@ def removePublishersNotSeenAfter(conn, dt):
     conn.commit()
     cur.close()
 
-def writeDatastoreBuildError(conn, hash, error):
-    cur = conn.cursor()
-
-    sql = """
-        UPDATE document SET datastore_build_error=%(error)s WHERE hash=%(hash)s
-    """
-
-    data = {
-        "error": error,
-        "hash": hash
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
 def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
 
     cur = conn.cursor()
@@ -572,9 +567,13 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
         ON CONFLICT (document_hash) DO
             UPDATE SET report = %(report)s,
-                valid = %(valid)s
+                valid = %(valid)s,
+                created = %(created)s
             WHERE validation.document_hash=%(doc_hash)s;
-        UPDATE document SET validation=%(doc_hash)s, validation_api_error=null WHERE hash=%(doc_hash)s;
+        UPDATE document 
+            SET validation=%(doc_hash)s,
+                regenerate_validation_report = 'f'
+            WHERE hash=%(doc_hash)s;
         """
 
     data = {
@@ -587,3 +586,32 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
     }
 
     cur.execute(sql, data)
+    conn.commit()
+
+def updateAdhocValidationState(conn, doc_hash, state, report):
+
+    cur = conn.cursor()
+
+    if state is None:
+        sql = "UPDATE adhoc_validation SET validated=null, report=null, validated=null WHERE hash=%s"
+        data = (doc_hash)
+        cur.execute(sql, data)
+        conn.commit()
+        cur.close()
+        return
+
+    sql = """
+        UPDATE adhoc_validation (hash, valid, report)  
+        SET valid=%(state)s, report=%(report)s, validated = %(validated)s
+        WHERE hash=%(doc_hash)s;
+        """
+
+    data = {
+        "doc_hash": doc_hash,
+        "validated": datetime.now(),
+        "valid": state,
+        "report": report
+    }
+
+    cur.execute(sql, data)
+    conn.commit()

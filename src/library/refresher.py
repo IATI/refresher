@@ -13,6 +13,11 @@ from library.logger import getLogger
 from constants.config import config
 from datetime import datetime
 import pysolr
+import chardet
+from lxml import etree
+from io import BytesIO
+import hashlib
+
 
 logger = getLogger() #/action/organization_list
 
@@ -199,14 +204,48 @@ def download_chunk(chunk, blob_service_client, datasets):
         url = dataset[2]
 
         try:
-            download_xml = requests_retry_session(retries=3).get(url=url, timeout=5).content
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
-            blob_client.upload_blob(download_xml, overwrite=True)
-            db.updateFileAsDownloaded(conn, id)
+            download_response = requests_retry_session(retries=3).get(url=url, timeout=5)
+            download_xml = download_response.content
+            if download_response.status_code == 200:
+                try:
+                    detect_result = chardet.detect(download_xml)
+                    charset = detect_result['encoding']
+                except:
+                    charset = 'UTF-8'
+                blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
+                db.updateFileAsDownloaded(conn, id)
+
+                try:
+                    context = etree.iterparse(BytesIO(download_xml), tag='iati-activity', huge_tree=True)
+                    for _, activity in context:
+                        identifiers = activity.xpath("iati-identifier/text()")
+                        if identifiers:
+                            identifier = identifiers[0]
+                            identifier_hash = hashlib.sha1()
+                            identifier_hash.update(identifier.encode())
+                            identifier_hash_hex = identifier_hash.hexdigest()
+                            activity_xml = etree.tostring(activity)
+                            act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(identifier_hash_hex))
+                            act_blob_client.upload_blob(activity_xml, overwrite=True, encoding=charset)
+                            act_blob_client.set_blob_tags({"dataset_hash": hash})
+                        # Free memory
+                        activity.clear()
+                        for ancestor in activity.xpath('ancestor-or-self::*'):
+                            while ancestor.getprevious() is not None:
+                                try:
+                                    del ancestor.getparent()[0]
+                                except TypeError:
+                                    break
+                    del context
+                except (etree.XMLSyntaxError, etree.SerialisationError) as e:
+                    logger.warning('Failed to extract activities to lake with url ' + url + ' and hash ' + hash)
+            else:
+                db.updateFileAsDownloadError(conn, id, download_response.status_code)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
-        except (requests.exceptions.HTTPError) as e:
-            db.updateFileAsDownloadError(conn, id, e.response.status_code)       
+        except (AzureExceptions.ResourceNotFoundError) as e:
+            db.updateFileAsDownloadError(conn, id, e.status_code)
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except Exception as e:

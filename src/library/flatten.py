@@ -3,7 +3,6 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
-from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
@@ -11,24 +10,13 @@ from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
 import json
+import library.utils as utils
 
 logger = getLogger()
 
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
-
-def get_text_from_blob(downloader):
-    #In order of likelihood
-    charsets = ['UTF-8', 'latin-1', 'UTF-16', 'Windows-1252']
-
-    for charset in charsets:
-        try:
-            return downloader.content_as_text(encoding=charset)
-        except:
-            continue
-
-    raise ValueError('Charset unknown, or not in the list.')
 
 def process_hash_list(document_datasets):
 
@@ -56,7 +44,7 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                payload = get_text_from_blob(downloader)
+                payload = utils.get_text_from_blob(downloader, file_hash)
             except:
                 logger.warning('Can not identify charset for ' + file_hash + '.xml')
                 continue
@@ -120,14 +108,14 @@ def main():
 
     file_hashes = db.getUnflattenedDatasets(conn)
 
-    if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
+    if config['FLATTEN']['PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['FLATTEN']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['FLATTEN']['PARALLEL_PROCESSES']) + " parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:

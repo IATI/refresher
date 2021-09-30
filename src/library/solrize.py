@@ -3,7 +3,6 @@ from multiprocessing import Process
 from library.logger import getLogger
 import datetime
 import requests
-from library.dds import IATI_db
 from constants.config import config
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from itertools import islice
@@ -27,37 +26,21 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
-            prior_error = file_data[1]
-
-            if prior_error: #explicit error codes returned from Validator
-                continue
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
-            logger.info("Pinging Solr")
             solr.ping()
-            logger.info("Solr pinged.")
 
             db.updateSolrizeStartDate(conn, file_hash)
-
-            #If doc_hash in Solr, delete and replace as transaction
-            #Work out deletes
 
             logger.info("Removing any linging docs for hash " + file_hash)            
             solr.delete(q='iati_activities_document_hash:' + file_hash)
 
-            batch = []
-            logger.info("Adding docs for hash " + file_hash) 
+            logger.info("Adding docs for hash " + file_hash)
+
             for fa in flattened_activities[0]:
                 fa['iati_activities_document_hash'] = file_hash
-                batch.append(fa)
-
-                if len(batch) > 9: #todo - config this batch number
-                    addToSolr(conn, batch, file_hash)
-                    batch = []
-
-            if len(batch) > 0:
-                addToSolr(conn, batch, file_hash)
+                addToSolr(conn, [fa], file_hash)
 
             logger.info("Updating DB for " + file_hash) 
             db.completeSolrize(conn, file_hash)     
@@ -117,7 +100,7 @@ def main():
 
         processes = []
 
-        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['DDS']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['SOLRIZE']['PARALLEL_PROCESSES']) + " parallel processes")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
