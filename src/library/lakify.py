@@ -105,6 +105,10 @@ def main():
 
     logger.info("Got DB connection")
 
+    logger.info("Resetting those unfinished")
+
+    db.resetUnfinishedLakifies(conn)
+
     file_hashes = db.getUnlakifiedDatasets(conn)
 
     logger.info("Got unlakified datasets")

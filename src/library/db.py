@@ -237,6 +237,19 @@ def getUnlakifiedDatasets(conn):
     cur.close()
     return results
 
+def resetUnfinishedLakifies(conn):
+    cur = conn.cursor()
+    sql = """
+        UPDATE document
+        SET lakify_start=null
+        WHERE lakify_end is null
+        AND lakify_error is not null
+    """    
+    
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
+
 def resetUnfinishedFlattens(conn):
     cur = conn.cursor()
     sql = """

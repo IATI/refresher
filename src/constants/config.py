@@ -30,6 +30,6 @@ config = dict(DATA_SCHEMA = "public",
         SOLR_PASSWORD = os.getenv('SOLR_PASSWORD')
     ),
     LAKIFY = dict(
-        PARALLEL_PROCESSES = 1
+        PARALLEL_PROCESSES = 10
     )
 )
