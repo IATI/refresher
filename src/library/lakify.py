@@ -47,7 +47,7 @@ def process_hash_list(document_datasets):
 
             downloader = blob_client.download_blob()
 
-            context = etree.iterparse(BytesIO(downloader.content_as_bytes().encode()), tag='iati-activity', huge_tree=True)
+            context = etree.iterparse(BytesIO(downloader.content_as_bytes()), tag='iati-activity', huge_tree=True)
 
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
