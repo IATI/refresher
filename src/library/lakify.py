@@ -110,7 +110,7 @@ def main():
     logger.info("Got unlakified datasets")
 
     if config['LAKIFY']['PARALLEL_PROCESSES'] == 1:
-        logger.info("Lakifiying " + str(len(file_hashes)) + " IATI docs in a a single process")
+        logger.info("Lakifiying " + str(len(file_hashes)) + " IATI docs in a single process")
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['LAKIFY']['PARALLEL_PROCESSES']))

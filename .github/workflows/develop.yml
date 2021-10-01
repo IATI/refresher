@@ -222,6 +222,7 @@ jobs:
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
