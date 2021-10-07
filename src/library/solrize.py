@@ -11,6 +11,7 @@ import psycopg2
 import library.db as db
 import json
 import pysolr
+import library.utils as utils
 
 logger = getLogger()
 solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
@@ -21,7 +22,8 @@ def chunk_list(l, n):
 
 def process_hash_list(document_datasets):
 
-    conn = db.getDirectConnection()     
+    conn = db.getDirectConnection()
+    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])   
 
     for file_data in document_datasets:
         try:
@@ -39,6 +41,16 @@ def process_hash_list(document_datasets):
             logger.info("Adding docs for hash " + file_hash)
 
             for fa in flattened_activities[0]:
+                blob_name = '{}.xml'.format(utils.get_hash_for_identifier(fa['iati_identifier']))
+                blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
+                downloader = blob_client.download_blob()
+
+                try:
+                    fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
+                except:
+                    logger.warning('Could not identify charset for ' + file_hash + '.xml')
+                    continue                
+                
                 fa['iati_activities_document_hash'] = file_hash
                 addToSolr(conn, [fa], file_hash)
 

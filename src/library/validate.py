@@ -43,6 +43,7 @@ def process_hash_list(document_datasets):
             except:
                 logger.warning('Could not identify charset for ' + file_hash + '.xml')
                 continue
+            
             headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
             db.updateValidationRequestDate(conn, file_hash)
