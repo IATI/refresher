@@ -1,5 +1,6 @@
 import chardet
 from library.logger import getLogger
+import hashlib
 
 logger = getLogger()
 
@@ -24,4 +25,9 @@ def get_text_from_blob(downloader, file_hash):
     except:
         logger.warning('Could not determine charset to decode for file with hash ' + file_hash)
         raise
+
+def get_hash_for_identifier(id):
+    identifier_hash = hashlib.sha1()
+    identifier_hash.update(id.encode())
+    return identifier_hash.hexdigest()
     

@@ -12,9 +12,9 @@ import library.db as db
 import json
 import pysolr
 from lxml import etree
-import hashlib
 import chardet
 from io import BytesIO
+import library.utils as utils
 
 logger = getLogger()
 
@@ -52,12 +52,9 @@ def process_hash_list(document_datasets):
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
                 if identifiers:
-                    identifier = identifiers[0]
-                    identifier_hash = hashlib.sha1()
-                    identifier_hash.update(identifier.encode())
-                    identifier_hash_hex = identifier_hash.hexdigest()
+                    id_hash = utils.get_hash_for_identifier(identifiers[0])
                     activity_xml = etree.tostring(activity)
-                    act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(identifier_hash_hex))
+                    act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(id_hash))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
                     act_blob_client.set_blob_tags({"dataset_hash": file_hash})
                 # Free memory
