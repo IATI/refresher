@@ -191,6 +191,7 @@ jobs:
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
