@@ -643,7 +643,7 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
 
     if state is None:
         sql = "UPDATE document SET validation=null WHERE hash=%s"
-        data = (doc_hash)
+        data = (doc_hash,)
         cur.execute(sql, data)
         conn.commit()
         cur.close()
@@ -681,7 +681,7 @@ def updateAdhocValidationState(conn, doc_hash, state, report):
 
     if state is None:
         sql = "UPDATE adhoc_validation SET validated=null, report=null, validated=null WHERE hash=%s"
-        data = (doc_hash)
+        data = (doc_hash,)
         cur.execute(sql, data)
         conn.commit()
         cur.close()
