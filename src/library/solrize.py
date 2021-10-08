@@ -42,15 +42,20 @@ def process_hash_list(document_datasets):
 
             for fa in flattened_activities[0]:
                 blob_name = '{}.xml'.format(utils.get_hash_for_identifier(fa['iati_identifier']))
-                blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
-                downloader = blob_client.download_blob()
 
+                try:
+                    blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
+                    downloader = blob_client.download_blob()
+                except:
+                    logger.warning('Could download XML activity blob from Lake with name ' + blob_name)
+                    continue
+                
                 try:
                     fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
                 except:
                     logger.warning('Could not identify charset for ' + file_hash + '.xml')
-                    continue                
-                
+                    continue
+             
                 fa['iati_activities_document_hash'] = file_hash
                 addToSolr(conn, [fa], file_hash)
 
