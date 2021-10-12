@@ -1,4 +1,4 @@
-import os, time, sys, traceback
+import os, time, sys, traceback, copy
 from multiprocessing import Process
 from library.logger import getLogger
 import datetime
@@ -75,10 +75,12 @@ def process_hash_list(document_datasets):
                 addToSolr(conn, 'activity', [fa], file_hash)
 
                 for element_name in explode_elements:
-                    addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+                    res = explode_element(element_name, fa)
+                    #addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+                    brake = True
 
             logger.info("Updating DB for " + file_hash) 
-            db.completeSolrize(conn, file_hash)     
+            #db.completeSolrize(conn, file_hash)     
 
         except Exception as e:
             logger.error('ERROR with Solrizing ' + file_hash)
@@ -96,7 +98,9 @@ def process_hash_list(document_datasets):
 
     conn.close()
 
-def explode_element(element_name, fa):   
+def explode_element(element_name, passed_fa):
+    fa = copy.deepcopy(passed_fa)
+
     exploded_docs = []
     exploded_elements = {}
     single_value_elements = {}
@@ -108,15 +112,18 @@ def explode_element(element_name, fa):
             else:
                 single_value_elements[key] = fa[key]
     
-    if not explode_elements:
+    if not exploded_elements and not single_value_elements:
+        return []
+    
+    if not exploded_elements:
         return [fa]
             
     for key in exploded_elements:
         del fa[key]    
     
-    i=0    
+    i=0
     
-    for value in exploded_elements[0]:
+    for value in exploded_elements[list(exploded_elements)[0]]:
         exploded_doc = {}
 
         for key in exploded_elements:            
