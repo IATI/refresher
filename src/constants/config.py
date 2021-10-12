@@ -24,10 +24,11 @@ config = dict(DATA_SCHEMA = "public",
         FLATTENER_URL = os.getenv('FLATTENER_API_URL')
     ),
     SOLRIZE = dict(
-        PARALLEL_PROCESSES = 10,
+        PARALLEL_PROCESSES = 1,
         SOLR_API_URL = os.getenv('SOLR_API_URL'),
         SOLR_USER = os.getenv('SOLR_USER'),
-        SOLR_PASSWORD = os.getenv('SOLR_PASSWORD')
+        SOLR_PASSWORD = os.getenv('SOLR_PASSWORD'),
+        EXPLODE_ELEMENTS = '["transaction"]'
     ),
     LAKIFY = dict(
         PARALLEL_PROCESSES = 10
