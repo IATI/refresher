@@ -40,8 +40,8 @@ def process_hash_list(document_datasets):
             for core_name in explode_elements:
                 solr_cores[core_name] = addCore(core_name)
             
-            #for core_name in solr_cores:
-                #solr_cores[core_name].ping()
+            for core_name in solr_cores:
+                solr_cores[core_name].ping()
 
             db.updateSolrizeStartDate(conn, file_hash)
 
@@ -76,11 +76,11 @@ def process_hash_list(document_datasets):
 
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
-                    #addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
-                    brake = True
+                    addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+
 
             logger.info("Updating DB for " + file_hash) 
-            #db.completeSolrize(conn, file_hash)     
+            db.completeSolrize(conn, file_hash)     
 
         except Exception as e:
             logger.error('ERROR with Solrizing ' + file_hash)
