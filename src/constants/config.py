@@ -21,7 +21,9 @@ config = dict(DATA_SCHEMA = "public",
     ),
     FLATTEN = dict(
         PARALLEL_PROCESSES = 1,
-        FLATTENER_URL = os.getenv('FLATTENER_API_URL')
+        FLATTENER_URL = os.getenv('FLATTENER_API_URL'),
+        FLATTENER_KEY_NAME = os.getenv('FLATTENER_KEY_NAME'),
+        FLATTENER_KEY_VALUE = os.getenv('FLATTENER_KEY_VALUE')
     ),
     SOLRIZE = dict(
         PARALLEL_PROCESSES = 10,
