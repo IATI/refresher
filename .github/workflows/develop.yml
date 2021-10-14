@@ -14,7 +14,9 @@ env:
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
   FILE_VALIDATION_KEY_NAME: ${{ secrets.DEV_FILE_VALIDATION_KEY_NAME }}
   FILE_VALIDATION_KEY_VALUE: ${{ secrets.DEV_FILE_VALIDATION_KEY_VALUE }}
-  FLATTENER_API_URL: ${{ secrets.FLATTENER_API_URL }}
+  FLATTENER_API_URL: ${{ secrets.DEV_FLATTENER_API_URL }}
+  FLATTENER_KEY_NAME: ${{ secrets.DEV_FLATTENER_KEY_NAME }}
+  FLATTENER_KEY_VALUE: ${{ secrets.DEV_FLATTENER_KEY_VALUE }}
   SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
   SOLR_USER: ${{ secrets.SOLR_USER }}
   SOLR_PASSWORD: ${{ secrets.SOLR_PASSWORD }}
@@ -154,6 +156,8 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
+                FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
+                FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
