@@ -1,4 +1,4 @@
-import os, time, sys, traceback
+import os, time, sys, traceback, copy, json
 from multiprocessing import Process
 from library.logger import getLogger
 import datetime
@@ -14,11 +14,15 @@ import pysolr
 import library.utils as utils
 
 logger = getLogger()
-solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
+solr_cores = {}
+explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
+
+def addCore(core_name):
+    return pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + core_name + '/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
 
 def process_hash_list(document_datasets):
 
@@ -31,13 +35,24 @@ def process_hash_list(document_datasets):
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
-            solr.ping()
+            solr_cores['activity'] = addCore('activity')
+
+            for core_name in explode_elements:
+                solr_cores[core_name] = addCore(core_name)
+            
+            for core_name in solr_cores:
+                solr_cores[core_name].ping()
 
             db.updateSolrizeStartDate(conn, file_hash)
 
-            logger.info("Removing any linging docs for hash " + file_hash)            
-            solr.delete(q='iati_activities_document_hash:' + file_hash)
+            logger.info("Removing any linging docs for hash " + file_hash)
 
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_hash:' + file_hash)
+                except:
+                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)                  
+                
             logger.info("Adding docs for hash " + file_hash)
 
             for fa in flattened_activities[0]:
@@ -47,7 +62,7 @@ def process_hash_list(document_datasets):
                     blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
                     downloader = blob_client.download_blob()
                 except:
-                    logger.warning('Could download XML activity blob from Lake with name ' + blob_name)
+                    logger.warning('Could not download XML activity blob from Lake with name ' + blob_name)
                     continue
                 
                 try:
@@ -57,7 +72,12 @@ def process_hash_list(document_datasets):
                     continue
              
                 fa['iati_activities_document_hash'] = file_hash
-                addToSolr(conn, [fa], file_hash)
+                addToSolr(conn, 'activity', [fa], file_hash)
+
+                for element_name in explode_elements:
+                    res = explode_element(element_name, fa)
+                    addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+
 
             logger.info("Updating DB for " + file_hash) 
             db.completeSolrize(conn, file_hash)     
@@ -78,8 +98,65 @@ def process_hash_list(document_datasets):
 
     conn.close()
 
-def addToSolr(conn, batch, file_hash):
-    response = solr.add(batch)
+def explode_element(element_name, passed_fa):
+    fa = copy.deepcopy(passed_fa)
+
+    exploded_docs = []
+    exploded_elements = {}
+    single_value_elements = {}
+
+    for key in fa:
+        if key.startswith(element_name + '_'):
+            if isinstance (fa[key], list):
+                exploded_elements[key] = fa[key]
+            else:
+                single_value_elements[key] = fa[key]
+    
+    if not exploded_elements and not single_value_elements:
+        return []
+    
+    if not exploded_elements:
+        return [fa]
+            
+    for key in exploded_elements:
+        del fa[key]    
+    
+    i=0
+    
+    for value in exploded_elements[list(exploded_elements)[0]]:
+        exploded_doc = {}
+
+        for key in exploded_elements:
+            try:            
+                exploded_doc[key] = exploded_elements[key][i]
+            except:
+                pass        
+
+        exploded_docs.append({**exploded_doc, **single_value_elements, **fa})
+
+        i = i + 1
+
+    return exploded_docs
+
+def addToSolr(conn, core_name, batch, file_hash):
+    
+    clean_batch = []
+   
+    for doc in batch:
+        cleanDoc = {}
+
+        doc['id'] = utils.get_hash_for_identifier(json.dumps(doc))
+
+        for key in doc:
+            if doc[key] != '':
+                cleanDoc[key] = doc[key]
+        
+        clean_batch.append(cleanDoc)
+
+    batch = clean_batch
+    del clean_batch
+
+    response = solr_cores[core_name].add(batch)
 
     if hasattr(response, 'status_code') and response.status_code != 200:
         if response.status_code >= 400 and response.status_code < 500:
