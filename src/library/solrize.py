@@ -1,4 +1,4 @@
-import os, time, sys, traceback, copy
+import os, time, sys, traceback, copy, json
 from multiprocessing import Process
 from library.logger import getLogger
 import datetime
@@ -126,8 +126,11 @@ def explode_element(element_name, passed_fa):
     for value in exploded_elements[list(exploded_elements)[0]]:
         exploded_doc = {}
 
-        for key in exploded_elements:            
-            exploded_doc[key] = exploded_elements[key][i]        
+        for key in exploded_elements:
+            try:            
+                exploded_doc[key] = exploded_elements[key][i]
+            except:
+                pass        
 
         exploded_docs.append({**exploded_doc, **single_value_elements, **fa})
 
@@ -136,6 +139,23 @@ def explode_element(element_name, passed_fa):
     return exploded_docs
 
 def addToSolr(conn, core_name, batch, file_hash):
+    
+    clean_batch = []
+   
+    for doc in batch:
+        cleanDoc = {}
+
+        doc['id'] = utils.get_hash_for_identifier(json.dumps(doc))
+
+        for key in doc:
+            if doc[key] != '':
+                cleanDoc[key] = doc[key]
+        
+        clean_batch.append(cleanDoc)
+
+    batch = clean_batch
+    del clean_batch
+
     response = solr_cores[core_name].add(batch)
 
     if hasattr(response, 'status_code') and response.status_code != 200:
