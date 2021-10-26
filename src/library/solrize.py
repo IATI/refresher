@@ -74,6 +74,9 @@ def process_hash_list(document_datasets):
                 fa['iati_activities_document_hash'] = file_hash
                 addToSolr(conn, 'activity', [fa], file_hash)
 
+                # don't index iati_xml into exploded elements
+                del fa['iati_xml']
+
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
                     addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
