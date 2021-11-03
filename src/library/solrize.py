@@ -159,17 +159,11 @@ def addToSolr(conn, core_name, batch, file_hash):
     batch = clean_batch
     del clean_batch
 
-    response = solr_cores[core_name].add(batch)
-
-    if hasattr(response, 'status_code') and response.status_code != 200:
-        if response.status_code >= 400 and response.status_code < 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        elif response.status_code >= 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        else: 
-            logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+    try:
+        response = solr_cores[core_name].add(batch)
+    except Exception as e:
+        logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0])
+        db.updateSolrError(conn, file_hash, e.args[0])
 
 def service_loop():
     logger.info("Start service loop")
