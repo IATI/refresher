@@ -572,7 +572,16 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
-                validation = null
+                validation = null,
+                lakify_start = null,
+                lakify_end = null,
+                lakify_error = null,
+                flatten_start = null,
+                flatten_end = null,
+                flatten_api_error = null,
+                solrize_start = null,
+                solrize_end = null,
+                solr_api_error = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
