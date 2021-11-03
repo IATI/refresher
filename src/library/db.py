@@ -303,7 +303,7 @@ def updateValidationError(conn, filehash, status):
 
 def updateSolrError(conn, filehash, error):
     cur = conn.cursor()
-    sql = "UPDATE document SET solr_api_error=%s, WHERE hash=%s"
+    sql = "UPDATE document SET solr_api_error=%s WHERE hash=%s"
 
     data = (error, filehash)
     cur.execute(sql, data)
