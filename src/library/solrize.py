@@ -62,13 +62,13 @@ def process_hash_list(document_datasets):
                     blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
                     downloader = blob_client.download_blob()
                 except:
-                    logger.warning('Could not download XML activity blob from Lake with name ' + blob_name)
+                    logger.warning('Could not download XML activity blob: blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
                     continue
                 
                 try:
                     fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
                 except:
-                    logger.warning('Could not identify charset for ' + file_hash + '.xml')
+                    logger.warning('Could not identify charset:  blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
                     continue
              
                 fa['iati_activities_document_hash'] = file_hash
