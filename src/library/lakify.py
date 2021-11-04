@@ -52,7 +52,7 @@ def process_hash_list(document_datasets):
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
                 if identifiers:
-                    id_hash = utils.get_hash_for_identifier(identifiers[0])
+                    id_hash = utils.get_hash_for_identifier(identifiers[0].strip())
                     activity_xml = etree.tostring(activity)
                     act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(id_hash))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
