@@ -199,7 +199,10 @@ def getFlattenedActivitiesForDoc(conn, hash):
     results = cur.fetchall()
     cur.close()
 
-    return results[0]
+    try:
+        return results[0]
+    except Exception as e:
+        return None
 
 def getUnsolrizedDatasets(conn):
     cur = conn.cursor()
