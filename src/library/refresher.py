@@ -111,6 +111,7 @@ def sync_documents():
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
 
     for dataset in stale_datasets:
+        file_id = dataset[0]
         file_hash = dataset[1]
         try:
             container_client.delete_blob(file_hash + '.xml')
@@ -120,9 +121,9 @@ def sync_documents():
         solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
 
         try:
-            solr.delete(q='iati_activities_document_hash:' + file_hash)
+            solr.delete(q='iati_activities_document_id:' + file_id)
         except Exception as e:
-            logger.warning('Failed to remove documents from Solr with document hash ' + file_hash)
+            logger.warning('Failed to remove documents from Solr with document id ' + file_id)
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 

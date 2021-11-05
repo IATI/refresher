@@ -207,7 +207,7 @@ def getFlattenedActivitiesForDoc(conn, hash):
 def getUnsolrizedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT doc.hash, doc.solr_api_error
+    SELECT doc.hash, doc.id, doc.solr_api_error
     FROM document as doc
     LEFT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 

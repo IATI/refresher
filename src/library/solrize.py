@@ -32,6 +32,7 @@ def process_hash_list(document_datasets):
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
+            file_id = file_data[1]
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
@@ -52,7 +53,7 @@ def process_hash_list(document_datasets):
 
             for core_name in solr_cores:
                 try:
-                    solr_cores[core_name].delete(q='iati_activities_document_hash:' + file_hash)
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
                     logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)                  
                 
@@ -74,7 +75,7 @@ def process_hash_list(document_datasets):
                     logger.warning('Could not identify charset:  blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
                     continue
              
-                fa['iati_activities_document_hash'] = file_hash
+                fa['iati_activities_document_id'] = file_id
                 addToSolr(conn, 'activity', [fa], file_hash)
 
                 # don't index iati_xml into exploded elements
