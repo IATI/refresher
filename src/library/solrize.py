@@ -49,7 +49,7 @@ def process_hash_list(document_datasets):
 
             db.updateSolrizeStartDate(conn, file_hash)
 
-            logger.info("Removing any linging docs for hash " + file_hash)
+            logger.info("Removing all docs docs for doc with id " + file_id)
 
             for core_name in solr_cores:
                 try:
