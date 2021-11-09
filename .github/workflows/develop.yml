@@ -58,9 +58,9 @@ jobs:
           docker build . -f lakify-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
       - name: "Deploy Refresh to Azure Container Instances"
-        uses: "azure/CLI@v1"
+        uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.19.1
+            azcliversion: 2.30.0
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
@@ -93,9 +93,9 @@ jobs:
                 ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}"
                 
       - name: "Deploy Validate to Azure Container Instances"
-        uses: "azure/CLI@v1"
+        uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.19.1
+            azcliversion: 2.30.0
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
@@ -131,9 +131,9 @@ jobs:
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
      
       - name: "Deploy Flatten to Azure Container Instances"
-        uses: "azure/CLI@v1"
+        uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.19.1
+            azcliversion: 2.30.0
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
@@ -168,9 +168,9 @@ jobs:
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
                 
       - name: "Deploy Solrize to Azure Container Instances"
-        uses: "azure/CLI@v1"
+        uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.19.1
+            azcliversion: 2.30.0
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
@@ -203,9 +203,9 @@ jobs:
                 DB_NAME="${{ env.DB_NAME }}"
 
       - name: "Deploy Lakify to Azure Container Instances"
-        uses: "azure/CLI@v1"
+        uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.19.1
+            azcliversion: 2.30.0
             inlineScript: |
               az container create \
               --resource-group "${{ secrets.RESOURCE_GROUP }}" \
