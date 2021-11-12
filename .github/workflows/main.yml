@@ -8,6 +8,7 @@ env:
   STAGE: prod-aci-iati
   NAME: refresher
   TAG: ${{ github.sha }}
+  RESOURCE_GROUP: rg-refresher-prod
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.PROD_AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.PROD_AZURE_STORAGE_CONTAINER_SOURCE }}
   FILE_VALIDATION_URL: ${{ secrets.PROD_FILE_VALIDATION_URL }}
@@ -61,7 +62,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-refresh:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -95,7 +96,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -133,7 +134,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-flatten:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -170,7 +171,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-solrize:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -205,7 +206,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-lakify:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
