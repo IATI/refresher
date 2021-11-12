@@ -71,7 +71,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "dev-iati-refresher" \
+              --vnet "prod-iati-refresher" \
               --subnet "default" \
               --memory "4" \
               --cpu "1" \
@@ -105,7 +105,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "dev-iati-refresher" \
+              --vnet "prod-iati-refresher" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
@@ -143,7 +143,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "dev-iati-refresher" \
+              --vnet "prod-iati-refresher" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
@@ -180,7 +180,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "dev-iati-refresher" \
+              --vnet "prod-iati-refresher" \
               --subnet "default" \
               --memory "4" \
               --cpu "1" \
@@ -215,7 +215,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "dev-iati-refresher" \
+              --vnet "prod-iati-refresher" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
