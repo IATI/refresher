@@ -2,6 +2,9 @@ name: Deploy_Refresher_To_Development_On_Push
 
 on:
   push:
+    paths-ignore: # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
+      - '**/README.md'
+      - '.github/workflows/main.yml'
     branches:
       - develop
 
@@ -9,6 +12,7 @@ env:
   STAGE: dev-aci-iati
   NAME: refresher
   TAG: ${{ github.sha }}
+  RESOURCE_GROUP: rg-refresher-dev
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.AZURE_STORAGE_CONTAINER_SOURCE }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
@@ -17,10 +21,9 @@ env:
   FLATTENER_API_URL: ${{ secrets.DEV_FLATTENER_API_URL }}
   FLATTENER_KEY_NAME: ${{ secrets.DEV_FLATTENER_KEY_NAME }}
   FLATTENER_KEY_VALUE: ${{ secrets.DEV_FLATTENER_API_KEY }}
-  SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
-  SOLR_USER: ${{ secrets.SOLR_USER }}
-  SOLR_PASSWORD: ${{ secrets.SOLR_PASSWORD }}
-  VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
+  SOLR_API_URL: ${{ secrets.DEV_SOLR_API_URL }}
+  SOLR_USER: ${{ secrets.DEV_SOLR_USER }}
+  SOLR_PASSWORD: ${{ secrets.DEV_SOLR_PASSWORD }}
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
   DB_HOST: ${{ secrets.DB_HOST }}
@@ -63,7 +66,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-refresh:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -98,7 +101,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -136,7 +139,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-flatten:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -173,7 +176,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-solrize:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
@@ -208,7 +211,7 @@ jobs:
             azcliversion: 2.30.0
             inlineScript: |
               az container create \
-              --resource-group "${{ secrets.RESOURCE_GROUP }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
               --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-lakify:${{ env.TAG }}" \
               --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
               --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
