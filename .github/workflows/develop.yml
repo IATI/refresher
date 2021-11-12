@@ -20,9 +20,9 @@ env:
   FLATTENER_API_URL: ${{ secrets.DEV_FLATTENER_API_URL }}
   FLATTENER_KEY_NAME: ${{ secrets.DEV_FLATTENER_KEY_NAME }}
   FLATTENER_KEY_VALUE: ${{ secrets.DEV_FLATTENER_API_KEY }}
-  SOLR_API_URL: ${{ secrets.SOLR_API_URL }}
-  SOLR_USER: ${{ secrets.SOLR_USER }}
-  SOLR_PASSWORD: ${{ secrets.SOLR_PASSWORD }}
+  SOLR_API_URL: ${{ secrets.DEV_SOLR_API_URL }}
+  SOLR_USER: ${{ secrets.DEV_SOLR_USER }}
+  SOLR_PASSWORD: ${{ secrets.DEV_SOLR_PASSWORD }}
   VALIDATOR_PARALLEL: ${{ secrets.VALIDATOR_PARALLEL }}
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
