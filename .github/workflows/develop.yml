@@ -2,6 +2,9 @@ name: Deploy_Refresher_To_Development_On_Push
 
 on:
   push:
+    paths-ignore: # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
+      - '**/README.md'
+      - '.github/workflows/main.yml'
     branches:
       - develop
 
