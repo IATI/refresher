@@ -14,6 +14,9 @@ from constants.config import config
 from datetime import datetime
 import pysolr
 import chardet
+from lxml import etree
+from io import BytesIO
+import hashlib
 
 
 logger = getLogger() #/action/organization_list
@@ -108,20 +111,19 @@ def sync_documents():
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
 
     for dataset in stale_datasets:
+        file_id = dataset[0]
         file_hash = dataset[1]
         try:
             container_client.delete_blob(file_hash + '.xml')
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
 
-        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
+        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
 
         try:
-            solr.delete(q='iati_activities_document_hash:' + file_hash)
+            solr.delete(q='iati_activities_document_id:' + file_id)
         except Exception as e:
-            logger.warning('Failed to remove documents from Solr with document hash ' + file_hash)
-
-    #todo perhaps - remove Validation Reports here. But maybe just leave them in place.
+            logger.warning('Failed to remove documents from Solr with document id ' + file_id)
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 

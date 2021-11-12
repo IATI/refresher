@@ -178,6 +178,7 @@ def getUnflattenedDatasets(conn):
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
     AND val.valid = true
+    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)    
@@ -198,16 +199,20 @@ def getFlattenedActivitiesForDoc(conn, hash):
     results = cur.fetchall()
     cur.close()
 
-    return results[0]
+    try:
+        return results[0]
+    except Exception as e:
+        return None
 
 def getUnsolrizedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT doc.hash, doc.solr_api_error
+    SELECT doc.hash, doc.id, doc.solr_api_error
     FROM document as doc
     LEFT JOIN validation as val ON doc.hash = val.document_hash
     WHERE downloaded is not null 
     AND doc.flatten_end is not null
+    AND doc.lakify_end is not null
     AND doc.solrize_end is null
 	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
@@ -218,6 +223,35 @@ def getUnsolrizedDatasets(conn):
     results = cur.fetchall()
     cur.close()
     return results
+
+def getUnlakifiedDatasets(conn):
+    cur = conn.cursor()
+    sql = """
+    SELECT hash, downloaded, id, url, lakify_error 
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    WHERE doc.downloaded is not null 
+    AND doc.lakify_start is Null
+    AND val.valid = true
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
+def resetUnfinishedLakifies(conn):
+    cur = conn.cursor()
+    sql = """
+        UPDATE document
+        SET lakify_start=null
+        WHERE lakify_end is null
+        AND lakify_error is not null
+    """    
+    
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
 
 def resetUnfinishedFlattens(conn):
     cur = conn.cursor()
@@ -272,7 +306,7 @@ def updateValidationError(conn, filehash, status):
 
 def updateSolrError(conn, filehash, error):
     cur = conn.cursor()
-    sql = "UPDATE document SET solr_api_error=%s, WHERE hash=%s"
+    sql = "UPDATE document SET solr_api_error=%s WHERE hash=%s"
 
     data = (error, filehash)
     cur.execute(sql, data)
@@ -285,6 +319,25 @@ def startFlatten(conn, doc_id):
     sql = """
         UPDATE document
         SET flatten_start = %(now)s, flatten_api_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def startLakify(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_start = %(now)s, lakify_error = null
         WHERE id = %(doc_id)s
     """
 
@@ -331,6 +384,44 @@ def completeFlatten(conn, doc_id, flattened_activities):
         "doc_id": doc_id,
         "now": datetime.now(),
         "flat_act": flattened_activities
+    }
+
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def lakifyError(conn, doc_id, msg):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_error = %(msg)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "msg": msg
+    }
+    
+    cur.execute(sql, data)
+    
+    conn.commit()
+    cur.close()
+
+def completeLakify(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_end = %(now)s, lakify_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
     }
 
     cur.execute(sql, data)
@@ -484,7 +575,16 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
-                validation = null
+                validation = null,
+                lakify_start = null,
+                lakify_end = null,
+                lakify_error = null,
+                flatten_start = null,
+                flatten_end = null,
+                flatten_api_error = null,
+                solrize_start = null,
+                solrize_end = null,
+                solr_api_error = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 

@@ -1,4 +1,4 @@
-import os, time, sys, traceback
+import os, time, sys, traceback, copy, json
 from multiprocessing import Process
 from library.logger import getLogger
 import datetime
@@ -11,36 +11,80 @@ import psycopg2
 import library.db as db
 import json
 import pysolr
+import library.utils as utils
 
 logger = getLogger()
-solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=True)
+solr_cores = {}
+explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
 
+def addCore(core_name):
+    return pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + core_name + '_solrize/', always_commit=True, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
+
 def process_hash_list(document_datasets):
 
-    conn = db.getDirectConnection()     
+    conn = db.getDirectConnection()
+    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])   
 
     for file_data in document_datasets:
         try:
             file_hash = file_data[0]
+            file_id = file_data[1]
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
-            solr.ping()
+            if flattened_activities is None:
+                continue
+
+            solr_cores['activity'] = addCore('activity')
+
+            for core_name in explode_elements:
+                solr_cores[core_name] = addCore(core_name)
+            
+            for core_name in solr_cores:
+                solr_cores[core_name].ping()
 
             db.updateSolrizeStartDate(conn, file_hash)
 
-            logger.info("Removing any linging docs for hash " + file_hash)            
-            solr.delete(q='iati_activities_document_hash:' + file_hash)
+            logger.info("Removing all docs docs for doc with id " + file_id)
 
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)                  
+                
             logger.info("Adding docs for hash " + file_hash)
 
             for fa in flattened_activities[0]:
-                fa['iati_activities_document_hash'] = file_hash
-                addToSolr(conn, [fa], file_hash)
+                blob_name = '{}.xml'.format(utils.get_hash_for_identifier(fa['iati_identifier']))
+
+                try:
+                    blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
+                    downloader = blob_client.download_blob()
+                except:
+                    logger.warning('Could not download XML activity blob: blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
+                    continue
+                
+                try:
+                    fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
+                except:
+                    logger.warning('Could not identify charset:  blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
+                    continue
+             
+                fa['iati_activities_document_id'] = file_id
+                addToSolr(conn, 'activity', [fa], file_hash)
+
+                # don't index iati_xml into exploded elements
+                del fa['iati_xml']
+
+                for element_name in explode_elements:
+                    res = explode_element(element_name, fa)
+                    addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+
 
             logger.info("Updating DB for " + file_hash) 
             db.completeSolrize(conn, file_hash)     
@@ -61,18 +105,69 @@ def process_hash_list(document_datasets):
 
     conn.close()
 
-def addToSolr(conn, batch, file_hash):
-    response = solr.add(batch)
+def explode_element(element_name, passed_fa):
+    fa = copy.deepcopy(passed_fa)
 
-    if hasattr(response, 'status_code') and response.status_code != 200:
-        if response.status_code >= 400 and response.status_code < 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        elif response.status_code >= 500:
-            db.updateSolrError(conn, file_hash, response.status_code)
-            logger.warning('Solr reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-        else: 
-            logger.warning('Solr reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+    exploded_docs = []
+    exploded_elements = {}
+    single_value_elements = {}
+
+    for key in fa:
+        if key.startswith(element_name + '_'):
+            if isinstance (fa[key], list):
+                exploded_elements[key] = fa[key]
+            else:
+                single_value_elements[key] = fa[key]
+    
+    if not exploded_elements and not single_value_elements:
+        return []
+    
+    if not exploded_elements:
+        return [fa]
+            
+    for key in exploded_elements:
+        del fa[key]    
+    
+    i=0
+    
+    for value in exploded_elements[list(exploded_elements)[0]]:
+        exploded_doc = {}
+
+        for key in exploded_elements:
+            try:            
+                exploded_doc[key] = exploded_elements[key][i]
+            except:
+                pass        
+
+        exploded_docs.append({**exploded_doc, **single_value_elements, **fa})
+
+        i = i + 1
+
+    return exploded_docs
+
+def addToSolr(conn, core_name, batch, file_hash):
+    
+    clean_batch = []
+   
+    for doc in batch:
+        cleanDoc = {}
+
+        doc['id'] = utils.get_hash_for_identifier(json.dumps(doc))
+
+        for key in doc:
+            if doc[key] != '':
+                cleanDoc[key] = doc[key]
+        
+        clean_batch.append(cleanDoc)
+
+    batch = clean_batch
+    del clean_batch
+
+    try:
+        response = solr_cores[core_name].add(batch)
+    except Exception as e:
+        logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0])
+        db.updateSolrError(conn, file_hash, e.args[0])
 
 def service_loop():
     logger.info("Start service loop")
