@@ -19,7 +19,6 @@ env:
   SOLR_API_URL: ${{ secrets.PROD_SOLR_API_URL }}
   SOLR_USER: ${{ secrets.PROD_SOLR_USER }}
   SOLR_PASSWORD: ${{ secrets.PROD_SOLR_PASSWORD }}
-  VALIDATOR_PARALLEL: ${{ secrets.PROD_VALIDATOR_PARALLEL }}
   DB_USER: ${{ secrets.PROD_DB_USER }}
   DB_PASS: ${{ secrets.PROD_DB_PASS }}
   DB_HOST: ${{ secrets.PROD_DB_HOST }}
