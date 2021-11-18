@@ -30,7 +30,8 @@ config = dict(DATA_SCHEMA = "public",
         SOLR_API_URL = os.getenv('SOLR_API_URL'),
         SOLR_USER = os.getenv('SOLR_USER'),
         SOLR_PASSWORD = os.getenv('SOLR_PASSWORD'),
-        EXPLODE_ELEMENTS = '["transaction", "budget"]'
+        EXPLODE_ELEMENTS = '["transaction", "budget"]',
+        SOLR_500_SLEEP = int(os.getenv('SOLR_500_SLEEP'))
     ),
     LAKIFY = dict(
         PARALLEL_PROCESSES = 10

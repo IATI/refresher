@@ -12,6 +12,7 @@ import library.db as db
 import json
 import pysolr
 import library.utils as utils
+import re
 
 logger = getLogger()
 solr_cores = {}
@@ -166,8 +167,16 @@ def addToSolr(conn, core_name, batch, file_hash):
     try:
         response = solr_cores[core_name].add(batch)
     except Exception as e:
-        logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0])
-        db.updateSolrError(conn, file_hash, e.args[0])
+        status_code = int(re.search(r'\(HTTP (\d{3})\)', e.args[0]).group(1))
+        if status_code >= 500:
+            logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0] + 
+            '- giving it a chance to come back up...')
+            db.updateSolrError(conn, file_hash, e.args[0])
+            time.sleep(config['SOLRIZE']['SOLR_500_SLEEP']) # give the thing time to come back up
+            logger.warning('...and off we go again.')
+        else:
+            db.updateSolrError(conn, file_hash, e.args[0])
+            logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0])
 
 def service_loop():
     logger.info("Start service loop")
