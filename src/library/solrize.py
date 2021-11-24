@@ -167,7 +167,10 @@ def addToSolr(conn, core_name, batch, file_hash):
     try:
         response = solr_cores[core_name].add(batch)
     except Exception as e:
-        status_code = int(re.search(r'\(HTTP (\d{3})\)', e.args[0]).group(1))
+        status_code = 0 
+        search_res = re.search(r'\(HTTP (\d{3})\)', e.args[0])
+        if search_res is not None:
+            status_code = int(search_res.group(1))
         if status_code >= 500:
             logger.warning('Solr reports Client Error ' + str(status_code) + ' for source blob ' + file_hash + '.xml. Sleeping for ' + config['SOLRIZE']['SOLR_500_SLEEP'] + ' seconds: ' + e.args[0])
             db.updateSolrError(conn, file_hash, e.args[0])
