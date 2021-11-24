@@ -84,7 +84,7 @@ def process_hash_list(document_datasets):
 
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
-                    addToSolr(conn, element_name, explode_element(element_name, fa), file_hash)
+                    addToSolr(conn, element_name, res, file_hash)
 
 
             logger.info("Updating DB for " + file_hash) 
