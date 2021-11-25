@@ -43,19 +43,27 @@ def requests_retry_session(
 def fetch_datasets():
     results = []
     api_url = "https://iatiregistry.org/api/3/action/package_search?rows=1000"
-    response = requests_retry_session().get(url=api_url, timeout=30).content
-    json_response = json.loads(response)
-    full_count = json_response["result"]["count"]
-    current_count = len(json_response["result"]["results"])
-    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    response = requests_retry_session().get(url=api_url, timeout=30)
+    if response.status_code == 200:
+        json_response = json.loads(response.content)
+        full_count = json_response["result"]["count"]
+        current_count = len(json_response["result"]["results"])
+        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    else:
+        logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
+        raise Exception()
 
     while current_count < full_count:
         next_api_url = "{}&start={}".format(api_url, current_count)
-        response = requests_retry_session().get(url=next_api_url, timeout=30).content
-        json_response = json.loads(response)
-        current_count += len(json_response["result"]["results"])
-        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
-    
+        response = requests_retry_session().get(url=next_api_url, timeout=30)
+        if response.status_code == 200:
+            json_response = json.loads(response.content)
+            current_count += len(json_response["result"]["results"])
+            results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+        else:
+            logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
+            raise Exception()
+
     return results
 
 def get_paginated_response(url, offset, limit, retval = []):
@@ -101,8 +109,13 @@ def sync_documents():
     conn = db.getDirectConnection()
 
     start_dt = datetime.now()
-    all_datasets = fetch_datasets()
-    logger.info('...Registry result got. Updating DB...')
+    all_datasets = []
+    try:
+        all_datasets = fetch_datasets()
+        logger.info('...Registry result got. Updating DB...')
+    except Exception as e:
+        logger.error('Failed to fetch datasets from Registry')
+        raise
 
     for dataset in all_datasets:   
         try:    
@@ -147,8 +160,11 @@ def refresh():
         logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
-    sync_documents()
-    logger.info('Documents synced.')
+    try:
+        sync_documents()
+        logger.info('Documents synced.')
+    except Exception as e:
+        logger.error('Documents failed to sync.')
       
     logger.info('End refresh.')
 
