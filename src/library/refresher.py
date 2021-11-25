@@ -78,6 +78,13 @@ def sync_publishers():
     start_dt = datetime.now()
     publisher_list = get_paginated_response("https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
 
+    known_publishers_num = db.getNumPublishers(conn)
+    if len(publisher_list) < (config['PUBLISHER_SAFETY_PERCENTAGE']/100) * known_publishers_num:
+        logger.error('Number of publishers reported by registry: ' + str(len(publisher_list)) + ', is less than ' + str(config['PUBLISHER_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_publishers_num) + ', NOT Updating Publishers at this time.')
+        conn.close()
+        raise
+
+    logger.info('Syncing Publishers to DB...')
     for publisher_name in publisher_list:
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
@@ -133,8 +140,11 @@ def refresh():
     logger.info('Begin refresh')       
 
     logger.info('Syncing publishers from the Registry...')
-    sync_publishers()
-    logger.info('Publishers synced. Updating publishers in DB...')
+    try:
+        sync_publishers()
+        logger.info('Publishers synced.')
+    except Exception as e:
+        logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
     sync_documents()
