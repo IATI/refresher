@@ -137,7 +137,9 @@ def sync_documents():
     container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
-
+    if len(stale_datasets) > 0:
+        logger.info('Removing ' + str(len(stale_datasets)) + ' stale documents')
+        
     for dataset in stale_datasets:
         file_id = dataset[0]
         file_hash = dataset[1]
