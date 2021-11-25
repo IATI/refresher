@@ -115,7 +115,15 @@ def sync_documents():
         logger.info('...Registry result got. Updating DB...')
     except Exception as e:
         logger.error('Failed to fetch datasets from Registry')
+        conn.close()
         raise
+    
+    known_documents_num = db.getNumDocuments(conn)
+    if len(all_datasets) < (config['DOCUMENT_SAFETY_PERCENTAGE']/100) * known_documents_num:
+        logger.error('Number of documents reported by registry: ' + str(len(all_datasets)) + ', is less than ' + str(config['DOCUMENT_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_documents_num) + ', NOT Updating Documents at this time.')
+        conn.close()
+        raise
+    
 
     for dataset in all_datasets:   
         try:    
@@ -152,12 +160,12 @@ def sync_documents():
 def refresh():        
     logger.info('Begin refresh')       
 
-    logger.info('Syncing publishers from the Registry...')
-    try:
-        sync_publishers()
-        logger.info('Publishers synced.')
-    except Exception as e:
-        logger.error('Publishers failed to sync.')
+    # logger.info('Syncing publishers from the Registry...')
+    # try:
+    #     sync_publishers()
+    #     logger.info('Publishers synced.')
+    # except Exception as e:
+    #     logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
     try:

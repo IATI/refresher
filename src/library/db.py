@@ -729,3 +729,18 @@ def getNumPublishers(conn):
     results = cur.fetchone()
     cur.close()
     return results[0]
+
+def getNumDocuments(conn): 
+
+    cur = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) FROM document
+        """
+
+    cur.execute(sql)
+
+    conn.commit()
+    results = cur.fetchone()
+    cur.close()
+    return results[0]
