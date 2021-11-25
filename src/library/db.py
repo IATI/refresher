@@ -714,3 +714,33 @@ def updateAdhocValidationState(conn, doc_hash, state, report):
 
     cur.execute(sql, data)
     conn.commit()
+
+def getNumPublishers(conn): 
+
+    cur = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) FROM publisher
+        """
+
+    cur.execute(sql)
+
+    conn.commit()
+    results = cur.fetchone()
+    cur.close()
+    return results[0]
+
+def getNumDocuments(conn): 
+
+    cur = conn.cursor()
+
+    sql = """
+        SELECT COUNT(*) FROM document
+        """
+
+    cur.execute(sql)
+
+    conn.commit()
+    results = cur.fetchone()
+    cur.close()
+    return results[0]

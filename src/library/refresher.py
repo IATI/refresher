@@ -43,19 +43,27 @@ def requests_retry_session(
 def fetch_datasets():
     results = []
     api_url = "https://iatiregistry.org/api/3/action/package_search?rows=1000"
-    response = requests_retry_session().get(url=api_url, timeout=30).content
-    json_response = json.loads(response)
-    full_count = json_response["result"]["count"]
-    current_count = len(json_response["result"]["results"])
-    results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    response = requests_retry_session().get(url=api_url, timeout=30)
+    if response.status_code == 200:
+        json_response = json.loads(response.content)
+        full_count = json_response["result"]["count"]
+        current_count = len(json_response["result"]["results"])
+        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+    else:
+        logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
+        raise Exception()
 
     while current_count < full_count:
         next_api_url = "{}&start={}".format(api_url, current_count)
-        response = requests_retry_session().get(url=next_api_url, timeout=30).content
-        json_response = json.loads(response)
-        current_count += len(json_response["result"]["results"])
-        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
-    
+        response = requests_retry_session().get(url=next_api_url, timeout=30)
+        if response.status_code == 200:
+            json_response = json.loads(response.content)
+            current_count += len(json_response["result"]["results"])
+            results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
+        else:
+            logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
+            raise Exception()
+
     return results
 
 def get_paginated_response(url, offset, limit, retval = []):
@@ -78,6 +86,13 @@ def sync_publishers():
     start_dt = datetime.now()
     publisher_list = get_paginated_response("https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
 
+    known_publishers_num = db.getNumPublishers(conn)
+    if len(publisher_list) < (config['PUBLISHER_SAFETY_PERCENTAGE']/100) * known_publishers_num:
+        logger.error('Number of publishers reported by registry: ' + str(len(publisher_list)) + ', is less than ' + str(config['PUBLISHER_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_publishers_num) + ', NOT Updating Publishers at this time.')
+        conn.close()
+        raise
+
+    logger.info('Syncing Publishers to DB...')
     for publisher_name in publisher_list:
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
@@ -94,8 +109,21 @@ def sync_documents():
     conn = db.getDirectConnection()
 
     start_dt = datetime.now()
-    all_datasets = fetch_datasets()
-    logger.info('...Registry result got. Updating DB...')
+    all_datasets = []
+    try:
+        all_datasets = fetch_datasets()
+        logger.info('...Registry result got. Updating DB...')
+    except Exception as e:
+        logger.error('Failed to fetch datasets from Registry')
+        conn.close()
+        raise
+    
+    known_documents_num = db.getNumDocuments(conn)
+    if len(all_datasets) < (config['DOCUMENT_SAFETY_PERCENTAGE']/100) * known_documents_num:
+        logger.error('Number of documents reported by registry: ' + str(len(all_datasets)) + ', is less than ' + str(config['DOCUMENT_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_documents_num) + ', NOT Updating Documents at this time.')
+        conn.close()
+        raise
+    
 
     for dataset in all_datasets:   
         try:    
@@ -109,7 +137,9 @@ def sync_documents():
     container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
     #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
-
+    if len(stale_datasets) > 0:
+        logger.info('Removing ' + str(len(stale_datasets)) + ' stale documents')
+        
     for dataset in stale_datasets:
         file_id = dataset[0]
         file_hash = dataset[1]
@@ -133,12 +163,18 @@ def refresh():
     logger.info('Begin refresh')       
 
     logger.info('Syncing publishers from the Registry...')
-    sync_publishers()
-    logger.info('Publishers synced. Updating publishers in DB...')
+    try:
+        sync_publishers()
+        logger.info('Publishers synced.')
+    except Exception as e:
+        logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
-    sync_documents()
-    logger.info('Documents synced.')
+    try:
+        sync_documents()
+        logger.info('Documents synced.')
+    except Exception as e:
+        logger.error('Documents failed to sync.')
       
     logger.info('End refresh.')
 
