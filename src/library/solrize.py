@@ -37,7 +37,7 @@ def process_hash_list(document_datasets):
 
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
-            if flattened_activities is None:
+            if flattened_activities is None or flattened_activities[0] is None:
                 continue
 
             solr_cores['activity'] = addCore('activity')
