@@ -151,7 +151,7 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, validation_api_error 
+    SELECT hash, downloaded, id, url, validation_api_error, publisher
     FROM document 
     WHERE downloaded is not null AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
@@ -649,7 +649,7 @@ def removePublishersNotSeenAfter(conn, dt):
     conn.commit()
     cur.close()
 
-def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
+def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, report):
 
     cur = conn.cursor()
 
@@ -662,8 +662,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         return
 
     sql = """
-        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report)  
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s)
+        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher)
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s)
         ON CONFLICT (document_hash) DO
             UPDATE SET report = %(report)s,
                 valid = %(valid)s,
@@ -681,7 +681,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, state, report):
         "doc_url": doc_url,
         "created": datetime.now(),
         "valid": state,
-        "report": report
+        "report": report,
+        "publisher": publisher
     }
 
     cur.execute(sql, data)
