@@ -153,7 +153,7 @@ def getUnvalidatedDatasets(conn):
     sql = """
     SELECT hash, downloaded, id, url, validation_api_error, publisher
     FROM document 
-    WHERE downloaded is not null AND (validation is Null OR regenerate_validation_report is True) 
+    WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
     """
     cur.execute(sql)    
@@ -466,7 +466,7 @@ def resetFailedFlattens(conn):
 def updateFileAsDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = %(dt)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"
 
     date = datetime.now()
 
