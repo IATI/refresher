@@ -153,7 +153,7 @@ def getUnvalidatedDatasets(conn):
     sql = """
     SELECT hash, downloaded, id, url, validation_api_error, publisher
     FROM document 
-    WHERE downloaded is not null AND (validation is Null OR regenerate_validation_report is True) 
+    WHERE downloaded is not null AND download_error is not null AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
     """
     cur.execute(sql)    
