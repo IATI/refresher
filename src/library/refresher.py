@@ -246,6 +246,9 @@ def download_chunk(chunk, blob_service_client, datasets):
                 try:
                     detect_result = chardet.detect(download_xml)
                     charset = detect_result['encoding']
+                    # log error for undetectable charset, prevent PDFs from being downloaded to Unified Platform
+                    if charset is None:
+                        db.updateFileAsDownloadError(conn, id, 0 )
                 except:
                     charset = 'UTF-8'
                 blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
