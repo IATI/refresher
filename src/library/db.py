@@ -466,7 +466,7 @@ def resetFailedFlattens(conn):
 def updateFileAsDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = %(dt)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"
 
     date = datetime.now()
 
