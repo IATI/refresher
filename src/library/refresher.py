@@ -17,6 +17,7 @@ import chardet
 from lxml import etree
 from io import BytesIO
 import hashlib
+import time
 
 
 logger = getLogger() #/action/organization_list
@@ -54,6 +55,8 @@ def fetch_datasets():
         raise Exception()
 
     while current_count < full_count:
+        time.sleep(1)   
+        logger.info('Current count:' + str(current_count) + ', full count: ' + str(full_count))
         next_api_url = "{}&start={}".format(api_url, current_count)
         response = requests_retry_session().get(url=next_api_url, timeout=30)
         if response.status_code == 200:
@@ -64,6 +67,7 @@ def fetch_datasets():
             logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
             raise Exception()
 
+    logger.info('Final count:' + str(current_count) + ', full count: ' + str(full_count))
     return results
 
 def get_paginated_response(url, offset, limit, retval = []):
