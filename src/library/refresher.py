@@ -54,20 +54,42 @@ def fetch_datasets():
         logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
         raise Exception()
 
-    while current_count < full_count:
-        time.sleep(1)   
-        logger.info('Current count:' + str(current_count) + ', full count: ' + str(full_count))
+    live_count = full_count
+    last_live_count = None
+    last_current_count = None
+    numbers_not_changing_count = 0    
+
+    while current_count < live_count:
+        time.sleep(1)
+        
         next_api_url = "{}&start={}".format(api_url, current_count)
         response = requests_retry_session().get(url=next_api_url, timeout=30)
         if response.status_code == 200:
             json_response = json.loads(response.content)
+            
+            live_count = json_response["result"]["count"]
+            
+            if live_count != full_count:
+                logger.info('The count changed whilst in the run - started at ' + str(full_count) + ', now at ' + str(live_count))
+            
             current_count += len(json_response["result"]["results"])
+
+            if current_count == last_current_count and live_count == last_live_count:
+                numbers_not_changing_count = numbers_not_changing_count + 1
+
+            if numbers_not_changing_count > 4:
+                logger.warning('Numbers appear to have been the same for five iterations, indicating a problem - raising exception to end run.')
+                raise Exception()
+            
+            last_current_count = current_count
+            last_live_count = live_count
+
             results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]} for result in json_response["result"]["results"] for resource in result["resources"]]
         else:
             logger.error('IATI Registry returned ' + str(response.status_code) + ' when getting document metadata from https://iatiregistry.org/api/3/action/package_search')
             raise Exception()
 
-    logger.info('Final count:' + str(current_count) + ', full count: ' + str(full_count))
+    logger.info('Final count:' + str(current_count) + ', full count: ' + str(live_count))
     return results
 
 def get_paginated_response(url, offset, limit, retval = []):
@@ -168,7 +190,7 @@ def refresh():
 
     logger.info('Syncing publishers from the Registry...')
     try:
-        sync_publishers()
+        #sync_publishers()
         logger.info('Publishers synced.')
     except Exception as e:
         logger.error('Publishers failed to sync.')
