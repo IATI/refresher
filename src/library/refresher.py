@@ -190,7 +190,7 @@ def refresh():
 
     logger.info('Syncing publishers from the Registry...')
     try:
-        #sync_publishers()
+        sync_publishers()
         logger.info('Publishers synced.')
     except Exception as e:
         logger.error('Publishers failed to sync.')
