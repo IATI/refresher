@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
       - name: "Build and push image"
-      - run: |
+        run: |
           docker build . -f refresh-dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
           docker build . -f validate-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
