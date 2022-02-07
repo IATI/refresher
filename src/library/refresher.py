@@ -120,6 +120,7 @@ def sync_publishers():
 
     logger.info('Syncing Publishers to DB...')
     for publisher_name in publisher_list:
+        time.sleep(1)
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
             response = requests_retry_session().get(url=api_url, timeout=30).content
