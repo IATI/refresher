@@ -280,6 +280,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 except:
                     charset = 'UTF-8'
                 blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
+                blob_client.set_blob_tags({ "document_id": id })
                 db.updateFileAsDownloaded(conn, id)
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
