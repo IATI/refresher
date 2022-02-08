@@ -18,6 +18,7 @@ from lxml import etree
 from io import BytesIO
 import hashlib
 import time
+from library.solrize import addCore
 
 
 logger = getLogger() #/action/organization_list
@@ -151,36 +152,64 @@ def sync_documents():
         conn.close()
         raise
     
+    stale_datasets = []
 
     for dataset in all_datasets:   
-        try:    
+        try:
+            changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
+            if changed is not None:
+                stale_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except Exception as e:
             logger.error('Failed to sync document with url ' + dataset['url'])
     
-    stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
-
+    stale_datasets += db.getFilesNotSeenAfter(conn, start_dt)
+   
     blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
     container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
-    #todo perhaps - There's an argument for leaving the source files, or archiving them, or keeping a history, or whatever.
+    # remove raw xml for hash's that are stale, remove document from solr
     if len(stale_datasets) > 0:
         logger.info('Removing ' + str(len(stale_datasets)) + ' stale documents')
-        
-    for dataset in stale_datasets:
-        file_id = dataset[0]
-        file_hash = dataset[1]
-        try:
-            container_client.delete_blob(file_hash + '.xml')
-        except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
 
-        solr = pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + 'activity/', always_commit=False, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
-
+        # prep solr connections
         try:
-            solr.delete(q='iati_activities_document_id:' + file_id)
+            solr_cores = {}
+            solr_cores['activity'] = addCore('activity')
+            explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])        
+
+            for core_name in explode_elements:
+                solr_cores[core_name] = addCore(core_name)
+            
+            for core_name in solr_cores:
+                solr_cores[core_name].ping()
         except Exception as e:
-            logger.warning('Failed to remove documents from Solr with document id ' + file_id)
+            logger.error('ERROR with Initialising Solr to delete stale documents')
+            print(traceback.format_exc())
+            if hasattr(e, 'args'):                     
+                logger.error(e.args[0])
+            if hasattr(e, 'message'):                         
+                logger.error(e.message)
+            if hasattr(e, 'msg'):                         
+                logger.error(e.msg)
+            try:
+                logger.warning(e.args[0])
+            except:
+                pass  
+        
+        for (file_id, file_hash) in stale_datasets:
+            # remove blob
+            try:
+                container_client.delete_blob(file_hash + '.xml')
+            except (AzureExceptions.ResourceNotFoundError) as e:
+                logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
+            
+            # remove from all solr collections
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)  
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 

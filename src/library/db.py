@@ -608,6 +608,24 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     conn.commit()
     cur.close()
 
+def getFileWhereHashChanged(conn, id, hash):
+    cur = conn.cursor()
+
+    sql = """
+        SELECT id, hash FROM document 
+        WHERE document.id=%(id)s and document.hash != %(hash)s;
+    """
+
+    data = {
+        "id": id,
+        "hash": hash
+    }
+
+    cur.execute(sql,data)
+    results = cur.fetchone()
+    cur.close()
+    return results
+
 def getFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
