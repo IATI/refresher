@@ -218,12 +218,12 @@ def sync_documents():
 def refresh():        
     logger.info('Begin refresh')       
 
-    # logger.info('Syncing publishers from the Registry...')
-    # try:
-    #     sync_publishers()
-    #     logger.info('Publishers synced.')
-    # except Exception as e:
-    #     logger.error('Publishers failed to sync.')
+    logger.info('Syncing publishers from the Registry...')
+    try:
+        sync_publishers()
+        logger.info('Publishers synced.')
+    except Exception as e:
+        logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
     try:
