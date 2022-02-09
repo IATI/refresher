@@ -630,7 +630,7 @@ def getFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
-        SELECT id, hash, url FROM document WHERE last_seen < %s
+        SELECT id, hash FROM document WHERE last_seen < %s
     """
 
     data = (dt,)
