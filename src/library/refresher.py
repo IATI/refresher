@@ -108,6 +108,76 @@ def get_paginated_response(url, offset, limit, retval = []):
     except Exception as e:
         logger.error('IATI Registry returned other than 200 when getting the list of orgs')
 
+def clean_datasets(conn, stale_datasets, changed_datasets):
+    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
+    
+    # clean up activity lake for stale_datasets, doesn't need to be done for changed_datasets as iati-identifiers hash probably didn't change
+    if len(stale_datasets) > 0:
+        try:
+            logger.info('Removing ' + str(len(stale_datasets)) + ' stale documents from lake')
+            lake_container_client = blob_service_client.get_container_client(config['ACTIVITIES_LAKE_CONTAINER_NAME'])
+
+            for (file_id, file_hash) in stale_datasets:
+                filter_config = "@container='"+ str(config["ACTIVITIES_LAKE_CONTAINER_NAME"]) + "' and dataset_hash='" + file_hash + "'"
+                assoc_blobs = blob_service_client.find_blobs_by_tags(filter_config)
+                name_list = [ blob['name'] for blob in assoc_blobs ]
+                max_blob_delete = config['MAX_BLOB_DELETE']
+                if len(name_list) > max_blob_delete:
+                    chunked_list = [name_list[i:i + max_blob_delete] for i in range(0, len(name_list), max_blob_delete)] 
+                    for list_chunk in chunked_list:
+                        lake_container_client.delete_blobs(*list_chunk)
+                else:
+                    lake_container_client.delete_blobs(*name_list)
+        except Exception as e:
+            logger.warning('Failed to clean up lake for id ' + file_id + ' and hash ' + file_hash, e)
+
+    # clean up source xml and solr for both stale and changed datasets
+    combined_datasets_toclean = stale_datasets + changed_datasets
+    if len(combined_datasets_toclean) > 0:
+        logger.info('Removing ' + str(len(stale_datasets)) + ' stale and ' + str(len(changed_datasets)) + ' changed documents')
+
+        # prep solr connections
+        try:
+            solr_cores = {}
+            solr_cores['activity'] = addCore('activity')
+            explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])        
+
+            for core_name in explode_elements:
+                solr_cores[core_name] = addCore(core_name)
+            
+            for core_name in solr_cores:
+                solr_cores[core_name].ping()
+        except Exception as e:
+            logger.error('ERROR with Initialising Solr to delete stale or changed documents')
+            print(traceback.format_exc())
+            if hasattr(e, 'args'):                     
+                logger.error(e.args[0])
+            if hasattr(e, 'message'):                         
+                logger.error(e.message)
+            if hasattr(e, 'msg'):                         
+                logger.error(e.msg)
+            try:
+                logger.warning(e.args[0])
+            except:
+                pass  
+
+        source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
+
+        for (file_id, file_hash) in combined_datasets_toclean:
+            # remove source xml
+            try:
+                source_container_client.delete_blob(file_hash + '.xml')
+            except (AzureExceptions.ResourceNotFoundError) as e:
+                logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
+            
+            # remove from all solr collections
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)  
+
+
 def sync_publishers():
     conn = db.getDirectConnection()
     start_dt = datetime.now()
@@ -152,64 +222,21 @@ def sync_documents():
         conn.close()
         raise
     
-    stale_datasets = []
+    changed_datasets = []
 
     for dataset in all_datasets:   
         try:
             changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
             if changed is not None:
-                stale_datasets += [changed]
+                changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except Exception as e:
             logger.error('Failed to sync document with url ' + dataset['url'])
     
-    stale_datasets += db.getFilesNotSeenAfter(conn, start_dt)
-   
-    blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-    container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
+    stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
-    # remove raw xml for hash's that are stale, remove document from solr
-    if len(stale_datasets) > 0:
-        logger.info('Removing ' + str(len(stale_datasets)) + ' stale documents')
-
-        # prep solr connections
-        try:
-            solr_cores = {}
-            solr_cores['activity'] = addCore('activity')
-            explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])        
-
-            for core_name in explode_elements:
-                solr_cores[core_name] = addCore(core_name)
-            
-            for core_name in solr_cores:
-                solr_cores[core_name].ping()
-        except Exception as e:
-            logger.error('ERROR with Initialising Solr to delete stale documents')
-            print(traceback.format_exc())
-            if hasattr(e, 'args'):                     
-                logger.error(e.args[0])
-            if hasattr(e, 'message'):                         
-                logger.error(e.message)
-            if hasattr(e, 'msg'):                         
-                logger.error(e.msg)
-            try:
-                logger.warning(e.args[0])
-            except:
-                pass  
-        
-        for (file_id, file_hash) in stale_datasets:
-            # remove blob
-            try:
-                container_client.delete_blob(file_hash + '.xml')
-            except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
-            
-            # remove from all solr collections
-            for core_name in solr_cores:
-                try:
-                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
-                except:
-                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)  
+    if (len(changed_datasets) > 0 or len(stale_datasets) > 0):
+        clean_datasets(conn, stale_datasets, changed_datasets)   
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 
