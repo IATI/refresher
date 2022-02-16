@@ -23,6 +23,7 @@ from library.solrize import addCore
 
 logger = getLogger() #/action/organization_list
 
+
 def requests_retry_session(
     retries=10,
     backoff_factor=0.3,
@@ -42,6 +43,7 @@ def requests_retry_session(
     session.mount('https://', adapter)
     return session
 
+
 def fetch_datasets():
     results = []
     api_url = "https://iatiregistry.org/api/3/action/package_search?rows=1000"
@@ -58,21 +60,21 @@ def fetch_datasets():
     live_count = full_count
     last_live_count = None
     last_current_count = None
-    numbers_not_changing_count = 0    
+    numbers_not_changing_count = 0
 
     while current_count < live_count:
         time.sleep(1)
-        
+
         next_api_url = "{}&start={}".format(api_url, current_count)
         response = requests_retry_session().get(url=next_api_url, timeout=30)
         if response.status_code == 200:
             json_response = json.loads(response.content)
-            
+
             live_count = json_response["result"]["count"]
-            
+
             if live_count != full_count:
                 logger.info('The count changed whilst in the run - started at ' + str(full_count) + ', now at ' + str(live_count))
-            
+
             current_count += len(json_response["result"]["results"])
 
             if current_count == last_current_count and live_count == last_live_count:
@@ -81,7 +83,7 @@ def fetch_datasets():
             if numbers_not_changing_count > 4:
                 logger.warning('Numbers appear to have been the same for five iterations, indicating a problem - raising exception to end run.')
                 raise Exception()
-            
+
             last_current_count = current_count
             last_live_count = live_count
 
@@ -92,6 +94,7 @@ def fetch_datasets():
 
     logger.info('Final count:' + str(current_count) + ', full count: ' + str(live_count))
     return results
+
 
 def get_paginated_response(url, offset, limit, retval = []):
     api_url = url + "?offset=" + str(offset) + "&limit=" + str(limit)
@@ -108,9 +111,10 @@ def get_paginated_response(url, offset, limit, retval = []):
     except Exception as e:
         logger.error('IATI Registry returned other than 200 when getting the list of orgs')
 
+
 def clean_datasets(conn, stale_datasets, changed_datasets):
     blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-    
+
     # clean up activity lake for stale_datasets, doesn't need to be done for changed_datasets as iati-identifiers hash probably didn't change
     if len(stale_datasets) > 0:
         try:
@@ -150,11 +154,11 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
         except Exception as e:
             logger.error('ERROR with Initialising Solr to delete stale or changed documents')
             print(traceback.format_exc())
-            if hasattr(e, 'args'):                     
+            if hasattr(e, 'args'):
                 logger.error(e.args[0])
-            if hasattr(e, 'message'):                         
+            if hasattr(e, 'message'):
                 logger.error(e.message)
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 logger.error(e.msg)
             try:
                 logger.warning(e.args[0])
@@ -169,13 +173,13 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 source_container_client.delete_blob(file_hash + '.xml')
             except (AzureExceptions.ResourceNotFoundError) as e:
                 logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
-            
+
             # remove from all solr collections
             for core_name in solr_cores:
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)  
+                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)
 
 
 def sync_publishers():
@@ -199,9 +203,10 @@ def sync_publishers():
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
         except Exception as e:
             logger.error('Failed to sync publisher with name ' + publisher_name)
-    
+
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
+
 
 def sync_documents():
     conn = db.getDirectConnection()
@@ -215,16 +220,16 @@ def sync_documents():
         logger.error('Failed to fetch datasets from Registry')
         conn.close()
         raise
-    
+
     known_documents_num = db.getNumDocuments(conn)
     if len(all_datasets) < (config['DOCUMENT_SAFETY_PERCENTAGE']/100) * known_documents_num:
         logger.error('Number of documents reported by registry: ' + str(len(all_datasets)) + ', is less than ' + str(config['DOCUMENT_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_documents_num) + ', NOT Updating Documents at this time.')
         conn.close()
         raise
-    
+
     changed_datasets = []
 
-    for dataset in all_datasets:   
+    for dataset in all_datasets:
         try:
             changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
             if changed is not None:
@@ -232,18 +237,19 @@ def sync_documents():
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except Exception as e:
             logger.error('Failed to sync document with url ' + dataset['url'])
-    
+
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
     if (len(changed_datasets) > 0 or len(stale_datasets) > 0):
-        clean_datasets(conn, stale_datasets, changed_datasets)   
+        clean_datasets(conn, stale_datasets, changed_datasets)
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 
     conn.close()
 
-def refresh():        
-    logger.info('Begin refresh')       
+
+def refresh():
+    logger.info('Begin refresh')
 
     logger.info('Syncing publishers from the Registry...')
     try:
@@ -258,8 +264,9 @@ def refresh():
         logger.info('Documents synced.')
     except Exception as e:
         logger.error('Documents failed to sync.')
-      
+
     logger.info('End refresh.')
+
 
 def reload(retry_errors):
     logger.info('Start reload...')
@@ -273,7 +280,7 @@ def reload(retry_errors):
     processes = []
 
     logger.info('Downloading ' + str(len(datasets)) + ' files in a maximum of ' + str(config['PARALLEL_PROCESSES']) + ' processes.' )
-    
+
     for chunk in chunked_datasets:
         if len(chunk) == 0:
             continue
@@ -293,24 +300,27 @@ def reload(retry_errors):
 
     logger.info("Reload complete.")
 
+
 def service_loop():
     logger.info("Start service loop")
     count = 0
     while True:
         count = count + 1
         refresh()
-        
+
         if count > config['RETRY_ERRORS_AFTER_LOOP']:
             count = 0
             reload(True)
         else:        
             reload(False)
-            
+
         time.sleep(config['SERVICE_LOOP_SLEEP'])
+
 
 def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
+
 
 def download_chunk(chunk, blob_service_client, datasets):
     conn = db.getDirectConnection()
@@ -320,6 +330,11 @@ def download_chunk(chunk, blob_service_client, datasets):
         id = dataset[0]
         hash = dataset[1]
         url = dataset[2]
+
+        if hash == '':
+            # Blank hash indicates the Registry has never successfully fetched the file, so mark download_error
+            db.updateFileAsDownloadError(conn, id, 404)
+            continue
 
         try:
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
@@ -348,4 +363,3 @@ def download_chunk(chunk, blob_service_client, datasets):
             logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
         except Exception as e:
             logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
-            
