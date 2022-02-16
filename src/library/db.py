@@ -496,11 +496,10 @@ def updateFileAsNotDownloaded(conn, id):
 def updateFileAsDownloadError(conn, id, status):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = null, download_error = %(status)s WHERE id = %(id)s"
 
     data = {
         "id": id,
-        "dt": datetime.now(),
         "status": status
     }
 
