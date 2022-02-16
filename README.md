@@ -254,3 +254,42 @@ UPDATE document
 SET lakify_end = %(now)s, lakify_error = null
 WHERE id = %(doc_id)s
 ```
+
+# Solrize
+
+service_loop() calls main(), then sleeps for 60 seconds
+
+- service_loop() 
+  - Get unsolrized documents
+
+```sql
+FROM document as doc
+    LEFT JOIN validation as val ON doc.hash = val.document_hash
+    WHERE downloaded is not null 
+    AND doc.flatten_end is not null
+    AND doc.lakify_end is not null
+    AND doc.solrize_end is null
+	  AND doc.hash != ''
+    AND val.report ? 'iatiVersion' 
+    AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%'
+```
+
+  - process_hash_list()
+    - For each document, get Flattened activities (db.getFlattenedActivitiesForDoc)
+
+```sql
+SELECT flattened_activities
+    FROM document as doc
+    WHERE doc.hash = %(hash)s
+```
+
+  - If flattened activities are present, continue, otherwise break out of loop for that document
+  - Initialise and test connection to the Solr collections
+  - Update solr start (db.updateSolrizeStartDate)
+  - Removes documents from Solr for the `document.id` to start fresh
+  - Download each activity from the lake
+  - Add `iati_xml` field to flattened activity, index to `activity` collection
+  - Remove `iati_xml` field, index to exploded collections
+  - Update db that solrizing is complete for that hash (db.completeSolrize)
+  
