@@ -97,7 +97,201 @@ Service Loop (when container starts)
 
 - refresh()
   - sync_publishers() - gets publisher metadata from registry and saves to DB (table: publisher)
+    - removes any publishers where `document.last_seen` is from a previous run (so no longer in registry)
   - sync_documents() - gets document metadata from registry and saves to DB (table: document)
-- reload()
-  - Gets documents to download from DB
+    - Checks for `changed_datasets` - `document.id` is same, but `document.hash` has changed
+    - Updates DB with all documents
+      - If there is a conflict with `document.id`, `hash,url,modified,downloaded,download_error` are updated along with `validation_*`, `lakify_*`, `flatten_*`, and `solrize_*` columns
+    - Checks for `stale_datasets` - `document.last_seen` is from a previous run (so no longer in registry)
+    - clean_datasets()
+      - Removes `stale_datasets` from Activity lake, decided it wasn't worth updating `changed_datasets` from activity lake because filenames are hash of `iati_identifier` so less likely to change.
+      - Removes `changed_datasets` and `stale_datasets` from source xml blob container and Solr.
+    - Removes `stale_datasets` from DB documents table
+- reload(retry_errors)
+  - `retry_errors` is True after RETRY_ERRORS_AFTER_LOOP refreshes.
+  - Gets documents to download from DB (db.getRefreshDataset)
+    - If `retry_errors=true` - `"SELECT id, hash, url FROM document WHERE downloaded is null"`
+    - Else - `"SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"`
   - Downloads docs from publisher's URL, saves to Blob storage, updates DB
+    - download_chunk()
+      - If successfully uploaded to Blob - `db.updateFileAsDownloaded`
+        `"UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"`
+      - If error occurs `db.updateFileAsDownloadError`
+        - Not 200 - `document.download_error` = status code
+        - Connection Error `document.download_error = 0`
+        - SSL Issue `document.download_error = 1`
+        - Charset detection issue `document.download_error = 2`
+      - If `AzureExceptions.ServiceResponseError` or other Exception
+        - Warning logged, DB not updated
+
+# Validator Logic
+
+service_loop() calls main(), then sleeps for 60 seconds
+
+- main()
+  - Gets unvalidated documents (db.getUnvalidatedDatasets)
+
+```sql
+FROM document
+WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True)
+```
+
+- process_hash_list()
+  - Takes document, downloads from Azure blobs
+    - If charset undetectable, breaks out of loop for that document
+  - POST's to validator API
+  - Updates Validation Request Time in db (db.updateValidationRequestDate)
+    - `document.validation_request`
+  - If Validator Response status code != 200
+    - `400, 413, 422`
+      - Log status_code in db (db.updateValidationError)
+      - Since "expected" and we move on to save report into db
+    - `400 - 499`
+      - Log status_code in db, break out of loop
+    - `> 500`
+      - Log status_code in db, break out of loop
+    - `else`
+      - warning logged, nothing in db, we continue on
+  - If exception
+    - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
+    - Other Exception, log message, no change to DB
+  - Save report into DB (db.updateValidationState)
+    - If `state` is None (bad report) `"UPDATE document SET validation=null WHERE hash=%s"`
+    - If ok, save report into `validation` table, set `document.validation = hash` and `document.regenerate_validation_report = False`
+
+# Flattener Logic
+
+service_loop() calls main(), then sleeps for 60 seconds
+
+- main()
+  - Reset unfinished flattens
+
+```sql
+UPDATE document
+SET flatten_start=null
+WHERE flatten_end is null
+```
+
+  - Get unflattened (db.getUnflattenedDatasets) - downloaded exists, validated where valid = true, flatten_start = Null, fileType = 'iati-activities'
+
+```sql
+FROM document as doc
+LEFT JOIN validation as val ON doc.validation = val.document_hash
+WHERE doc.downloaded is not null
+AND doc.flatten_start is Null
+AND val.valid = true
+AND val.report ->> 'fileType' = 'iati-activities'
+```
+
+  - process_hash_list()
+    - If prior_error = 422, 400, 413, break out of loop for this file
+    - Start flatten in db (db.startFlatten)
+
+```sql
+UPDATE document
+SET flatten_start = %(now)s, flatten_api_error = null
+WHERE id = %(doc_id)s
+```
+
+ - Download source XML from Azure blobs
+      - If charset error, breaks out of loop for file
+    - POST's to flattener API
+    - Update Solrize start `"UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"`
+    - If status code != 200
+      - `404` - update DB `document.flatten_api_error`, pause 1min, continue loop
+      - `400 - 499` - update DB `document.flatten_api_error`, break out of loop
+      - `500 +` - update DB `document.flatten_api_error`, break out of loop
+      - else - log warning, continue
+    - If exception
+      - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
+      - Other Exception, log message, no change to DB
+
+# Lakify
+
+service_loop() calls main(), then sleeps for 60 seconds
+
+- main()
+  - Reset unfinished lakifies
+
+```sql
+UPDATE document
+SET lakify_start=null
+WHERE lakify_end is null
+AND lakify_error is not null
+```
+
+  - Get unlakified documents
+
+```sql
+FROM document as doc
+LEFT JOIN validation as val ON doc.validation = val.document_hash
+WHERE doc.downloaded is not null
+AND doc.lakify_start is Null
+AND val.valid = true
+```
+
+  - process_hash_list()
+    - If prior_error = 422, 400, 413, break out of loop for this file
+    - Start lakify in DB
+
+```sql
+UPDATE document
+SET lakify_start = %(now)s, lakify_error = null
+WHERE id = %(doc_id)s
+```
+
+  - Download source XML from Azure blobs
+  - Breaks into individual activities
+  - If there is an activity, create hash of iati-identifier and set that as filename
+  - Save that file to Azure Blobs activity lake
+  - If Exception
+    - `etree.XMLSyntaxError, etree.SerialisationError`
+      - Log warning, log error to DB
+    - Other Exception
+      - Log error, log error to DB
+  - complete lakify in db (db.completeLakify)
+
+```sql
+UPDATE document
+SET lakify_end = %(now)s, lakify_error = null
+WHERE id = %(doc_id)s
+```
+
+# Solrize
+
+service_loop() calls main(), then sleeps for 60 seconds
+
+- service_loop() 
+  - Get unsolrized documents
+
+```sql
+FROM document as doc
+    LEFT JOIN validation as val ON doc.hash = val.document_hash
+    WHERE downloaded is not null 
+    AND doc.flatten_end is not null
+    AND doc.lakify_end is not null
+    AND doc.solrize_end is null
+	  AND doc.hash != ''
+    AND val.report ? 'iatiVersion' 
+    AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%'
+```
+
+  - process_hash_list()
+    - For each document, get Flattened activities (db.getFlattenedActivitiesForDoc)
+
+```sql
+SELECT flattened_activities
+    FROM document as doc
+    WHERE doc.hash = %(hash)s
+```
+
+  - If flattened activities are present, continue, otherwise break out of loop for that document
+  - Initialise and test connection to the Solr collections
+  - Update solr start (db.updateSolrizeStartDate)
+  - Removes documents from Solr for the `document.id` to start fresh
+  - Download each activity from the lake
+  - Add `iati_xml` field to flattened activity, index to `activity` collection
+  - Remove `iati_xml` field, index to exploded collections
+  - Update db that solrizing is complete for that hash (db.completeSolrize)
+  

@@ -496,11 +496,10 @@ def updateFileAsNotDownloaded(conn, id):
 def updateFileAsDownloadError(conn, id, status):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+    sql="UPDATE document SET downloaded = null, download_error = %(status)s WHERE id = %(id)s"
 
     data = {
         "id": id,
-        "dt": datetime.now(),
         "status": status
     }
 
@@ -608,11 +607,29 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     conn.commit()
     cur.close()
 
+def getFileWhereHashChanged(conn, id, hash):
+    cur = conn.cursor()
+
+    sql = """
+        SELECT id, hash FROM document 
+        WHERE document.id=%(id)s and document.hash != %(hash)s;
+    """
+
+    data = {
+        "id": id,
+        "hash": hash
+    }
+
+    cur.execute(sql,data)
+    results = cur.fetchone()
+    cur.close()
+    return results
+
 def getFilesNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
-        SELECT id, hash, url FROM document WHERE last_seen < %s
+        SELECT id, hash FROM document WHERE last_seen < %s
     """
 
     data = (dt,)
