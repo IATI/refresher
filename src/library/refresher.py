@@ -331,7 +331,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                     charset = detect_result['encoding']
                     # log error for undetectable charset, prevent PDFs from being downloaded to Unified Platform
                     if charset is None:
-                        db.updateFileAsDownloadError(conn, id, 0 )
+                        db.updateFileAsDownloadError(conn, id, 2 )
                         continue
                 except:
                     charset = 'UTF-8'
@@ -340,6 +340,8 @@ def download_chunk(chunk, blob_service_client, datasets):
                 db.updateFileAsDownloaded(conn, id)
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
+        except (requests.exceptions.SSLError) as e:
+            db.updateFileAsDownloadError(conn, id, 1)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
         except (AzureExceptions.ResourceNotFoundError) as e:
