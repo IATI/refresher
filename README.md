@@ -118,7 +118,9 @@ Service Loop (when container starts)
         `"UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"`
       - If error occurs `db.updateFileAsDownloadError`
         - Not 200 - `document.download_error` = status code
-        - Connection Error, or Charset Issue `document.download_error = 0`
+        - Connection Error `document.download_error = 0`
+        - SSL Issue `document.download_error = 1`
+        - Charset detection issue `document.download_error = 2`
       - If `AzureExceptions.ServiceResponseError` or other Exception
         - Warning logged, DB not updated
 
