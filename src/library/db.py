@@ -680,12 +680,13 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
 
     sql = """
         INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher)
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s)
-        ON CONFLICT (document_hash) DO
-            UPDATE SET report = %(report)s,
-                valid = %(valid)s,
-                created = %(created)s
-            WHERE validation.document_hash=%(doc_hash)s;
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s);
+        UPDATE document
+            SET validation = validation.id,
+            regenerate_validation_report = 'f'
+            FROM validation
+            WHERE document.hash = validation.document_hash AND
+            document.hash=%(doc_hash)s;
         UPDATE document 
             SET validation=%(doc_hash)s,
                 regenerate_validation_report = 'f'
