@@ -130,6 +130,9 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                     lake_container_client.delete_blobs(*name_list)
         except Exception as e:
             logger.warning('Failed to clean up lake for id ' + file_id + ' and hash ' + file_hash, e)
+    
+    logger.info('changed_datasets len:' + str(len(changed_datasets)))
+    logger.info('stale_datasets len:' + str(len(stale_datasets)))
 
     # clean up source xml and solr for both stale and changed datasets
     combined_datasets_toclean = stale_datasets + changed_datasets
@@ -227,13 +230,15 @@ def sync_documents():
     for dataset in all_datasets:   
         try:
             changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
+            logger.info('Changed: ' + str(changed) + '. For id: ' + dataset['id'] + '. And hash: ' + dataset['hash'])
             if changed is not None:
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except Exception as e:
-            logger.error('Failed to sync document with url ' + dataset['url'])
-    
+            logger.error('Failed to sync document with url ' + dataset['url'] + e.pgerror)
+    logger.info('Changed datasets len: ' + str(len(changed_datasets)))
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
+    logger.info('Stale datasets len: ' + str(len(stale_datasets)))
 
     if (len(changed_datasets) > 0 or len(stale_datasets) > 0):
         clean_datasets(conn, stale_datasets, changed_datasets)   
