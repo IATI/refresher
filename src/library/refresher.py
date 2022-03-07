@@ -129,7 +129,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 else:
                     lake_container_client.delete_blobs(*name_list)
         except Exception as e:
-            logger.warning('Failed to clean up lake for id ' + file_id + ' and hash ' + file_hash, e)
+            logger.warning('Failed to clean up lake for id ' + file_id + ' and hash ' + file_hash)
 
     # clean up source xml and solr for both stale and changed datasets
     combined_datasets_toclean = stale_datasets + changed_datasets
