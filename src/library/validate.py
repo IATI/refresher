@@ -30,6 +30,7 @@ def process_hash_list(document_datasets):
             file_url = file_data[3]
             prior_error = file_data[4]
             publisher = file_data[5]
+            publisher_name = file_data[6]
 
             logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
@@ -70,7 +71,7 @@ def process_hash_list(document_datasets):
 
             state = report.get('valid', None)
 
-            db.updateValidationState(conn, file_id, file_hash, file_url, publisher, state, json.dumps(report))
+            db.updateValidationState(conn, file_id, file_hash, file_url, publisher, state, json.dumps(report), publisher_name)
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')

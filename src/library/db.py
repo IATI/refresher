@@ -151,8 +151,10 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, validation_api_error, publisher
-    FROM document 
+    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name
+    FROM document
+    LEFT JOIN publisher
+        ON document.publisher = publisher.org_id
     WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
     """
@@ -666,7 +668,7 @@ def removePublishersNotSeenAfter(conn, dt):
     conn.commit()
     cur.close()
 
-def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, report):
+def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, report, publisher_name):
 
     cur = conn.cursor()
 
@@ -679,8 +681,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         return
 
     sql = """
-        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher)
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s);
+        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s);
         UPDATE document
             SET validation = validation.id,
             regenerate_validation_report = 'f'
@@ -700,7 +702,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         "created": datetime.now(),
         "valid": state,
         "report": report,
-        "publisher": publisher
+        "publisher": publisher,
+        "publisher_name": publisher_name
     }
 
     cur.execute(sql, data)

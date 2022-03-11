@@ -7,6 +7,9 @@ upgrade = """
     ALTER TABLE ONLY public.document
         ADD CONSTRAINT related_validation FOREIGN KEY (validation) REFERENCES public.validation(id);
     UPDATE public.document SET validation = validation.id FROM public.validation WHERE document.hash = validation.document_hash;
+
+    ALTER TABLE public.validation ADD COLUMN publisher_name character varying;
+    UPDATE public.validation SET publisher_name = publisher.name FROM public.publisher WHERE validation.publisher_id = publisher.org_id;
 """
 
 downgrade = """
@@ -20,4 +23,6 @@ downgrade = """
         ADD CONSTRAINT related_validation FOREIGN KEY (validation) REFERENCES public.validation(document_hash);
     UPDATE public.document SET validation = validation.document_hash FROM public.validation WHERE document.hash = validation.document_hash;
     ALTER TABLE validation DROP COLUMN id;
+
+    ALTER TABLE public.validation DROP COLUMN publisher_name;
 """
