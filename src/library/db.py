@@ -176,7 +176,7 @@ def getUnflattenedDatasets(conn):
     sql = """
     SELECT hash, downloaded, id, url, flatten_api_error 
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
     AND val.valid = true
@@ -211,7 +211,7 @@ def getUnsolrizedDatasets(conn):
     sql = """
     SELECT doc.hash, doc.id, doc.solr_api_error
     FROM document as doc
-    LEFT JOIN validation as val ON doc.hash = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE downloaded is not null 
     AND doc.flatten_end is not null
     AND doc.lakify_end is not null
@@ -231,7 +231,7 @@ def getUnlakifiedDatasets(conn):
     sql = """
     SELECT hash, downloaded, id, url, lakify_error 
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
     AND val.valid = true
