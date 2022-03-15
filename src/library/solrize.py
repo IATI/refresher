@@ -27,9 +27,7 @@ def parse_status_code(error_str):
 class SolrError(Exception):
     def __init__(self, message):
         super(SolrError, self).__init__(message)
-        status_code = 0
-        status_code = parse_status_code(message)
-        self.status_code = status_code
+        self.status_code = parse_status_code(message)
         if status_code >= 500:
             self.type = 'Server'
         elif status_code < 500 and status_code >= 400:
