@@ -4,12 +4,11 @@ from library.logger import getLogger
 import datetime
 import requests
 from constants.config import config
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient, ContainerClient
 from itertools import islice
 from azure.core import exceptions as AzureExceptions
 import psycopg2
 import library.db as db
-import json
 import pysolr
 import library.utils as utils
 import re
@@ -17,6 +16,39 @@ import re
 logger = getLogger()
 solr_cores = {}
 explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
+
+def parse_status_code(error_str):
+    status_code = 0 
+    search_res = re.search(r'\(HTTP (\d{3})\)', error_str)
+    if search_res is not None:
+        status_code = int(search_res.group(1))
+    return status_code
+
+class SolrError(Exception):
+    def __init__(self, message):
+        super(SolrError, self).__init__(message)
+        self.status_code = parse_status_code(message)
+        if status_code >= 500:
+            self.type = 'Server'
+        elif status_code < 500 and status_code >= 400:
+            self.type = 'Client'
+        elif 'timed out' in message:
+            self.type = 'Timeout'
+        elif 'NewConnectionError' in message:
+            self.type = 'Connection'
+        else:
+            self.type = 'Unknown Type'
+        
+        if status_code != 0:
+            self.message = 'Solr ' + self.type + ' HTTP: ' + str(status_code) + ' Error ' + message
+        else:
+            self.message = 'Solr ' + self.type + ' Error ' + message
+
+class SolrizeSourceError(Exception):
+    def __init__(self, message):
+        super(SolrizeSourceError, self).__init__(message)
+        self.message = message
+
 
 def chunk_list(l, n):
     for i in range(0, n):
@@ -38,7 +70,7 @@ def process_hash_list(document_datasets):
             flattened_activities = db.getFlattenedActivitiesForDoc(conn, file_hash)
 
             if flattened_activities is None or flattened_activities[0] is None:
-                continue
+                raise SolrizeSourceError('Flattened activities not found for hash: ' + file_hash + ' and id: ' + file_id)
 
             solr_cores['activity'] = addCore('activity')
 
@@ -50,15 +82,19 @@ def process_hash_list(document_datasets):
 
             db.updateSolrizeStartDate(conn, file_hash)
 
-            logger.info("Removing all docs docs for doc with id " + file_id)
+            logger.info('Removing all docs for doc with hash: ' + file_hash + ' and id: ' + file_id)
 
             for core_name in solr_cores:
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
-                except:
-                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)                  
+                except Exception as e:
+                    e_message = ''
+                    if hasattr(e, 'args'):                     
+                        e_message = e.args[0]
+                    raise SolrError('DELETING hash: ' + file_hash + ' and id: ' + file_id + ', from collection with name ' + core_name + ': ' + e_message)
+                               
                 
-            logger.info("Adding docs for hash " + file_hash)
+            logger.info('Adding docs for hash: ' + file_hash + ' and id: ' + file_id)
 
             for fa in flattened_activities[0]:
                 blob_name = '{}.xml'.format(utils.get_hash_for_identifier(fa['iati_identifier']))
@@ -67,31 +103,47 @@ def process_hash_list(document_datasets):
                     blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=blob_name)
                     downloader = blob_client.download_blob()
                 except:
-                    logger.warning('Could not download XML activity blob: blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
-                    continue
+                    raise SolrizeSourceError('Could not download XML activity blob: ' + blob_name + ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
                 
                 try:
                     fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
                 except:
-                    logger.warning('Could not identify charset:  blob ' + blob_name + ', file hash ' + file_hash + ', iati id ' + fa['iati_identifier'])
-                    continue
+                    raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name + ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
              
                 fa['iati_activities_document_id'] = file_id
-                addToSolr(conn, 'activity', [fa], file_hash)
+                addToSolr('activity', [fa], file_hash, file_id)
 
                 # don't index iati_xml into exploded elements
                 del fa['iati_xml']
 
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
-                    addToSolr(conn, element_name, res, file_hash)
+                    addToSolr(element_name, res, file_hash, file_id)
 
-
-            logger.info("Updating DB for " + file_hash) 
+            logger.info('Updating DB with successful Solrize for hash: ' + file_hash + ' and id: ' + file_id) 
             db.completeSolrize(conn, file_hash)     
 
+        except (SolrizeSourceError) as e:
+            logger.warning(e.message)
+            db.updateSolrError(conn, file_hash, e.message)
+        except (SolrError) as e:
+            logger.warning(e.message)
+            db.updateSolrError(conn, file_hash, e.message)
+            if e.type == 'Server' or e.type == 'Timeout' or e.type == 'Connection':
+                logger.warning('Sleeping for ' + config['SOLRIZE']['SOLR_500_SLEEP'] + ' seconds for hash: ' + file_hash + ' and id: ' + file_id)
+                time.sleep(int(config['SOLRIZE']['SOLR_500_SLEEP'])) # give the thing time to come back up
+                logger.warning('...and off we go again after ' + e.type + ' error for hash: ' + file_hash + ' and id: ' + file_id)
+            # delete to keep atomic
+            logger.warning('Removing docs after Solr Error for hash: ' + file_hash + ' and id: '+ file_id + ' to keep things atomic')
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.error('Failed to remove docs with hash: ' + file_hash + ' and id: '+ file_id + ', from collection with name ' + core_name)   
         except Exception as e:
-            logger.error('ERROR with Solrizing ' + file_hash)
+            message = 'Unidentified ERROR with Solrizing hash: ' + file_hash + ' and id: ' + file_id
+            logger.error(message)
+            db.updateSolrError(conn, file_hash, message)
             print(traceback.format_exc())
             if hasattr(e, 'args'):                     
                 logger.error(e.args[0])
@@ -146,7 +198,7 @@ def explode_element(element_name, passed_fa):
 
     return exploded_docs
 
-def addToSolr(conn, core_name, batch, file_hash):
+def addToSolr(core_name, batch, file_hash, file_id):
     
     clean_batch = []
    
@@ -165,48 +217,40 @@ def addToSolr(conn, core_name, batch, file_hash):
     del clean_batch
 
     try:
-        response = solr_cores[core_name].add(batch)
+        solr_cores[core_name].add(batch)
     except Exception as e:
-        status_code = 0 
-        search_res = re.search(r'\(HTTP (\d{3})\)', e.args[0])
-        if search_res is not None:
-            status_code = int(search_res.group(1))
-        if status_code >= 500:
-            logger.warning('Solr reports Client Error ' + str(status_code) + ' for source blob ' + file_hash + '.xml. Sleeping for ' + config['SOLRIZE']['SOLR_500_SLEEP'] + ' seconds: ' + e.args[0])
-            db.updateSolrError(conn, file_hash, e.args[0])
-            time.sleep(int(config['SOLRIZE']['SOLR_500_SLEEP'])) # give the thing time to come back up
-            logger.warning('...and off we go again after ' + str(status_code) + ' error for source blob ' + file_hash + '.xml.')
-        else:
-            db.updateSolrError(conn, file_hash, e.args[0])
-            logger.warning('Solr reports Client Error for source blob ' + file_hash + '.xml: ' + e.args[0])
+        e_message = ''
+        if hasattr(e, 'args'):                     
+            e_message = e.args[0]
+        raise SolrError('ADDING hash: ' + file_hash + ' and id: ' + file_id + ', from collection with name ' + core_name + ': ' + e_message)
 
 def service_loop():
-    logger.info("Start service loop")
+    logger.info('Start service loop')
 
     while True:
         main()            
         time.sleep(60)
 
 def main():
-    logger.info("Starting to Solrize...")
+    logger.info('Starting to Solrize...')
 
     conn = db.getDirectConnection()
 
-    logger.info("Got DB connection")
+    logger.info('Got DB connection')
 
     file_hashes = db.getUnsolrizedDatasets(conn)
 
-    logger.info("Got unsolrized datasets")
+    logger.info('Got unsolrized datasets')
 
     if config['SOLRIZE']['PARALLEL_PROCESSES'] == 1:
-        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a a single process")
+        logger.info('Solrizing ' + str(len(file_hashes)) + ' IATI docs in a a single process')
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['SOLRIZE']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a maximum of " + str(config['SOLRIZE']['PARALLEL_PROCESSES']) + " parallel processes")
+        logger.info('Solrizing ' + str(len(file_hashes)) + ' IATI docs in a maximum of ' + str(config['SOLRIZE']['PARALLEL_PROCESSES']) + ' parallel processes')
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
@@ -225,4 +269,5 @@ def main():
                     finished = False
 
     conn.close()
-    logger.info("Finished.")
+    logger.info('Finished.')
+    
