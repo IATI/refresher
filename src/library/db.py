@@ -690,9 +690,11 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
             WHERE document.hash = validation.document_hash AND
             document.hash=%(doc_hash)s;
         UPDATE document 
-            SET validation=%(doc_hash)s,
+            SET validation=validation.id,
                 regenerate_validation_report = 'f'
-            WHERE hash=%(doc_hash)s;
+            FROM validation
+            WHERE document.hash = validation.document_hash
+            AND document.hash=%(doc_hash)s;
         """
 
     data = {
