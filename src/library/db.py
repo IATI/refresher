@@ -174,7 +174,7 @@ def getUnvalidatedAdhocDocs(conn):
 def getUnflattenedDatasets(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, flatten_api_error 
+    SELECT hash, downloaded, doc.id, url, flatten_api_error 
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
