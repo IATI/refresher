@@ -229,7 +229,7 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, lakify_error 
+    SELECT hash, downloaded, doc.id, url, lakify_error 
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
