@@ -161,6 +161,23 @@ def getUnvalidatedDatasets(conn):
     cur.close()
     return results
 
+def getInvalidDatasetsForActivityLevelVal(conn):    
+    cur = conn.cursor()
+    sql = """
+    SELECT hash, downloaded, id, url validation_api_error, publisher
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    WHERE doc.downloaded is not null 
+    AND doc.flatten_start is Null
+    AND val.valid = false
+    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.0', '%"id": "0.3.1', '%"id": "0.2.1'])
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def getUnvalidatedAdhocDocs(conn):    
     cur = conn.cursor()
     sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
