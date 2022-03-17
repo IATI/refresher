@@ -28,27 +28,36 @@ class SolrError(Exception):
     def __init__(self, message):
         super(SolrError, self).__init__(message)
         self.status_code = parse_status_code(message)
-        if status_code >= 500:
+        if self.status_code >= 500:
             self.type = 'Server'
-        elif status_code < 500 and status_code >= 400:
+        elif self.status_code < 500 and self.status_code >= 400:
             self.type = 'Client'
         elif 'timed out' in message:
             self.type = 'Timeout'
         elif 'NewConnectionError' in message:
             self.type = 'Connection'
+        elif 'RemoteDisconnected' in message:
+            self.type = 'Connection'
         else:
             self.type = 'Unknown Type'
         
-        if status_code != 0:
-            self.message = 'Solr ' + self.type + ' HTTP: ' + str(status_code) + ' Error ' + message
+        if self.status_code != 0:
+            self.message = 'Solr ' + self.type + ' HTTP: ' + str(self.status_code) + ' Error ' + message
         else:
             self.message = 'Solr ' + self.type + ' Error ' + message
+
+class SolrPingError(SolrError):
+    pass
 
 class SolrizeSourceError(Exception):
     def __init__(self, message):
         super(SolrizeSourceError, self).__init__(message)
         self.message = message
 
+def sleep_solr(file_hash, file_id, err_type = ""):
+    logger.warning('Sleeping for ' + config['SOLRIZE']['SOLR_500_SLEEP'] + ' seconds for hash: ' + file_hash + ' and id: ' + file_id)
+    time.sleep(int(config['SOLRIZE']['SOLR_500_SLEEP'])) # give the thing time to come back up
+    logger.warning('...and off we go again after ' + err_type + ' error for hash: ' + file_hash + ' and id: ' + file_id)
 
 def chunk_list(l, n):
     for i in range(0, n):
@@ -78,7 +87,13 @@ def process_hash_list(document_datasets):
                 solr_cores[core_name] = addCore(core_name)
             
             for core_name in solr_cores:
-                solr_cores[core_name].ping()
+                try:
+                    solr_cores[core_name].ping()
+                except Exception as e:
+                    e_message = ''
+                    if hasattr(e, 'args'):                     
+                        e_message = e.args[0]
+                    raise SolrPingError('PINGING hash: ' + file_hash + ' and id: ' + file_id + ', from collection with name ' + core_name + ': ' + e_message)
 
             db.updateSolrizeStartDate(conn, file_hash)
 
@@ -126,13 +141,16 @@ def process_hash_list(document_datasets):
         except (SolrizeSourceError) as e:
             logger.warning(e.message)
             db.updateSolrError(conn, file_hash, e.message)
+        except (SolrPingError) as e:
+            logger.warning(e.message)
+            db.updateSolrError(conn, file_hash, e.message)
+            if e.type == 'Server' or e.type == 'Timeout' or e.type == 'Connection':
+                sleep_solr(file_hash, file_id, e.type)
         except (SolrError) as e:
             logger.warning(e.message)
             db.updateSolrError(conn, file_hash, e.message)
             if e.type == 'Server' or e.type == 'Timeout' or e.type == 'Connection':
-                logger.warning('Sleeping for ' + config['SOLRIZE']['SOLR_500_SLEEP'] + ' seconds for hash: ' + file_hash + ' and id: ' + file_id)
-                time.sleep(int(config['SOLRIZE']['SOLR_500_SLEEP'])) # give the thing time to come back up
-                logger.warning('...and off we go again after ' + e.type + ' error for hash: ' + file_hash + ' and id: ' + file_id)
+                sleep_solr(file_hash, file_id, e.type)
             # delete to keep atomic
             logger.warning('Removing docs after Solr Error for hash: ' + file_hash + ' and id: '+ file_id + ' to keep things atomic')
             for core_name in solr_cores:
