@@ -161,13 +161,40 @@ def getUnvalidatedDatasets(conn):
     cur.close()
     return results
 
+def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
+    cur = conn.cursor()
+    #All absolute bollocks presently, but you get the idea:
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag = true
+    WHERE (
+        SELECT COUNT(file_hash) 
+        FROM validation 
+        WHERE publisher = pub.org_id
+        AND valid = false
+        AND NOW() - created < interval ' %(period_in_hours)s
+ hours' ) > %(threshold)s
+    """
+
+    data = {
+        "threshold": threshold,
+        "error": period_in_hours,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 def getInvalidDatasetsForActivityLevelVal(conn):    
     cur = conn.cursor()
     sql = """
     SELECT hash, downloaded, id, url validation_api_error, publisher
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.document_hash
-    WHERE doc.downloaded is not null 
+    LEFT JOIN publisher as pub ON doc.publisher = publisher.org_id
+    WHERE doc.downloaded is not null
+    AND pub.black_flag = false
+    AND NOW() - doc.downloaded > interval '24 hours'
     AND doc.flatten_start is Null
     AND val.valid = false
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.0', '%"id": "0.3.1', '%"id": "0.2.1'])
