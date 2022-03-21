@@ -3,7 +3,7 @@ from azure.core import exceptions as AzureExceptions
 import json
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
-import os, sys
+import os, sys, traceback
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -19,6 +19,7 @@ from io import BytesIO
 import hashlib
 import time
 from library.solrize import addCore
+from psycopg2 import Error as DbError
 
 
 logger = getLogger() #/action/organization_list
@@ -205,7 +206,6 @@ def sync_publishers():
 
 def sync_documents():
     conn = db.getDirectConnection()
-
     start_dt = datetime.now()
     all_datasets = []
     try:
@@ -230,8 +230,11 @@ def sync_documents():
             if changed is not None:
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
+        except DbError as e:
+            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e.pgerror)
+            conn.rollback()
         except Exception as e:
-            logger.error('Failed to sync document with url ' + dataset['url'])
+            logger.error('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : Unidentified Error')
     
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
@@ -245,12 +248,12 @@ def sync_documents():
 def refresh():        
     logger.info('Begin refresh')       
 
-    logger.info('Syncing publishers from the Registry...')
-    try:
-        sync_publishers()
-        logger.info('Publishers synced.')
-    except Exception as e:
-        logger.error('Publishers failed to sync.')
+    # logger.info('Syncing publishers from the Registry...')
+    # try:
+    #     sync_publishers()
+    #     logger.info('Publishers synced.')
+    # except Exception as e:
+    #     logger.error('Publishers failed to sync.')
 
     logger.info('Syncing documents from the Registry...')
     try:
