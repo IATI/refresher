@@ -235,6 +235,7 @@ def getUnlakifiedDatasets(conn):
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
     AND val.valid = true
+    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)    
