@@ -563,8 +563,6 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     cur.close()
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
-    cur = conn.cursor()
-
     sql1 = """
         INSERT INTO document (id, hash, url, first_seen, last_seen, publisher) 
         VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
@@ -604,10 +602,10 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
         "publisher_id": publisher_id
     }
 
-    cur.execute(sql1, data)
-    cur.execute(sql2, data)
+    with conn.cursor() as curs:
+        curs.execute(sql1, data)
+        curs.execute(sql2, data)
     conn.commit()
-    cur.close()
 
 def getFileWhereHashChanged(conn, id, hash):
     cur = conn.cursor()
