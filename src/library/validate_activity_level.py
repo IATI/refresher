@@ -51,7 +51,7 @@ def process_hash_list(document_datasets):
                 activitiesEl = etree.Element('iati-activities')
                 singleActivityDoc = etree.ElementTree(activitiesEl)
 
-                for att, val in activitiesEl:
+                for att, val in activitiesEl.attrib:
                     singleActivityDoc.attrib[att] = val
 
                 singleActivityDoc.append(activity)
@@ -67,7 +67,7 @@ def process_hash_list(document_datasets):
                     invalid_activity = False
                     continue                
                 
-                invalid_activity = False
+                invalid_activity = False #Replace with true/false response from API
 
                 if invalid_activity: #Get rid - why store a wrong 'un?
                     activity.getparent().remove(activity)

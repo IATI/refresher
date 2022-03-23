@@ -163,12 +163,12 @@ def getUnvalidatedDatasets(conn):
 
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
-    #All absolute bollocks presently, but you get the idea:
+    #Highly untested...
     sql = """
     UPDATE publisher as pub
     SET black_flag = true
     WHERE (
-        SELECT COUNT(file_hash) 
+        SELECT COUNT(document_hash) 
         FROM validation 
         WHERE publisher = pub.org_id
         AND valid = false
