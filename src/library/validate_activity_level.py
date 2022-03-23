@@ -129,7 +129,7 @@ def main():
 
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
 
-    if config['VALIDATION_AL']['PARALLEL_PROCESSES'] == 1:
+    if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))

@@ -178,7 +178,7 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
 
     data = {
         "threshold": threshold,
-        "error": period_in_hours,
+        "period_in_hours": period_in_hours,
     }
 
     cur.execute(sql, data)
@@ -188,10 +188,10 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
 def getInvalidDatasetsForActivityLevelVal(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url validation_api_error, publisher
+    SELECT hash, downloaded, id, url validation_api_error, pub.org_id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.document_hash
-    LEFT JOIN publisher as pub ON doc.publisher = publisher.org_id
+    LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
     WHERE doc.downloaded is not null
     AND pub.black_flag = false
     AND NOW() - doc.downloaded > interval '24 hours'
