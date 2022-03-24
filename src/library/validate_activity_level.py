@@ -127,6 +127,13 @@ def main():
     #Black flag the swine!
     db.blackFlagDubiousPublishers(conn, 1000, 24)
 
+    black_flags = db.getBlackFlagsSince(24)
+
+    #black_
+
+    #for black_flag in black_flags:
+        #response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
+
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:

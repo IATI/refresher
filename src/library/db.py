@@ -185,7 +185,31 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     conn.commit()
     cur.close()
 
-def getInvalidDatasetsForActivityLevelVal(conn):    
+def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
+    cur = conn.cursor()
+    #Highly untested...
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag = true
+    WHERE (
+        SELECT COUNT(document_hash) 
+        FROM validation 
+        WHERE publisher = pub.org_id
+        AND valid = false
+        AND NOW() - created < interval ' %(period_in_hours)s
+ hours' ) > %(threshold)s
+    """
+
+    data = {
+        "threshold": threshold,
+        "period_in_hours": period_in_hours,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def getUnnotifiedBlackFlagsSince(conn, period_in_hours):    
     cur = conn.cursor()
     sql = """
     SELECT hash, downloaded, id, url validation_api_error, pub.org_id
