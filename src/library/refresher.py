@@ -270,7 +270,6 @@ def reload(retry_errors):
     conn = db.getDirectConnection()
 
     datasets = db.getRefreshDataset(conn, retry_errors)
-
     chunked_datasets = list(split(datasets, config['PARALLEL_PROCESSES']))
 
     processes = []
@@ -347,10 +346,13 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, 1)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
+        except (requests.exceptions.InvalidSchema) as e:
+            logger.warning('Failed to download file with hash: ' + hash + ' and id: ' + id + ' Error: ' + e.args[0])
+            db.updateFileAsDownloadError(conn, id, 3)
         except (AzureExceptions.ResourceNotFoundError) as e:
             db.updateFileAsDownloadError(conn, id, e.status_code)
         except (AzureExceptions.ServiceResponseError) as e:
-            logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
+            logger.warning('Failed to upload file with url: ' + url + ' and hash: ' + hash + 'and id: ' + id + ' - Azure error message: ' + e.message)
         except Exception as e:
-            logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
+            logger.warning('Failed to upload or download file with url: ' + url + ' and hash: ' + hash + 'and id: ' + id)
             
