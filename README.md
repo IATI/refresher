@@ -110,7 +110,7 @@ Service Loop (when container starts)
 - reload(retry_errors)
   - `retry_errors` is True after RETRY_ERRORS_AFTER_LOOP refreshes.
   - Gets documents to download from DB (db.getRefreshDataset)
-    - If `retry_errors=true` - `"SELECT id, hash, url FROM document WHERE downloaded is null"`
+    - If `retry_errors=true` - `"SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"`
     - Else - `"SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"`
   - Downloads docs from publisher's URL, saves to Blob storage, updates DB
     - download_chunk()
@@ -121,6 +121,7 @@ Service Loop (when container starts)
         - Connection Error `document.download_error = 0`
         - SSL Issue `document.download_error = 1`
         - Charset detection issue `document.download_error = 2`
+        - Not HTTP URL (e.g. FTP) `document.download_error = 3` - these are NOT retried
       - If `AzureExceptions.ServiceResponseError` or other Exception
         - Warning logged, DB not updated
 
