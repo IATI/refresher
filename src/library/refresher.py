@@ -3,7 +3,7 @@ from azure.core import exceptions as AzureExceptions
 import json
 import multiprocessing
 multiprocessing.set_start_method('spawn', True)
-import os, sys
+import os, sys, traceback
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -19,6 +19,7 @@ from io import BytesIO
 import hashlib
 import time
 from library.solrize import addCore
+from psycopg2 import Error as DbError
 
 
 logger = getLogger() #/action/organization_list
@@ -129,7 +130,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 else:
                     lake_container_client.delete_blobs(*name_list)
         except Exception as e:
-            logger.warning('Failed to clean up lake for id ' + file_id + ' and hash ' + file_hash)
+            logger.warning('Failed to clean up lake for id: ' + file_id + ' and hash: ' + file_hash)
 
     # clean up source xml and solr for both stale and changed datasets
     combined_datasets_toclean = stale_datasets + changed_datasets
@@ -168,14 +169,14 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
             except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist:' + file_hash + '.xml')
+                logger.warning('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
             
             # remove from all solr collections
             for core_name in solr_cores:
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.warn("Failed to remove docs with hash " + file_hash + " from core with name " + core_name)  
+                    logger.warn('Failed to remove docs with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
 
 
 def sync_publishers():
@@ -197,15 +198,20 @@ def sync_publishers():
             response = requests_retry_session().get(url=api_url, timeout=30).content
             json_response = json.loads(response)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except DbError as e:
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e.pgerror)
+            conn.rollback()
         except Exception as e:
-            logger.error('Failed to sync publisher with name ' + publisher_name)
+            e_message = ''
+            if hasattr(e, 'args'):
+                e_message = e.args[0]
+            logger.error('Failed to sync publisher with name ' + publisher_name + ' : Unidentified Error: ' + e_message)
     
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
 
 def sync_documents():
     conn = db.getDirectConnection()
-
     start_dt = datetime.now()
     all_datasets = []
     try:
@@ -230,8 +236,11 @@ def sync_documents():
             if changed is not None:
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
+        except DbError as e:
+            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e.pgerror)
+            conn.rollback()
         except Exception as e:
-            logger.error('Failed to sync document with url ' + dataset['url'])
+            logger.error('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : Unidentified Error')
     
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
@@ -267,7 +276,6 @@ def reload(retry_errors):
     conn = db.getDirectConnection()
 
     datasets = db.getRefreshDataset(conn, retry_errors)
-
     chunked_datasets = list(split(datasets, config['PARALLEL_PROCESSES']))
 
     processes = []
@@ -344,10 +352,16 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, 1)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
+        except (requests.exceptions.InvalidSchema) as e:
+            logger.warning('Failed to download file with hash: ' + hash + ' and id: ' + id + ' Error: ' + e.args[0])
+            db.updateFileAsDownloadError(conn, id, 3)
         except (AzureExceptions.ResourceNotFoundError) as e:
             db.updateFileAsDownloadError(conn, id, e.status_code)
         except (AzureExceptions.ServiceResponseError) as e:
-            logger.warning('Failed to upload XML with url ' + url + ' - Azure error message: ' + e.message)
+            logger.warning('Failed to upload file with url: ' + url + ' and hash: ' + hash + ' and id: ' + id + ' - Azure error message: ' + e.message)
         except Exception as e:
-            logger.warning('Failed to upload XML with url ' + url + ' and hash ' + hash)
+            e_message = ''
+            if hasattr(e, 'args'):
+                e_message = e.args[0]
+            logger.warning('Failed to upload or download file with url: ' + url + ' and hash: ' + hash + ' and id: ' + id + ' Error: ' + e_message)
             

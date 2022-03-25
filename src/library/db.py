@@ -130,7 +130,7 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null"
+        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"
     else:
         sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
     
@@ -151,8 +151,10 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, validation_api_error, publisher
-    FROM document 
+    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name
+    FROM document
+    LEFT JOIN publisher
+        ON document.publisher = publisher.org_id
     WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
     """
@@ -240,9 +242,9 @@ def getUnvalidatedAdhocDocs(conn):
 def getUnflattenedDatasets(conn):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, flatten_api_error 
+    SELECT hash, downloaded, doc.id, url, flatten_api_error 
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
     AND val.valid = true
@@ -277,7 +279,7 @@ def getUnsolrizedDatasets(conn):
     sql = """
     SELECT doc.hash, doc.id, doc.solr_api_error
     FROM document as doc
-    LEFT JOIN validation as val ON doc.hash = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE downloaded is not null 
     AND doc.flatten_end is not null
     AND doc.lakify_end is not null
@@ -295,12 +297,13 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url, lakify_error 
+    SELECT hash, downloaded, doc.id, url, lakify_error 
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
     AND val.valid = true
+    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)    
@@ -591,8 +594,6 @@ def updateAdhocFileAsUnavailable(conn, hash, status):
     cur.close()
 
 def insertOrUpdatePublisher(conn, organization, last_seen):
-    cur = conn.cursor()
-
     sql = """
         INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)  
         VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
@@ -624,13 +625,11 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     except:
         data["image_url"] = None
 
-    cur.execute(sql, data)
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
     conn.commit()
-    cur.close()
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
-    cur = conn.cursor()
-
     sql1 = """
         INSERT INTO document (id, hash, url, first_seen, last_seen, publisher) 
         VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
@@ -670,10 +669,10 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
         "publisher_id": publisher_id
     }
 
-    cur.execute(sql1, data)
-    cur.execute(sql2, data)
+    with conn.cursor() as curs:
+        curs.execute(sql1, data)
+        curs.execute(sql2, data)
     conn.commit()
-    cur.close()
 
 def getFileWhereHashChanged(conn, id, hash):
     cur = conn.cursor()
@@ -734,7 +733,7 @@ def removePublishersNotSeenAfter(conn, dt):
     conn.commit()
     cur.close()
 
-def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, report):
+def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, report, publisher_name):
 
     cur = conn.cursor()
 
@@ -747,17 +746,20 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         return
 
     sql = """
-        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher)
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s)
-        ON CONFLICT (document_hash) DO
-            UPDATE SET report = %(report)s,
-                valid = %(valid)s,
-                created = %(created)s
-            WHERE validation.document_hash=%(doc_hash)s;
+        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
+        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s);
+        UPDATE document
+            SET validation = validation.id,
+            regenerate_validation_report = 'f'
+            FROM validation
+            WHERE document.hash = validation.document_hash AND
+            document.hash=%(doc_hash)s;
         UPDATE document 
-            SET validation=%(doc_hash)s,
+            SET validation=validation.id,
                 regenerate_validation_report = 'f'
-            WHERE hash=%(doc_hash)s;
+            FROM validation
+            WHERE document.hash = validation.document_hash
+            AND document.hash=%(doc_hash)s;
         """
 
     data = {
@@ -767,7 +769,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         "created": datetime.now(),
         "valid": state,
         "report": report,
-        "publisher": publisher
+        "publisher": publisher,
+        "publisher_name": publisher_name
     }
 
     cur.execute(sql, data)
