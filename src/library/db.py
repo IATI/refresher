@@ -526,8 +526,6 @@ def updateAdhocFileAsUnavailable(conn, hash, status):
     cur.close()
 
 def insertOrUpdatePublisher(conn, organization, last_seen):
-    cur = conn.cursor()
-
     sql = """
         INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)  
         VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
@@ -559,9 +557,9 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     except:
         data["image_url"] = None
 
-    cur.execute(sql, data)
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
     conn.commit()
-    cur.close()
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     sql1 = """
