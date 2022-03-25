@@ -203,7 +203,7 @@ def getUnnotifiedBlackFlags(conn):
     cur.close()
     return results
 
-def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):    
+def getInvalidDatasetsForActivityLevelVal(conn):    
     cur = conn.cursor()
     sql = """
     SELECT hash, downloaded, doc.id, url validation_api_error, pub.org_id
@@ -213,7 +213,6 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     WHERE doc.downloaded is not null
     AND pub.black_flag is not null
     AND pub.black_flag_notified = false
-    AND NOW() - doc.downloaded > interval '24 hours'
     AND doc.flatten_start is Null
     AND val.valid = false
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.0', '%"id": "0.3.1', '%"id": "0.2.1'])
