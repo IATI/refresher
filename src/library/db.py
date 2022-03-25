@@ -162,13 +162,14 @@ def getUnvalidatedDatasets(conn):
     results = cur.fetchall()
     cur.close()
     return results
+    
 
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
     #Highly untested...
     sql = """
     UPDATE publisher as pub
-    SET black_flag = true
+    SET black_flag = NOW()
     WHERE (
         SELECT COUNT(document_hash) 
         FROM validation 
@@ -187,39 +188,31 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     conn.commit()
     cur.close()
 
-def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
+def getUnnotifiedBlackFlags(conn):
     cur = conn.cursor()
-    #Highly untested...
+
     sql = """
-    UPDATE publisher as pub
-    SET black_flag = true
-    WHERE (
-        SELECT COUNT(document_hash) 
-        FROM validation 
-        WHERE publisher = pub.org_id
-        AND valid = false
-        AND NOW() - created < interval ' %(period_in_hours)s
- hours' ) > %(threshold)s
+    SELECT org_id
+    FROM publisher
+    WHERE black_flag_notified = false 
+    AND black_flag is not null
     """
 
-    data = {
-        "threshold": threshold,
-        "period_in_hours": period_in_hours,
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
+    cur.execute(sql)    
+    results = cur.fetchall()
     cur.close()
+    return results
 
-def getUnnotifiedBlackFlagsSince(conn, period_in_hours):    
+def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):    
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, id, url validation_api_error, pub.org_id
+    SELECT hash, downloaded, doc.id, url validation_api_error, pub.org_id
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.document_hash
+    LEFT JOIN validation as val ON doc.validation = val.id
     LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
     WHERE doc.downloaded is not null
-    AND pub.black_flag = false
+    AND pub.black_flag is not null
+    AND pub.black_flag_notified = false
     AND NOW() - doc.downloaded > interval '24 hours'
     AND doc.flatten_start is Null
     AND val.valid = false
