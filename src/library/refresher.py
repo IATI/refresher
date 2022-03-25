@@ -198,8 +198,14 @@ def sync_publishers():
             response = requests_retry_session().get(url=api_url, timeout=30).content
             json_response = json.loads(response)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except DbError as e:
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e.pgerror)
+            conn.rollback()
         except Exception as e:
-            logger.error('Failed to sync publisher with name ' + publisher_name)
+            e_message = ''
+            if hasattr(e, 'args'):
+                e_message = e.args[0]
+            logger.error('Failed to sync publisher with name ' + publisher_name + ' : Unidentified Error: ' + e_message)
     
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
