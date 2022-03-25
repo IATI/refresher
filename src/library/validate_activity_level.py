@@ -1,4 +1,5 @@
 import os, time, sys, traceback
+from signal import pause
 from re import A
 from multiprocessing import Process
 from library.logger import getLogger
@@ -30,8 +31,7 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             file_id = file_data[2]
             file_url = file_data[3]
-            prior_error = file_data[4]
-            publisher = file_data[5]
+            publisher = file_data[4]
 
             logger.info('Processing for individual activity indexing the critically invalid doc with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
@@ -42,48 +42,47 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                context = etree.iterparse(BytesIO(downloader.content_as_bytes()), tag='iati-activity', huge_tree=True)
-            except:
-                logger.warning('Could not identify charset for ' + file_hash + '.xml')
-                continue          
+                root = etree.fromstring(downloader.content_as_text())
+            except Exception as e:
+                logger.warning('Could not parse ' + file_hash + '.xml')
+                continue
 
-            for _, activity in context:
-                activitiesEl = etree.Element('iati-activities')
-                singleActivityDoc = etree.ElementTree(activitiesEl)
+            activities = root.xpath("iati-activity")         
 
-                for att, val in activitiesEl.attrib:
-                    singleActivityDoc.attrib[att] = val
+            for activity in activities:
+                singleActivityDoc = etree.Element('iati-activities')
+
+                for att in root.attrib:
+                    singleActivityDoc.attrib[att] = root.attrib[att]
 
                 singleActivityDoc.append(activity)
 
+                payload = etree.tostring(singleActivityDoc)
+
                 # @todo Send to as-yet nonexistant Validator Function instead of this
                 headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
-                response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
+                response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
 
                 if response.status_code != 200:
                     #Because, we not that arsed, are we, if a single activity from a critical file doesn't go?
                     logger.warning('Activity Level Validator reports Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml, activity id ' + activity_id)
                     invalid_activity = False
-                    continue                
-                
-                invalid_activity = False #Replace with true/false response from API
+                    continue
 
-                if invalid_activity: #Get rid - why store a wrong 'un?
-                    activity.getparent().remove(activity)
+                response_data = response.json()               
+
+                if response_data['valid'] == False: #Get rid - why store a wrong 'un?
+                    root.remove(activity)
 
             #replace blob with the trimmed sort
 
-            activities_xml = etree.tostring(context)
+            activities_xml = etree.tostring(root)
             act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(file_hash))
             act_blob_client.upload_blob(activities_xml, overwrite=True)
-            act_blob_client.set_blob_tags({"dataset_hash": file_hash})
+            act_blob_client.set_blob_tags({"dataset_hash": file_hash})           
 
-                #activity.clear()
-
-            
-
-            del context
+            del root
             #Send to new Validate function, which will return true/false
             #If true add to new doc
             #Replace original with new (maybe rename original to keep it around)
@@ -93,7 +92,7 @@ def process_hash_list(document_datasets):
             
             
 
-            db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)
+            #db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')

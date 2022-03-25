@@ -210,12 +210,10 @@ def getInvalidDatasetsForActivityLevelVal(conn):
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
-    WHERE doc.downloaded is not null
-    AND pub.black_flag is not null
-    AND pub.black_flag_notified = false
+	WHERE pub.black_flag is null
     AND doc.flatten_start is Null
     AND val.valid = false
-    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.0', '%"id": "0.3.1', '%"id": "0.2.1'])
+    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
     ORDER BY downloaded
     """
     cur.execute(sql)    
