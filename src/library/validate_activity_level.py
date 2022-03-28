@@ -59,7 +59,6 @@ def process_hash_list(document_datasets):
 
                 payload = etree.tostring(singleActivityDoc)
 
-                # @todo Send to as-yet nonexistant Validator Function instead of this
                 headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
                 response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
@@ -83,16 +82,16 @@ def process_hash_list(document_datasets):
             act_blob_client.set_blob_tags({"dataset_hash": file_hash})           
 
             del root
-            #Send to new Validate function, which will return true/false
-            #If true add to new doc
-            #Replace original with new (maybe rename original to keep it around)
+
+            
+
             #Make an ALV column, update it with a date
             #Alter the flattener to pick up from that too
             #JOB'S A GOOD UN
             
             
 
-            #db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)
+            db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')

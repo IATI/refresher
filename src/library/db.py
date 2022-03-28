@@ -341,6 +341,21 @@ def updateValidationRequestDate(conn, filehash):
     conn.commit()
     cur.close()
 
+def updateActivityLevelValidationState(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE document SET activity_level_validation=%(dt)s WHERE hash=%(hash)s"
+
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 def updateSolrizeStartDate(conn, filehash):
     cur = conn.cursor()
     sql = "UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"
