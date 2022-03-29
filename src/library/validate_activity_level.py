@@ -47,7 +47,9 @@ def process_hash_list(document_datasets):
                 logger.warning('Could not parse ' + file_hash + '.xml')
                 continue
 
-            activities = root.xpath("iati-activity")         
+            activities = root.xpath("iati-activity")
+
+            origLen = len(activities)        
 
             for activity in activities:
                 singleActivityDoc = etree.Element('iati-activities')
@@ -57,41 +59,40 @@ def process_hash_list(document_datasets):
 
                 singleActivityDoc.append(activity)
 
-                payload = etree.tostring(singleActivityDoc)
+                payload = etree.tostring(singleActivityDoc, encoding="utf8", method="xml").decode()
+
+                payload = "".join(json.dumps(payload).split("\\n"))
+                payload = payload.replace('\\"', '"')
+                payload = payload[1:]
+                payload = payload[:-1]
+
+                print(config['VALIDATION']['FILE_VALIDATION_URL'])
 
                 headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
                 response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
 
                 if response.status_code != 200:
-                    #Because, we not that arsed, are we, if a single activity from a critical file doesn't go?
-                    logger.warning('Activity Level Validator reports Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml, activity id ' + activity_id)
-                    invalid_activity = False
+                    activities.remove(activity)
                     continue
 
                 response_data = response.json()               
 
                 if response_data['valid'] == False: #Get rid - why store a wrong 'un?
-                    root.remove(activity)
+                    activities.remove(activity)
 
-            #replace blob with the trimmed sort
+            activities = root.xpath("iati-activity")
 
+            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' activities valid for ' + file_hash)
+  
             activities_xml = etree.tostring(root)
-            act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(file_hash))
-            act_blob_client.upload_blob(activities_xml, overwrite=True)
-            act_blob_client.set_blob_tags({"dataset_hash": file_hash})           
+            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+            blob_client.upload_blob(activities_xml, overwrite=True)
+            blob_client.set_blob_tags({"dataset_hash": file_hash})           
 
-            del root
+            del root            
 
-            
-
-            #Make an ALV column, update it with a date
-            #Alter the flattener to pick up from that too
-            #JOB'S A GOOD UN
-            
-            
-
-            db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)
+            #db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)         
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')

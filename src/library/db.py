@@ -237,7 +237,7 @@ def getUnflattenedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
-    AND val.valid = true
+    AND (val.valid = true OR doc.activity_level_validation is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
