@@ -199,7 +199,10 @@ def sync_publishers():
             json_response = json.loads(response)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
         except DbError as e:
-            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e.pgerror)
+            e_message = ''
+            if e.pgerror is not None:
+                e_message = e.pgerror
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e_message)
             conn.rollback()
         except Exception as e:
             e_message = ''
@@ -237,7 +240,10 @@ def sync_documents():
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except DbError as e:
-            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e.pgerror)
+            e_message = ''
+            if e.pgerror is not None:
+                e_message = e.pgerror
+            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e_message)
             conn.rollback()
         except Exception as e:
             logger.error('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : Unidentified Error')
