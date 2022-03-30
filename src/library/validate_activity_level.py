@@ -66,8 +66,6 @@ def process_hash_list(document_datasets):
                 payload = payload[1:]
                 payload = payload[:-1]
 
-                print(config['VALIDATION']['FILE_VALIDATION_URL'])
-
                 headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
                 response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
@@ -81,11 +79,17 @@ def process_hash_list(document_datasets):
                 if response_data['valid'] == False: #Get rid - why store a wrong 'un?
                     activities.remove(activity)
 
-            activities = root.xpath("iati-activity")
+            cleanDoc = etree.Element('iati-activities')
+
+            for att in root.attrib:
+                cleanDoc.attrib[att] = root.attrib[att]
+
+            for activity in activities:
+                cleanDoc.append(activity)
 
             logger.info(str(len(activities)) + ' of ' + str(origLen) + ' activities valid for ' + file_hash)
   
-            activities_xml = etree.tostring(root)
+            activities_xml = etree.tostring(cleanDoc)
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
             blob_client.upload_blob(activities_xml, overwrite=True)
             blob_client.set_blob_tags({"dataset_hash": file_hash})           
