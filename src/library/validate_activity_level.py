@@ -30,8 +30,6 @@ def process_hash_list(document_datasets):
             file_hash = file_data[0]
             downloaded = file_data[1]
             file_id = file_data[2]
-            file_url = file_data[3]
-            publisher = file_data[4]
 
             logger.info('Processing for individual activity indexing the critically invalid doc with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
@@ -94,9 +92,10 @@ def process_hash_list(document_datasets):
             blob_client.upload_blob(activities_xml, overwrite=True)
             blob_client.set_blob_tags({"dataset_hash": file_hash})           
 
-            del root            
+            del root
+            del cleanDoc          
 
-            #db.updateActivityLevelValidationState(conn, file_id, file_hash, file_url, publisher)         
+            db.updateActivityLevelValidationState(conn, file_hash)         
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
@@ -133,6 +132,7 @@ def main():
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
     for black_flag in black_flags:
+        #TODO send Slack notification
         response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
 
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)

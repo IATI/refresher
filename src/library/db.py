@@ -213,6 +213,7 @@ def getInvalidDatasetsForActivityLevelVal(conn):
 	WHERE pub.black_flag is null
     AND doc.flatten_start is Null
     AND val.valid = false
+    AND doc.activity_level_validation is null
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
     ORDER BY downloaded
     """
