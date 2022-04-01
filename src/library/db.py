@@ -213,6 +213,8 @@ def getInvalidDatasetsForActivityLevelVal(conn):
 	WHERE pub.black_flag is null
     AND doc.flatten_start is Null
     AND val.valid = false
+    AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%'
     AND doc.activity_level_validation is null
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
     ORDER BY downloaded
@@ -293,7 +295,7 @@ def getUnlakifiedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
-    AND val.valid = true
+    AND (val.valid = true OR doc.activity_level_validation is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
