@@ -126,14 +126,34 @@ def main():
 
     conn = db.getDirectConnection()
 
-    #Black flag the swine!
-    db.blackFlagDubiousPublishers(conn, 1000, 24)
+    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
     for black_flag in black_flags:
-        #TODO send Slack notification
-        response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
+        notification = {
+            "type": "NEW_BLACK_FLAG",
+            "data": {
+                "publisherId": black_flag[0],
+                "reason": "Over " + str(config['VALIDATION']['ALV_THRESHOLD']) + " critical documents in the last " + str(config['VALIDATION']['ALV_PERIOD']) + " hours."
+            }
+        }
+        headers = { 
+            config['NOTIFICATION_KEY_NAME']: config['NOTIFICATION_KEY_VALUE'],
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            response = requests.post(config['NOTIFICATION_URL'], data = json.dumps(notification), headers=headers)
+        except Exception as e:
+            logger.warning('Could notify Black Flag for  ' + black_flag.org_id + '.xml')
+            continue
+
+        if response.status_code != 200:
+            logger.warning('Could notify Black Flag for  ' + black_flag.org_id + '.xml')
+            continue
+
+        db.updateBlackFlagNotified(conn, black_flag[0])        
 
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
 

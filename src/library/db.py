@@ -194,7 +194,7 @@ def getUnnotifiedBlackFlags(conn):
     sql = """
     SELECT org_id
     FROM publisher
-    WHERE black_flag_notified = false 
+    WHERE black_flag_notified is null
     AND black_flag is not null
     """
 
@@ -202,6 +202,24 @@ def getUnnotifiedBlackFlags(conn):
     results = cur.fetchall()
     cur.close()
     return results
+
+def updateBlackFlagNotified(conn, org_id, notified=True):
+    cur = conn.cursor()
+
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag_notified = %(notified)s
+    WHERE org_id=%(org_id)s
+    """
+
+    data = {
+        "org_id": org_id,
+        "notified": notified
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
 
 def getInvalidDatasetsForActivityLevelVal(conn):    
     cur = conn.cursor()
