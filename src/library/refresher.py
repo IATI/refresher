@@ -195,9 +195,15 @@ def sync_publishers():
         time.sleep(1)
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
-            response = requests_retry_session().get(url=api_url, timeout=30).content
-            json_response = json.loads(response)
+            response = requests_retry_session().get(url=api_url, timeout=30)
+            response.raise_for_status()
+            json_response = json.loads(response.content)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except requests.HTTPError as e:
+            e_status_code = ''
+            if e.response.status_code is not None:
+                e_status_code = str(e.response.status_code)
+            logger.error('Failed to sync publisher with name ' + publisher_name + ' : Registry responded with HTTP ' + e_status_code )
         except DbError as e:
             e_message = ''
             if e.pgerror is not None:
