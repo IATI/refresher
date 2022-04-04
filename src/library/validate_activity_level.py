@@ -14,6 +14,7 @@ from io import BytesIO
 import library.db as db
 import json
 import library.utils as utils
+from azure.storage.queue import QueueServiceClient
 
 logger = getLogger()
 
@@ -126,6 +127,21 @@ def main():
 
     conn = db.getDirectConnection()
 
+    queue_service_client = QueueServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])           
+    queue_client = queue_service_client.get_queue_client("publisher-black-flag-remove")
+    
+    messages = queue_client.receive_messages()
+
+    for message in messages:
+        try:
+            logger.info('Received message to remove black flag for publisher id ' + message.content)
+            db.removeBlackFlag(conn, message.content)
+            logger.info("Dequeueing message: " + message.content)
+            queue_client.delete_message(message.id, message.pop_receipt)
+        except Exception as e:
+            logger.warning('Could not process message with id  ' + message.id)
+            continue
+
     db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
@@ -150,7 +166,7 @@ def main():
             continue
 
         if response.status_code != 200:
-            logger.warning('Could notify Black Flag for  ' + black_flag.org_id + '.xml')
+            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id + '.xml')
             continue
 
         db.updateBlackFlagNotified(conn, black_flag[0])        

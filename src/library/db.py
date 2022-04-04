@@ -162,7 +162,24 @@ def getUnvalidatedDatasets(conn):
     results = cur.fetchall()
     cur.close()
     return results
-    
+
+def removeBlackFlag(conn, org_id):
+    cur = conn.cursor()
+    #Highly untested...
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag = null, black_flag_notified = null
+    WHERE pub.org_id = %(org_id)s
+    """
+
+    data = {
+        "org_id": org_id,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
