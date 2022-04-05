@@ -195,11 +195,20 @@ def sync_publishers():
         time.sleep(1)
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
-            response = requests_retry_session().get(url=api_url, timeout=30).content
-            json_response = json.loads(response)
+            response = requests_retry_session().get(url=api_url, timeout=30)
+            response.raise_for_status()
+            json_response = json.loads(response.content)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except requests.HTTPError as e:
+            e_status_code = ''
+            if e.response.status_code is not None:
+                e_status_code = str(e.response.status_code)
+            logger.error('Failed to sync publisher with name ' + publisher_name + ' : Registry responded with HTTP ' + e_status_code )
         except DbError as e:
-            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e.pgerror)
+            e_message = ''
+            if e.pgerror is not None:
+                e_message = e.pgerror
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e_message)
             conn.rollback()
         except Exception as e:
             e_message = ''
@@ -237,7 +246,10 @@ def sync_documents():
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
         except DbError as e:
-            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e.pgerror)
+            e_message = ''
+            if e.pgerror is not None:
+                e_message = e.pgerror
+            logger.warning('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : ' + e_message)
             conn.rollback()
         except Exception as e:
             logger.error('Failed to sync document with hash: ' + dataset['hash'] + ' and id: ' + dataset['id'] + ' : Unidentified Error')
