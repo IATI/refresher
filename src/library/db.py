@@ -163,6 +163,102 @@ def getUnvalidatedDatasets(conn):
     cur.close()
     return results
 
+def removeBlackFlag(conn, org_id):
+    cur = conn.cursor()
+    #Highly untested...
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag = null, black_flag_notified = null
+    WHERE pub.org_id = %(org_id)s
+    """
+
+    data = {
+        "org_id": org_id,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+
+def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
+    cur = conn.cursor()
+    #Highly untested...
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag = NOW()
+    WHERE (
+        SELECT COUNT(document_hash) 
+        FROM validation 
+        WHERE publisher = pub.org_id
+        AND valid = false
+        AND NOW() - created < interval ' %(period_in_hours)s
+ hours' ) > %(threshold)s
+    """
+
+    data = {
+        "threshold": threshold,
+        "period_in_hours": period_in_hours,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def getUnnotifiedBlackFlags(conn):
+    cur = conn.cursor()
+
+    sql = """
+    SELECT org_id
+    FROM publisher
+    WHERE black_flag_notified is null
+    AND black_flag is not null
+    """
+
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
+def updateBlackFlagNotified(conn, org_id, notified=True):
+    cur = conn.cursor()
+
+    sql = """
+    UPDATE publisher as pub
+    SET black_flag_notified = %(notified)s
+    WHERE org_id=%(org_id)s
+    """
+
+    data = {
+        "org_id": org_id,
+        "notified": notified
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def getInvalidDatasetsForActivityLevelVal(conn):    
+    cur = conn.cursor()
+    sql = """
+    SELECT hash, downloaded, doc.id, url validation_api_error, pub.org_id
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.id
+    LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
+	WHERE pub.black_flag is null
+    AND doc.flatten_start is Null
+    AND val.valid = false
+    AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%'
+    AND doc.activity_level_validation is null
+    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
+    ORDER BY downloaded
+    """
+    cur.execute(sql)    
+    results = cur.fetchall()
+    cur.close()
+    return results
+
 def getUnvalidatedAdhocDocs(conn):    
     cur = conn.cursor()
     sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
@@ -179,7 +275,7 @@ def getUnflattenedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
-    AND val.valid = true
+    AND (val.valid = true OR doc.activity_level_validation is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -234,7 +330,7 @@ def getUnlakifiedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
-    AND val.valid = true
+    AND (val.valid = true OR doc.activity_level_validation is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -271,6 +367,21 @@ def resetUnfinishedFlattens(conn):
 def updateValidationRequestDate(conn, filehash):
     cur = conn.cursor()
     sql = "UPDATE document SET validation_request=%(dt)s WHERE hash=%(hash)s"
+
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+def updateActivityLevelValidationState(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE document SET activity_level_validation=%(dt)s WHERE hash=%(hash)s"
 
     date = datetime.now()
 
