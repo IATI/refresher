@@ -75,7 +75,7 @@ def process_hash_list(document_datasets):
 
                 response_data = response.json()               
 
-                if response_data['valid'] == False: #Get rid - why store a wrong 'un?
+                if response_data['valid'] == False:
                     activities.remove(activity)
 
             cleanDoc = etree.Element('iati-activities')
