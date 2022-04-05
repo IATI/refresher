@@ -142,7 +142,7 @@ jobs:
                 SOLR_USER="${{ env.SOLR_USER }}" \
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
 
-- name: "Deploy Validate Activity Level to Azure Container Instances"
+      - name: "Deploy Validate Activity Level to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
             azcliversion: 2.30.0
