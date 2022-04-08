@@ -160,7 +160,7 @@ jobs:
               --vnet "dev-iati-refresher" \
               --subnet "default" \
               --memory "2" \
-              --cpu "0.5" \
+              --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
@@ -271,7 +271,7 @@ jobs:
               --vnet "dev-iati-refresher" \
               --subnet "default" \
               --memory "2" \
-              --cpu "1" \
+              --cpu "0.5" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \

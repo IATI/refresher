@@ -40,11 +40,11 @@ def process_hash_list(document_datasets):
 
             downloader = blob_client.download_blob()
 
-            try:
-                root = etree.fromstring(downloader.content_as_text())
-            except Exception as e:
-                logger.warning('Could not parse ' + file_hash + '.xml')
-                continue
+            #try:
+            root = etree.fromstring(downloader.content_as_text())
+            #except Exception as e:
+            #    logger.warning('Could not parse ' + file_hash + '.xml')
+            #    continue
 
             activities = root.xpath("iati-activity")
 
