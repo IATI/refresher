@@ -41,12 +41,13 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                root = etree.fromstring(downloader.content_as_text())
+                root = etree.parse(BytesIO(downloader.content_as_bytes()))
             except Exception as e:
                 print(e)
                 logger.warning('Could not parse ' + file_hash + '.xml')
                 continue
 
+            iati_activities_el = root.getroot()
             activities = root.xpath("iati-activity")
 
             origLen = len(activities)        
@@ -54,8 +55,8 @@ def process_hash_list(document_datasets):
             for activity in activities:
                 singleActivityDoc = etree.Element('iati-activities')
 
-                for att in root.attrib:
-                    singleActivityDoc.attrib[att] = root.attrib[att]
+                for att in iati_activities_el.attrib:
+                    singleActivityDoc.attrib[att] = iati_activities_el.attrib[att]
 
                 singleActivityDoc.append(activity)
 
@@ -81,8 +82,8 @@ def process_hash_list(document_datasets):
 
             cleanDoc = etree.Element('iati-activities')
 
-            for att in root.attrib:
-                cleanDoc.attrib[att] = root.attrib[att]
+            for att in iati_activities_el.attrib:
+                cleanDoc.attrib[att] = iati_activities_el.attrib[att]
 
             for activity in activities:
                 cleanDoc.append(activity)
@@ -95,6 +96,8 @@ def process_hash_list(document_datasets):
             blob_client.set_blob_tags({"dataset_hash": file_hash})           
 
             del root
+            del iati_activities_el
+            del activities
             del cleanDoc          
 
             db.updateActivityLevelValidationState(conn, file_hash)         
