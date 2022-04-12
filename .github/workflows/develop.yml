@@ -130,6 +130,7 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+                SCHEMA_VALIDATOR_API_URL="${{ env.DEV_SCHEMA_VALIDATION_URL }}" \
                 VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
                 VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
@@ -167,9 +168,12 @@ jobs:
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+                VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
+                SCHEMA_VALIDATOR_API_URL="${{ env.DEV_SCHEMA_VALIDATION_URL }}" \
                 VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
                 VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+                SCHEMA_VALIDATION_KEY_NAME="${{ env.DEV_SCHEMA_VALIDATION_KEY_NAME }}" \
+                SCHEMA_VALIDATION_KEY_VALUE="${{ env.DEV_SCHEMA_VALIDATION_KEY_VALUE }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \

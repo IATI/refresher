@@ -67,8 +67,8 @@ def process_hash_list(document_datasets):
                 payload = payload[1:]
                 payload = payload[:-1]
 
-                headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
-                response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload, headers=headers)
+                headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
+                response = requests.post(config['VALIDATION']['SCHEMA_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
 
                 if response.status_code != 200:
