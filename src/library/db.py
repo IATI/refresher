@@ -315,6 +315,7 @@ def getUnsolrizedDatasets(conn):
 	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
+    AND doc.flattened_activities != '[]'
     ORDER BY doc.downloaded
     """
     cur.execute(sql)    

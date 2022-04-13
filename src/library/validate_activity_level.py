@@ -32,7 +32,7 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             file_id = file_data[2]
 
-            logger.info('Processing for individual activity indexing the critically invalid doc with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
+            logger.info('Processing for individual activity indexing the critically invalid doc with hash: ' + file_hash + ' and id: ' + file_id + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
@@ -48,11 +48,11 @@ def process_hash_list(document_datasets):
                 continue
 
             iati_activities_el = root.getroot()
+            activities_loop = root.xpath("iati-activity")
             activities = root.xpath("iati-activity")
 
             origLen = len(activities)        
-
-            for activity in activities:
+            for activity in activities_loop:
                 singleActivityDoc = etree.Element('iati-activities')
 
                 for att in iati_activities_el.attrib:
@@ -88,7 +88,7 @@ def process_hash_list(document_datasets):
             for activity in activities:
                 cleanDoc.append(activity)
 
-            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' activities valid for ' + file_hash)
+            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' activities valid for hash: ' + file_hash + ' and id: ' + file_id)
   
             activities_xml = etree.tostring(cleanDoc)
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
@@ -98,15 +98,16 @@ def process_hash_list(document_datasets):
             del root
             del iati_activities_el
             del activities
+            del activities_loop
             del cleanDoc          
 
             db.updateActivityLevelValidationState(conn, file_hash)         
             
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
+            logger.warning('Blob not found for hash ' + file_hash + ' and id: ' + file_id + ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
-            logger.error('ERROR with validating ' + file_hash)
+            logger.error('ERROR with validating ' + file_hash+ ' and id: ' + file_id)
             print(traceback.format_exc())
             if hasattr(e, 'message'):                         
                 logger.error(e.message)
