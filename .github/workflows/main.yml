@@ -29,6 +29,8 @@ env:
   LOG_WORKSPACE_KEY: ${{ secrets.PROD_LOG_WORKSPACE_KEY }}
   ACTIVITIES_LAKE_CONTAINER_NAME: ${{ secrets.PROD_ACTIVITIES_LAKE_CONTAINER_NAME }}
   SOLR_500_SLEEP: ${{ secrets.PROD_SOLR_500_SLEEP }}
+  COMMSHUB_URL: ${{ secrets.PROD_COMMSHUB_URL }}
+  COMMSHUB_KEY: $${{ secrets.PROD_COMMSHUB_KEY }}
 
 jobs:
   build-and-deploy:
@@ -96,7 +98,9 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}"
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -134,7 +138,9 @@ jobs:
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -171,7 +177,9 @@ jobs:
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -207,7 +215,9 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}"
+                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -240,4 +250,6 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
