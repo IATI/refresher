@@ -49,8 +49,16 @@ def process_hash_list(document_datasets):
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
+            blob_bytes = BytesIO(downloader.content_as_bytes())
 
-            context = etree.iterparse(BytesIO(downloader.content_as_bytes()), tag='iati-activity', huge_tree=True)
+            large_parser = etree.XMLParser(huge_tree=True)
+            root = etree.parse(blob_bytes, parser=large_parser).getroot()
+            if root.tag != 'iati-activities':
+                raise Exception('Blob returning non-IATI XML.')
+
+            del root
+
+            context = etree.iterparse(blob_bytes, tag='iati-activity', huge_tree=True)
 
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
