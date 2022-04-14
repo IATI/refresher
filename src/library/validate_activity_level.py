@@ -43,7 +43,8 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
 
             try:
-                root = etree.parse(BytesIO(downloader.content_as_bytes()))
+                large_parser = etree.XMLParser(huge_tree=True)
+                root = etree.parse(BytesIO(downloader.content_as_bytes()), parser=large_parser)
             except Exception as e:
                 print(e)
                 logger.warning('Could not parse ' + file_hash + '.xml')
