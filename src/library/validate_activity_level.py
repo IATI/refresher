@@ -32,6 +32,8 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             file_id = file_data[2]
 
+            db.updateActivityLevelValidationStart(conn, file_hash)
+
             logger.info('Processing for individual activity indexing the critically invalid doc with hash: ' + file_hash + ' and id: ' + file_id + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
@@ -45,6 +47,7 @@ def process_hash_list(document_datasets):
             except Exception as e:
                 print(e)
                 logger.warning('Could not parse ' + file_hash + '.xml')
+                db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
                 continue
 
             iati_activities_el = root.getroot()
@@ -101,7 +104,7 @@ def process_hash_list(document_datasets):
             del activities_loop
             del cleanDoc          
 
-            db.updateActivityLevelValidationState(conn, file_hash)         
+            db.updateActivityLevelValidationEnd(conn, file_hash)         
             
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' and id: ' + file_id + ' - updating as Not Downloaded for the refresher to pick up.')
@@ -111,12 +114,15 @@ def process_hash_list(document_datasets):
             print(traceback.format_exc())
             if hasattr(e, 'message'):                         
                 logger.error(e.message)
+                db.updateActivityLevelValidationError(conn, file_hash, e.message)
             if hasattr(e, 'msg'):                         
                 logger.error(e.msg)
+                db.updateActivityLevelValidationError(conn, file_hash, e.msg)
             try:
                 logger.warning(e.args[0])
+                db.updateActivityLevelValidationError(conn, file_hash, e.args[0])
             except:
-                pass        
+                db.updateActivityLevelValidationError(conn, file_hash, 'Unknown error')  
 
     conn.close()
 

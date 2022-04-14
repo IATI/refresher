@@ -256,7 +256,8 @@ def getInvalidDatasetsForActivityLevelVal(conn):
     AND val.valid = false
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
-    AND doc.activity_level_validation is null
+    AND doc.alv_start is null
+    AND doc.alv_error is null
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
     ORDER BY downloaded
     """
@@ -264,6 +265,19 @@ def getInvalidDatasetsForActivityLevelVal(conn):
     results = cur.fetchall()
     cur.close()
     return results
+
+def updateActivityLevelValidationError(conn, filehash, message):
+    cur = conn.cursor()
+    sql = "UPDATE document SET alv_error=%(message)s WHERE hash=%(hash)s"
+
+    data = {
+        "hash": filehash,
+        "message": message
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
 
 
 def getUnvalidatedAdhocDocs(conn):
@@ -283,7 +297,7 @@ def getUnflattenedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
-    AND (val.valid = true OR doc.activity_level_validation is not null)
+    AND (val.valid = true OR doc.alv_end is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -342,7 +356,7 @@ def getUnlakifiedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
-    AND (val.valid = true OR doc.activity_level_validation is not null)
+    AND (val.valid = true OR doc.alv_end is not null)
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -394,10 +408,25 @@ def updateValidationRequestDate(conn, filehash):
     conn.commit()
     cur.close()
 
-
-def updateActivityLevelValidationState(conn, filehash):
+def updateActivityLevelValidationStart(conn, filehash):
     cur = conn.cursor()
-    sql = "UPDATE document SET activity_level_validation=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET alv_start=%(dt)s WHERE hash=%(hash)s"
+
+    date = datetime.now()
+
+    data = {
+        "hash": filehash,
+        "dt": date,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
+
+def updateActivityLevelValidationEnd(conn, filehash):
+    cur = conn.cursor()
+    sql = "UPDATE document SET alv_end=%(dt)s WHERE hash=%(hash)s"
 
     date = datetime.now()
 
