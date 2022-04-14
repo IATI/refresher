@@ -54,7 +54,7 @@ def process_hash_list(document_datasets):
             large_parser = etree.XMLParser(huge_tree=True)
             root = etree.parse(blob_bytes, parser=large_parser).getroot()
             if root.tag != 'iati-activities':
-                raise Exception('Blob returning non-IATI XML. Azure SDK returned: "{}"'.format(blob_bytes.read()))
+                raise Exception('Blob returning non-IATI XML for file with hash {}. Azure SDK returned: "{}"'.format(file_hash, blob_bytes.read()))
 
             del root
 
