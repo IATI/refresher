@@ -20,6 +20,7 @@ import hashlib
 import time
 from library.solrize import addCore
 from psycopg2 import Error as DbError
+from constants.version import __version__
 
 
 logger = getLogger() #/action/organization_list
@@ -343,7 +344,8 @@ def download_chunk(chunk, blob_service_client, datasets):
 
         try:
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
-            download_response = requests_retry_session(retries=3).get(url=url, timeout=5)
+            headers = {'User-Agent': 'iati-unified-platform-refresher/' + __version__['number'] }
+            download_response = requests_retry_session(retries=3).get(url=url, headers=headers, timeout=5)
             download_xml = download_response.content
             if download_response.status_code == 200:
                 try:
