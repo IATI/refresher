@@ -49,8 +49,17 @@ def process_hash_list(document_datasets):
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
+            blob_bytes = BytesIO(downloader.content_as_bytes())
 
-            context = etree.iterparse(BytesIO(downloader.content_as_bytes()), tag='iati-activity', huge_tree=True)
+            large_parser = etree.XMLParser(huge_tree=True)
+            root = etree.parse(blob_bytes, parser=large_parser).getroot()
+
+            if root.tag != 'iati-activities':
+                raise Exception('Blob returning non-IATI XML for doc id {} with hash {}. Returned: "{}"'.format(doc_id, file_hash, blob_bytes.read()))
+
+            del root
+
+            context = etree.iterparse(blob_bytes, tag='iati-activity', huge_tree=True)
 
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")
@@ -73,21 +82,20 @@ def process_hash_list(document_datasets):
             db.completeLakify(conn, doc_id)
 
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
-            logger.warning('Failed to extract activities to lake with hash ' + hash)
+            logger.warning('Failed to extract activities to lake with hash {} and doc id {}'.format(file_hash, doc_id))
             db.lakifyError(conn, doc_id, 'Failed to extract activities')
         except Exception as e:
-            logger.error('ERROR with Lakifiying ' + file_hash)
-            print(traceback.format_exc())
-            err_message = "Unkown error"
-            if hasattr(e, 'args'):
-                err_message = e.args[0]                    
+            logger.error('ERROR with Lakifiying hash {} and doc id {}'.format(file_hash, doc_id))
+            err_message = "Unknown error"
+            if hasattr(e, 'args') and len(e.args) > 0:
+                err_message = e.args[0]
             if hasattr(e, 'message'):
                 err_message = e.message
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 err_message = e.msg 
 
             logger.error(err_message)
-            db.lakifyError(conn, doc_id, err_message)     
+            db.lakifyError(conn, doc_id, err_message)
 
     conn.close()
 
