@@ -46,6 +46,8 @@ def main(args):
             lakify.service_loop()           
         elif args.type == "solrizeloop":
             solrize.service_loop()
+        elif args.type == "validate_activity_level_loop":
+            validate_activity_level.service_loop()
         else:
             print("Type is required - either refresh, reload, validate, validate_activity_level, flatten, lakify, or solrize - or their related service loop.")
 

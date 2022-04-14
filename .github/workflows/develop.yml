@@ -166,7 +166,7 @@ jobs:
               --ip-address "Private" \
               --vnet "dev-iati-refresher" \
               --subnet "default" \
-              --memory "2" \
+              --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \

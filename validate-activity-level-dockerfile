@@ -4,4 +4,4 @@ WORKDIR /code
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY src/ .
-CMD /usr/local/bin/python /code/handler.py -t validate_activity_level
+CMD /usr/local/bin/python /code/handler.py -t validate_activity_level_loop
