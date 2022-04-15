@@ -15,6 +15,7 @@ import library.db as db
 import json
 import library.utils as utils
 from azure.storage.queue import QueueServiceClient
+import re
 
 logger = getLogger()
 
@@ -45,17 +46,43 @@ def process_hash_list(document_datasets):
             try:
                 large_parser = etree.XMLParser(huge_tree=True)
                 root = etree.parse(BytesIO(downloader.content_as_bytes()), parser=large_parser)
+                iati_activities_el = root.getroot()
+            except etree.XMLSyntaxError as e:
+                logger.warning('Cannot parse entire XML for hash {} doc {}, attempting regex activity extraction.'.format(file_hash, file_id))
+                try:
+                    file_text, file_encoding = utils.get_text_from_blob(downloader, file_hash, True)
+                except:
+                    logger.warning('Can not identify charset for ' + file_hash + '.xml for activity-level validation.')
+                    db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
+                    continue
+
+                activities_matcher = re.compile(r'<iati-activities[\s\S]*?>')
+                activities_element_match = re.findall(activities_matcher, file_text)
+                if len(activities_element_match) > 0:
+                    iati_activities_el = etree.fromstring(activities_element_match[0].encode(file_encoding) + b"</iati-activities>")
+                else:
+                    logger.warning('No IATI activities element found for hash {} doc {}. Cannot ALV.'.format(file_hash, file_id))
+                    db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
+                    continue
+
+                activity_matcher = re.compile(r'<iati-activity[\s\S]*?>[\s\S]*?<\/iati-activity>')
+                activity_element_match = re.findall(activity_matcher, file_text)
+                for activity_element_text in activity_element_match:
+                    try:
+                        act_el = etree.fromstring(activity_element_text.encode(file_encoding))
+                        iati_activities_el.append(act_el)
+                    except Exception as e:
+                        pass
             except Exception as e:
                 print(e)
                 logger.warning('Could not parse ' + file_hash + '.xml')
                 db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
                 continue
 
-            iati_activities_el = root.getroot()
-            activities_loop = root.xpath("iati-activity")
-            activities = root.xpath("iati-activity")
+            activities_loop = iati_activities_el.xpath("iati-activity")
+            activities = iati_activities_el.xpath("iati-activity")
 
-            origLen = len(activities)        
+            origLen = len(activities)
             for activity in activities_loop:
                 singleActivityDoc = etree.Element('iati-activities')
 
@@ -79,7 +106,7 @@ def process_hash_list(document_datasets):
                     activities.remove(activity)
                     continue
 
-                response_data = response.json()               
+                response_data = response.json()
 
                 if response_data['valid'] == False:
                     activities.remove(activity)
@@ -92,31 +119,48 @@ def process_hash_list(document_datasets):
             for activity in activities:
                 cleanDoc.append(activity)
 
-            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' activities valid for hash: ' + file_hash + ' and id: ' + file_id)
-  
+            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' parsable activities valid for hash: ' + file_hash + ' and id: ' + file_id)
+            if len(activities) == 0: # To prevent overwriting content with blank element
+                db.updateActivityLevelValidationError(conn, file_hash, 'No valid activities')
+                continue
             activities_xml = etree.tostring(cleanDoc)
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
             blob_client.upload_blob(activities_xml, overwrite=True)
-            blob_client.set_blob_tags({"dataset_hash": file_hash})           
+            blob_client.set_blob_tags({"dataset_hash": file_hash})
 
-            del root
+            try:
+                del root
+            except NameError:
+                pass
+            try:
+                del activities_element_match
+            except NameError:
+                pass
+            try:
+                del activity_element_match
+            except NameError:
+                pass
+            try:
+                del act_el
+            except NameError:
+                pass
             del iati_activities_el
             del activities
             del activities_loop
-            del cleanDoc          
+            del cleanDoc
 
-            db.updateActivityLevelValidationEnd(conn, file_hash)         
-            
+            db.updateActivityLevelValidationEnd(conn, file_hash)
+
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' and id: ' + file_id + ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash+ ' and id: ' + file_id)
             print(traceback.format_exc())
-            if hasattr(e, 'message'):                         
+            if hasattr(e, 'message'):
                 logger.error(e.message)
                 db.updateActivityLevelValidationError(conn, file_hash, e.message)
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 logger.error(e.msg)
                 db.updateActivityLevelValidationError(conn, file_hash, e.msg)
             try:
@@ -131,7 +175,7 @@ def service_loop():
     logger.info("Start service loop")
 
     while True:
-        main()            
+        main()
         time.sleep(60)
 
 def main():
@@ -139,7 +183,7 @@ def main():
 
     conn = db.getDirectConnection()
 
-    queue_service_client = QueueServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])           
+    queue_service_client = QueueServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
     queue_client = queue_service_client.get_queue_client("publisher-black-flag-remove")
     
     messages = queue_client.receive_messages()
@@ -181,7 +225,7 @@ def main():
             logger.warning('Could not notify Black Flag for  ' + black_flag.org_id + '.xml')
             continue
 
-        db.updateBlackFlagNotified(conn, black_flag[0])        
+        db.updateBlackFlagNotified(conn, black_flag[0])
 
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
 
