@@ -80,14 +80,14 @@ def process_hash_list(document_datasets):
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
-            if hasattr(e, 'message'):                         
+            if hasattr(e, 'message'):
                 logger.error(e.message)
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 logger.error(e.msg)
             try:
                 logger.warning(e.args[0])
             except:
-                pass        
+                pass
 
     conn.close()
 
@@ -95,7 +95,7 @@ def service_loop():
     logger.info("Start service loop")
 
     while True:
-        main()            
+        main()
         time.sleep(60)
 
 def main():
