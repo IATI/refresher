@@ -252,7 +252,8 @@ def getInvalidDatasetsForActivityLevelVal(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
 	WHERE pub.black_flag is null
-    AND doc.flatten_start is Null
+    AND doc.downloaded is not null
+    AND doc.flatten_start is null
     AND val.valid = false
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
