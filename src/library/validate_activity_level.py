@@ -47,6 +47,7 @@ def process_hash_list(document_datasets):
                 large_parser = etree.XMLParser(huge_tree=True)
                 root = etree.parse(BytesIO(downloader.content_as_bytes()), parser=large_parser)
                 iati_activities_el = root.getroot()
+                file_encoding = 'utf-8'
             except etree.XMLSyntaxError as e:
                 logger.warning('Cannot parse entire XML for hash {} doc {}, attempting regex activity extraction.'.format(file_hash, file_id))
                 try:
@@ -91,7 +92,7 @@ def process_hash_list(document_datasets):
 
                 singleActivityDoc.append(activity)
 
-                payload = etree.tostring(singleActivityDoc, encoding="utf8", method="xml").decode()
+                payload = etree.tostring(singleActivityDoc, encoding=file_encoding, method="xml").decode()
 
                 payload = "".join(json.dumps(payload).split("\\n"))
                 payload = payload.replace('\\"', '"')
@@ -125,7 +126,7 @@ def process_hash_list(document_datasets):
                 continue
             activities_xml = etree.tostring(cleanDoc)
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
-            blob_client.upload_blob(activities_xml, overwrite=True)
+            blob_client.upload_blob(activities_xml, overwrite=True, encoding=file_encoding)
             blob_client.set_blob_tags({"dataset_hash": file_hash})
 
             try:
