@@ -86,29 +86,21 @@ def process_hash_list(document_datasets):
             origLen = len(activities)
             for activity in activities_loop:
                 singleActivityDoc = etree.Element('iati-activities')
-
                 for att in iati_activities_el.attrib:
                     singleActivityDoc.attrib[att] = iati_activities_el.attrib[att]
-
                 singleActivityDoc.append(activity)
-
                 payload = etree.tostring(singleActivityDoc, encoding=file_encoding, method="xml").decode()
-
                 payload = "".join(json.dumps(payload).split("\\n"))
                 payload = payload.replace('\\"', '"')
                 payload = payload[1:]
                 payload = payload[:-1]
-
                 headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
                 response = requests.post(config['VALIDATION']['SCHEMA_VALIDATION_URL'], data = payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_hash)
-
                 if response.status_code != 200:
                     activities.remove(activity)
                     continue
-
                 response_data = response.json()
-
                 if response_data['valid'] == False:
                     activities.remove(activity)
 
@@ -124,7 +116,7 @@ def process_hash_list(document_datasets):
             if len(activities) == 0: # To prevent overwriting content with blank element
                 db.updateActivityLevelValidationError(conn, file_hash, 'No valid activities')
                 continue
-            activities_xml = etree.tostring(cleanDoc)
+            activities_xml = etree.tostring(cleanDoc, encoding=file_encoding)
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
             blob_client.upload_blob(activities_xml, overwrite=True, encoding=file_encoding)
             blob_client.set_blob_tags({"dataset_hash": file_hash})
