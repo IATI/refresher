@@ -855,14 +855,15 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         return
 
     sql = """
-        INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
-        VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s);
+        WITH new_id AS (
+            INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
+            VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s)
+            RETURNING id
+        )
         UPDATE document
-            SET validation = validation.id,
+            SET validation = (SELECT id FROM new_id),
             regenerate_validation_report = 'f'
-            FROM validation
-            WHERE document.hash = validation.document_hash AND
-            document.hash=%(doc_hash)s;
+            WHERE document.id = %(doc_id)s;
         """
 
     data = {
