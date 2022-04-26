@@ -619,22 +619,6 @@ def completeSolrize(conn, doc_hash):
     cur.close()
 
 
-def resetFailedFlattens(conn):
-    cur = conn.cursor()
-
-    sql = """
-        UPDATE document
-        SET flatten_start = null
-        WHERE flatten_end is null
-        AND flatten_api_error != ANY(ARRAY[422, 413, 400])
-    """
-
-    cur.execute(sql)
-
-    conn.commit()
-    cur.close()
-
-
 def updateFileAsDownloaded(conn, id):
     cur = conn.cursor()
 
