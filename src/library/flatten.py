@@ -55,7 +55,7 @@ def process_hash_list(document_datasets):
             db.updateSolrizeStartDate(conn, file_hash)
 
             if response.status_code != 200:
-                logger.warning('Flattener reports Client Error with status {} for hash {} doc id {}'.format(str(response.status_code), file_hash, doc_id))
+                logger.warning('Flattener reports error status {} for hash {} doc id {}'.format(str(response.status_code), file_hash, doc_id))
                 if response.status_code == 404:
                     logger.warning('Giving it a chance to come back up...')
                     time.sleep(360) # Give the thing time to come back up
@@ -72,7 +72,7 @@ def process_hash_list(document_datasets):
             db.updateFileAsNotDownloaded(conn, doc_id)
         except JSONDecodeError:
             logger.warning('Unable to decode JSON output from Flattener for hash {} doc id {}'.format(file_hash, doc_id))
-            logger.warning('Assuming soft 404, waiting, and retrying...')
+            logger.warning('Assuming soft 404/500, waiting, and retrying...')
             time.sleep(360)
             logger.warning('...and off we go again.')
             db.updateFlattenError(conn, doc_id, 404)
