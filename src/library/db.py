@@ -622,7 +622,12 @@ def completeSolrize(conn, doc_hash):
 def updateFileAsDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"
+    sql = """
+        UPDATE document
+        SET downloaded = %(dt)s, download_error = null,
+        alv_start = null, alv_end = null, alv_error = null
+        WHERE id = %(id)s
+    """
 
     date = datetime.now()
 
@@ -639,7 +644,12 @@ def updateFileAsDownloaded(conn, id):
 def updateFileAsNotDownloaded(conn, id):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = null WHERE id = %(id)s"
+    sql = """
+        UPDATE document
+        SET downloaded = null,
+        alv_start = null, alv_end = null, alv_error = null
+        WHERE id = %(id)s
+    """
 
     data = {
         "id": id,
@@ -653,7 +663,12 @@ def updateFileAsNotDownloaded(conn, id):
 def updateFileAsDownloadError(conn, id, status):
     cur = conn.cursor()
 
-    sql="UPDATE document SET downloaded = null, download_error = %(status)s WHERE id = %(id)s"
+    sql = """
+        UPDATE document
+        SET downloaded = null, download_error = %(status)s,
+        alv_start = null, alv_end = null, alv_error = null
+        WHERE id = %(id)s
+    """
 
     data = {
         "id": id,
@@ -739,7 +754,10 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 flatten_api_error = null,
                 solrize_start = null,
                 solrize_end = null,
-                solr_api_error = null
+                solr_api_error = null,
+                alv_start = null,
+                alv_end = null,
+                alv_error = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
