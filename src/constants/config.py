@@ -28,7 +28,7 @@ config = dict(DATA_SCHEMA = "public",
         FILE_VALIDATION_KEY_VALUE = os.getenv('VALIDATOR_API_KEY_VALUE'),
         SCHEMA_VALIDATION_KEY_NAME = os.getenv('SCHEMA_VALIDATION_KEY_NAME'),
         SCHEMA_VALIDATION_KEY_VALUE = os.getenv('SCHEMA_VALIDATION_KEY_VALUE'),
-        ALV_THRESHOLD = 1000,
+        ALV_THRESHOLD = 10,
         ALV_PERIOD = 24
     ),
     FLATTEN = dict(

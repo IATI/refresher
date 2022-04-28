@@ -211,11 +211,11 @@ def main():
         try:
             response = requests.post(config['NOTIFICATION_URL'], data = json.dumps(notification), headers=headers)
         except Exception as e:
-            logger.warning('Could notify Black Flag for  ' + black_flag.org_id + '.xml')
+            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id)
             continue
 
         if response.status_code != 200:
-            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id + '.xml')
+            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id)
             continue
 
         db.updateBlackFlagNotified(conn, black_flag[0])
