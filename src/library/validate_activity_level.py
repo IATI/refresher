@@ -188,7 +188,7 @@ def main():
             logger.info("Dequeueing message: " + message.content)
             queue_client.delete_message(message.id, message.pop_receipt)
         except Exception as e:
-            logger.warning('Could not process message with publisher id:  ' + message.id)
+            logger.warning('Could not process message with id:  ' + message.id + ' for publisher id: ' + message.content)
             continue
 
     db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
