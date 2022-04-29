@@ -191,7 +191,7 @@ def main():
             logger.warning('Could not process message with publisher id:  ' + message.id)
             continue
 
-    # db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
+    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
