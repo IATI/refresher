@@ -169,7 +169,6 @@ def getUnvalidatedDatasets(conn):
 
 def removeBlackFlag(conn, org_id):
     cur = conn.cursor()
-    #Highly untested...
     sql = """
     UPDATE publisher as pub
     SET black_flag = null, black_flag_notified = null
@@ -187,7 +186,6 @@ def removeBlackFlag(conn, org_id):
 
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
-    #Highly untested...
     sql = """
     UPDATE publisher as pub
     SET black_flag = NOW()
