@@ -191,7 +191,7 @@ def main():
             logger.warning('Could not process message with publisher id:  ' + message.id)
             continue
 
-    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
+    # db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
@@ -222,7 +222,7 @@ def main():
 
         db.updateBlackFlagNotified(conn, org_id)
 
-    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
+    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['ALV_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)

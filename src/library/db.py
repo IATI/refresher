@@ -242,7 +242,7 @@ def updateBlackFlagNotified(conn, org_id, notified=True):
     cur.close()
 
 
-def getInvalidDatasetsForActivityLevelVal(conn):
+def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     cur = conn.cursor()
     sql = """
     SELECT hash, downloaded, doc.id, url, validation_api_error, pub.org_id
@@ -253,15 +253,21 @@ def getInvalidDatasetsForActivityLevelVal(conn):
     AND doc.downloaded is not null
     AND doc.flatten_start is null
     AND val.valid = false
+    AND NOW() - val.created > interval ' %(period_in_hours)s hours'
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
-    AND report->>'iatiVersion' NOT LIKE '1%'
+    AND report->>'iatiVersion' NOT LIKE '1%%'
     AND doc.alv_start is null
     AND doc.alv_error is null
-    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%"id": "0.1.1', '%"id": "0.2.1', '%"id": "0.6.1'])
+    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.1.1', '%%"id": "0.2.1', '%%"id": "0.6.1'])
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
-    cur.execute(sql)
+
+    data = {
+        "period_in_hours": period_in_hours,
+    }
+
+    cur.execute(sql, data)
     results = cur.fetchall()
     cur.close()
     return results
