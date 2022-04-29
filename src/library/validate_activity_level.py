@@ -183,12 +183,12 @@ def main():
 
     for message in messages:
         try:
-            logger.info('Received message to remove black flag for publisher id ' + message.content)
+            logger.info('Received message to remove black flag for publisher id: ' + message.content)
             db.removeBlackFlag(conn, message.content)
             logger.info("Dequeueing message: " + message.content)
             queue_client.delete_message(message.id, message.pop_receipt)
         except Exception as e:
-            logger.warning('Could not process message with id  ' + message.id)
+            logger.warning('Could not process message with id:  ' + message.id + ' for publisher id: ' + message.content)
             continue
 
     db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
@@ -196,10 +196,12 @@ def main():
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
     for black_flag in black_flags:
+        org_id = black_flag[0]
+
         notification = {
             "type": "NEW_BLACK_FLAG",
             "data": {
-                "publisherId": black_flag[0],
+                "publisherId": org_id,
                 "reason": "Over " + str(config['VALIDATION']['ALV_THRESHOLD']) + " critical documents in the last " + str(config['VALIDATION']['ALV_PERIOD']) + " hours."
             }
         }
@@ -211,16 +213,16 @@ def main():
         try:
             response = requests.post(config['NOTIFICATION_URL'], data = json.dumps(notification), headers=headers)
         except Exception as e:
-            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id)
+            logger.warning('Could not notify Black Flag for publisher id: ' + org_id)
             continue
 
         if response.status_code != 200:
-            logger.warning('Could not notify Black Flag for  ' + black_flag.org_id)
+            logger.warning('Could not notify Black Flag for publisher id: ' + org_id + ', Comms Hub Responded HTTP ' + str(response.status_code))
             continue
 
-        db.updateBlackFlagNotified(conn, black_flag[0])
+        db.updateBlackFlagNotified(conn, org_id)
 
-    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn)
+    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['ALV_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
         process_hash_list(file_hashes)
