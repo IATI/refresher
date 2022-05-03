@@ -38,7 +38,7 @@ env:
   ACTIVITIES_LAKE_CONTAINER_NAME: ${{ secrets.DEV_ACTIVITIES_LAKE_CONTAINER_NAME }}
   SOLR_500_SLEEP: ${{ secrets.DEV_SOLR_500_SLEEP }}
   COMMSHUB_URL: ${{ secrets.DEV_COMMSHUB_URL }}
-  COMMSHUB_KEY: $${{ secrets.DEV_COMMSHUB_KEY }}
+  COMMSHUB_KEY: ${{ secrets.DEV_COMMSHUB_KEY }}
 
 jobs:
   build-and-deploy:
