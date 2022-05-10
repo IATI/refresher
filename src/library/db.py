@@ -258,7 +258,7 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     AND report->>'iatiVersion' NOT LIKE '1%%'
     AND doc.alv_start is null
     AND doc.alv_error is null
-    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.1.1', '%%"id": "0.2.1', '%%"id": "0.6.1'])
+    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.2.1', '%%"id": "0.6.1'])
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
