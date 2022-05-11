@@ -109,6 +109,7 @@ def main():
     file_hashes = db.getUnflattenedDatasets(conn)
 
     if config['FLATTEN']['PARALLEL_PROCESSES'] == 1:
+        logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a single process.")
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['FLATTEN']['PARALLEL_PROCESSES']))

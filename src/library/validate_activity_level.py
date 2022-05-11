@@ -225,13 +225,14 @@ def main():
     file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['ALV_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for activity level validation")
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for activity level validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
