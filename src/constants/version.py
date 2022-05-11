@@ -1,1 +1,1 @@
-__version__ = {'number': "0.1.17", 'migration': 17}
+__version__ = {'number': "0.1.18", 'migration': 18}

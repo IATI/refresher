@@ -235,12 +235,18 @@ def addToSolr(core_name, batch, file_hash, file_id):
     del clean_batch
 
     try:
-        solr_cores[core_name].add(batch)
+        chunk_length = config['SOLRIZE']['MAX_BATCH_LENGTH']
+        if len(batch) > chunk_length:
+            logger.info('Batch length of ' + str(len(batch)) + ' ' + core_name + ' greater than ' + str(config['SOLRIZE']['MAX_BATCH_LENGTH']) + ' for hash: ' + file_hash + ' id: ' + file_id)
+            for i in range(0, len(batch), chunk_length):
+                solr_cores[core_name].add(batch[i:i+chunk_length])  
+        else:
+           solr_cores[core_name].add(batch)                
     except Exception as e:
         e_message = ''
         if hasattr(e, 'args'):                     
             e_message = e.args[0]
-        raise SolrError('ADDING hash: ' + file_hash + ' and id: ' + file_id + ', from collection with name ' + core_name + ': ' + e_message)
+        raise SolrError('ADDING hash: ' + file_hash + ' and id: ' + file_id +  ' batch length: ' + str(len(batch)) +', from collection with name ' + core_name + ': ' + e_message)
 
 def service_loop():
     logger.info('Start service loop')

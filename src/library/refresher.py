@@ -20,6 +20,7 @@ import hashlib
 import time
 from library.solrize import addCore
 from psycopg2 import Error as DbError
+from constants.version import __version__
 
 
 logger = getLogger() #/action/organization_list
@@ -195,9 +196,15 @@ def sync_publishers():
         time.sleep(1)
         try:
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
-            response = requests_retry_session().get(url=api_url, timeout=30).content
-            json_response = json.loads(response)
+            response = requests_retry_session().get(url=api_url, timeout=30)
+            response.raise_for_status()
+            json_response = json.loads(response.content)
             db.insertOrUpdatePublisher(conn, json_response['result'], start_dt)
+        except requests.HTTPError as e:
+            e_status_code = ''
+            if e.response.status_code is not None:
+                e_status_code = str(e.response.status_code)
+            logger.error('Failed to sync publisher with name ' + publisher_name + ' : Registry responded with HTTP ' + e_status_code )
         except DbError as e:
             e_message = ''
             if e.pgerror is not None:
@@ -337,7 +344,8 @@ def download_chunk(chunk, blob_service_client, datasets):
 
         try:
             blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
-            download_response = requests_retry_session(retries=3).get(url=url, timeout=5)
+            headers = {'User-Agent': 'iati-unified-platform-refresher/' + __version__['number'] }
+            download_response = requests_retry_session(retries=3).get(url=url, headers=headers, timeout=5)
             download_xml = download_response.content
             if download_response.status_code == 200:
                 try:

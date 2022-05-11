@@ -7,6 +7,7 @@ on:
 env:
   STAGE: prod-aci-iati
   NAME: refresher
+  VNET: prod-iati-refresher
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher-prod
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.PROD_AZURE_STORAGE_CONNECTION_STRING }}
@@ -14,6 +15,9 @@ env:
   FILE_VALIDATION_URL: ${{ secrets.PROD_FILE_VALIDATION_URL }}
   FILE_VALIDATION_KEY_NAME: ${{ secrets.PROD_FILE_VALIDATION_KEY_NAME }}
   FILE_VALIDATION_KEY_VALUE: ${{ secrets.PROD_FILE_VALIDATION_KEY_VALUE }}
+  SCHEMA_VALIDATION_URL: ${{ secrets.PROD_SCHEMA_VALIDATION_URL }}
+  SCHEMA_VALIDATION_KEY_NAME: ${{ secrets.PROD_SCHEMA_VALIDATION_KEY_NAME }}
+  SCHEMA_VALIDATION_KEY_VALUE: ${{ secrets.PROD_SCHEMA_VALIDATION_KEY_VALUE }}
   FLATTENER_API_URL: ${{ secrets.PROD_FLATTENER_API_URL }}
   FLATTENER_KEY_NAME: ${{ secrets.PROD_FLATTENER_KEY_NAME }}
   FLATTENER_KEY_VALUE: ${{ secrets.PROD_FLATTENER_API_KEY }}
@@ -29,6 +33,8 @@ env:
   LOG_WORKSPACE_KEY: ${{ secrets.PROD_LOG_WORKSPACE_KEY }}
   ACTIVITIES_LAKE_CONTAINER_NAME: ${{ secrets.PROD_ACTIVITIES_LAKE_CONTAINER_NAME }}
   SOLR_500_SLEEP: ${{ secrets.PROD_SOLR_500_SLEEP }}
+  COMMSHUB_URL: ${{ secrets.PROD_COMMSHUB_URL }}
+  COMMSHUB_KEY: ${{ secrets.PROD_COMMSHUB_KEY }}
 
 jobs:
   build-and-deploy:
@@ -57,6 +63,8 @@ jobs:
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
           docker build . -f validate-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
+          docker build . -f validate-activity-level-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate-activity-level:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate-activity-level:$TAG
           docker build . -f flatten-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG   
           docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
@@ -78,7 +86,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "prod-iati-refresher" \
+              --vnet "${{ env.VNET }}" \
               --subnet "default" \
               --memory "4" \
               --cpu "1" \
@@ -88,15 +96,17 @@ jobs:
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}"
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -113,7 +123,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "prod-iati-refresher" \
+              --vnet "${{ env.VNET }}" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
@@ -124,6 +134,7 @@ jobs:
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
                 VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
                 VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
                 VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
                 VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
@@ -134,7 +145,52 @@ jobs:
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+      
+      - name: "Deploy Validate Activity Level to Azure Container Instances"
+        uses: "azure/CLI@1.0.4"
+        with:
+            azcliversion: 2.30.0
+            inlineScript: |
+              az container create \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate-activity-level:${{ env.TAG }}" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "${{ env.VNET }}" \
+              --subnet "default" \
+              --memory "4" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
+                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
+                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+                SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
+                SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
+                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -151,7 +207,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "prod-iati-refresher" \
+              --vnet "${{ env.VNET }}" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
@@ -171,7 +227,9 @@ jobs:
                 DB_NAME="${{ env.DB_NAME }}" \
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}"
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -188,7 +246,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "prod-iati-refresher" \
+              --vnet "${{ env.VNET }}" \
               --subnet "default" \
               --memory "4" \
               --cpu "1" \
@@ -207,7 +265,9 @@ jobs:
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
                 DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}"
+                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -224,7 +284,7 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "prod-iati-refresher" \
+              --vnet "${{ env.VNET }}" \
               --subnet "default" \
               --memory "2" \
               --cpu "1" \
@@ -240,4 +300,6 @@ jobs:
                 DB_PORT="${{ env.DB_PORT }}" \
                 DB_USER="${{ env.DB_USER }}" \
                 DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}"
+                DB_NAME="${{ env.DB_NAME }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"

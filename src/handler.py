@@ -1,6 +1,7 @@
 import argparse
 import library.refresher as refresher
 import library.validate as validate
+import library.validate_activity_level as validate_activity_level
 import library.validate_adhoc as validate_adhoc
 import library.flatten as flatten
 import library.lakify as lakify
@@ -25,6 +26,8 @@ def main(args):
             )
         elif args.type == "validate":
             validate.main()
+        elif args.type == "validate_activity_level":
+            validate_activity_level.main()
         elif args.type == "adhocvalidate":
             validate_adhoc.main()
         elif args.type == "flatten":
@@ -43,8 +46,10 @@ def main(args):
             lakify.service_loop()           
         elif args.type == "solrizeloop":
             solrize.service_loop()
+        elif args.type == "validate_activity_level_loop":
+            validate_activity_level.service_loop()
         else:
-            print("Type is required - either refresh, reload, validate, flatten, lakify, or solrize - or their related service loop.")
+            print("Type is required - either refresh, reload, validate, validate_activity_level, flatten, lakify, or solrize - or their related service loop.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh from IATI Registry')
