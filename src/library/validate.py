@@ -105,6 +105,7 @@ def main():
     file_hashes = db.getUnvalidatedDatasets(conn)
 
     if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for validation")
         process_hash_list(file_hashes)
     else:
         chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
