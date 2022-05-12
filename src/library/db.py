@@ -341,10 +341,10 @@ def getUnsolrizedDatasets(conn):
     WHERE downloaded is not null
     AND doc.flatten_end is not null
     AND doc.lakify_end is not null
-    AND doc.solrize_end is null
 	AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
+    AND (doc.solrize_end is null OR doc.solrize_reindex is True)
     AND doc.flattened_activities != '[]'
     ORDER BY doc.downloaded
     """
@@ -608,7 +608,9 @@ def completeSolrize(conn, doc_hash):
 
     sql = """
         UPDATE document
-        SET solrize_end = %(now)s, solr_api_error = null
+        SET solrize_end = %(now)s, 
+            solr_api_error = null,
+            solrize_reindex = 'f'
         WHERE hash = %(doc_hash)s
     """
 
