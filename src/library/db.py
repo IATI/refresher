@@ -385,6 +385,24 @@ def resetUnfinishedLakifies(conn):
     conn.commit()
     cur.close()
 
+def resetUnfoundLakify(conn, doc_id):
+    cur = conn.cursor()
+    sql = """
+        UPDATE document
+        SET lakify_start=null,
+        lakify_end=null,
+        lakify_error=null
+        WHERE id=%(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+    }
+
+    cur.execute(sql, data)
+    conn.commit()
+    cur.close()
+
 
 def resetUnfinishedFlattens(conn):
     cur = conn.cursor()
