@@ -253,7 +253,7 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     AND doc.downloaded is not null
     AND doc.flatten_start is null
     AND val.valid = false
-    AND NOW() - val.created > interval ' %(period_in_hours)s hours'
+    AND (NOW() - val.created > interval ' %(period_in_hours)s hours' OR doc.alv_revalidate = True)
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%%'
     AND ((doc.alv_start is null AND doc.alv_error is null) OR doc.alv_revalidate = True)
