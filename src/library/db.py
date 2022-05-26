@@ -253,11 +253,10 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     AND doc.downloaded is not null
     AND doc.flatten_start is null
     AND val.valid = false
-    AND NOW() - val.created > interval ' %(period_in_hours)s hours'
+    AND (NOW() - val.created > interval ' %(period_in_hours)s hours' OR doc.alv_revalidate = True)
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%%'
-    AND doc.alv_start is null
-    AND doc.alv_error is null
+    AND ((doc.alv_start is null AND doc.alv_error is null) OR doc.alv_revalidate = True)
     AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.2.1"%%', '%%"id": "0.6.1"%%'])
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
@@ -303,7 +302,7 @@ def getUnflattenedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.flatten_start is Null
-    AND (val.valid = true OR doc.alv_end is not null)
+    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -362,7 +361,7 @@ def getUnlakifiedDatasets(conn):
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
-    AND (val.valid = true OR doc.alv_end is not null)
+    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
@@ -450,7 +449,7 @@ def updateActivityLevelValidationStart(conn, filehash):
 
 def updateActivityLevelValidationEnd(conn, filehash):
     cur = conn.cursor()
-    sql = "UPDATE document SET alv_end=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET alv_end=%(dt)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
 
     date = datetime.now()
 
@@ -648,8 +647,7 @@ def updateFileAsDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = %(dt)s, download_error = null,
-        alv_start = null, alv_end = null, alv_error = null
+        SET downloaded = %(dt)s, download_error = null 
         WHERE id = %(id)s
     """
 
@@ -670,8 +668,7 @@ def updateFileAsNotDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = null,
-        alv_start = null, alv_end = null, alv_error = null
+        SET downloaded = null
         WHERE id = %(id)s
     """
 
@@ -689,8 +686,7 @@ def updateFileAsDownloadError(conn, id, status):
 
     sql = """
         UPDATE document
-        SET downloaded = null, download_error = %(status)s,
-        alv_start = null, alv_end = null, alv_error = null
+        SET downloaded = null, download_error = %(status)s
         WHERE id = %(id)s
     """
 
