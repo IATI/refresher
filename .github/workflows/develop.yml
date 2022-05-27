@@ -28,6 +28,7 @@ env:
   SOLR_API_URL: ${{ secrets.DEV_SOLR_API_URL }}
   SOLR_USER: ${{ secrets.DEV_SOLR_USER }}
   SOLR_PASSWORD: ${{ secrets.DEV_SOLR_PASSWORD }}
+  SOLR_PARALLEL_PROCESSES: 5
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
   DB_HOST: ${{ secrets.DB_HOST }}
@@ -263,6 +264,7 @@ jobs:
                 SOLR_API_URL="${{ env.SOLR_API_URL }}" \
                 SOLR_USER="${{ env.SOLR_USER }}" \
                 SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
                 ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
                 DB_HOST="${{ env.DB_HOST }}" \
                 DB_PORT="${{ env.DB_PORT }}" \
