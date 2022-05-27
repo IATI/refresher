@@ -38,7 +38,7 @@ config = dict(DATA_SCHEMA = "public",
         FLATTENER_KEY_VALUE = os.getenv('FLATTENER_KEY_VALUE')
     ),
     SOLRIZE = dict(
-        PARALLEL_PROCESSES = int(os.getenv('SOLR_PARALLEL_PROCESSES')),
+        PARALLEL_PROCESSES = int(os.getenv('SOLR_PARALLEL_PROCESSES') or 1),
         MAX_BATCH_LENGTH = 1000,
         SOLR_API_URL = os.getenv('SOLR_API_URL'),
         SOLR_USER = os.getenv('SOLR_USER'),
