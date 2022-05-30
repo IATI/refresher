@@ -232,78 +232,79 @@ jobs:
                 COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Lakify to Azure Container Instances"
-          uses: "azure/CLI@1.0.4"
-          with:
-              azcliversion: 2.30.0
-              inlineScript: |
-                az container create \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-                --command-line "/usr/local/bin/python /code/handler.py -t lakifyloop" \
-                --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-                --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-                --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
-                --location "uksouth" \
-                --restart-policy "Always" \
-                --ip-address "Private" \
-                --vnet "${{ env.VNET }}" \
-                --subnet "default" \
-                --memory "2" \
-                --cpu "1" \
-                --os-type "Linux" \
-                --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-                --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-                --secure-environment-variables \
-                  AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                  AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                  ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                  SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                  DB_HOST="${{ env.DB_HOST }}" \
-                  DB_PORT="${{ env.DB_PORT }}" \
-                  DB_USER="${{ env.DB_USER }}" \
-                  DB_PASS="${{ env.DB_PASS }}" \
-                  DB_NAME="${{ env.DB_NAME }}" \
-                  COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                  COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-                     
+        uses: "azure/CLI@1.0.4"
+        with:
+            azcliversion: 2.30.0
+            inlineScript: |
+              az container create \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+              --command-line "/usr/local/bin/python /code/handler.py -t lakifyloop" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "${{ env.VNET }}" \
+              --subnet "default" \
+              --memory "2" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+
       - name: "Deploy Solrize to Azure Container Instances"
-          uses: "azure/CLI@1.0.4"
-          with:
-              azcliversion: 2.30.0
-              inlineScript: |
-                az container create \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-                --command-line "/usr/local/bin/python /code/handler.py -t solrizeloop" \
-                --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-                --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-                --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
-                --location "uksouth" \
-                --restart-policy "Always" \
-                --ip-address "Private" \
-                --vnet "${{ env.VNET }}" \
-                --subnet "default" \
-                --memory "4" \
-                --cpu "1" \
-                --os-type "Linux" \
-                --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-                --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-                --secure-environment-variables \
-                  AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                  AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                  SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                  SOLR_USER="${{ env.SOLR_USER }}" \
-                  SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                  SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
-                  ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                  DB_HOST="${{ env.DB_HOST }}" \
-                  DB_PORT="${{ env.DB_PORT }}" \
-                  DB_USER="${{ env.DB_USER }}" \
-                  DB_PASS="${{ env.DB_PASS }}" \
-                  DB_NAME="${{ env.DB_NAME }}" \
-                  SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
-                  COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                  COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-      
+        uses: "azure/CLI@1.0.4"
+        with:
+            azcliversion: 2.30.0
+            inlineScript: |
+              az container create \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+              --command-line "/usr/local/bin/python /code/handler.py -t solrizeloop" \
+              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+              --location "uksouth" \
+              --restart-policy "Always" \
+              --ip-address "Private" \
+              --vnet "${{ env.VNET }}" \
+              --subnet "default" \
+              --memory "4" \
+              --cpu "1" \
+              --os-type "Linux" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --secure-environment-variables \
+                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+                SOLR_USER="${{ env.SOLR_USER }}" \
+                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+                SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
+                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+                DB_HOST="${{ env.DB_HOST }}" \
+                DB_PORT="${{ env.DB_PORT }}" \
+                DB_USER="${{ env.DB_USER }}" \
+                DB_PASS="${{ env.DB_PASS }}" \
+                DB_NAME="${{ env.DB_NAME }}" \
+                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
+                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+    
+
