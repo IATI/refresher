@@ -67,6 +67,30 @@ jobs:
           docker build . -f Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
 
+      - name: "Delete existing containers"
+        uses: "azure/CLI@1.0.4"
+        with:
+            azcliversion: 2.30.0
+            inlineScript: |
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
