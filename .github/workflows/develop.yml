@@ -92,7 +92,7 @@ jobs:
                 --resource-group "${{ env.RESOURCE_GROUP }}"
 
       - name: "Deploy Refresh to Azure Container Instances"
-        uses: ./.github/workflows/shared/deploy_aci.yml
+        uses: ./.github/workflows/deploy_aci.yml
         with:
           NAME: ${{ env.NAME }}
           CONTAINER_NAME: refresher
