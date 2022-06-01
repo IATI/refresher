@@ -170,7 +170,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
             except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
+                logger.info('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
             
             # remove from all solr collections
             for core_name in solr_cores:
