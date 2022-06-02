@@ -45,7 +45,7 @@ def process_hash_list(document_datasets):
             except:
                 logger.warning('Could not identify charset for ' + file_hash + '.xml')
                 continue
-            
+
             headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
             response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
             db.updateValidationRequestDate(conn, file_hash)
@@ -66,27 +66,27 @@ def process_hash_list(document_datasets):
                     continue
                 else: 
                     logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
-            
+
             report = response.json()
 
             state = report.get('valid', None)
 
             db.updateValidationState(conn, file_id, file_hash, file_url, publisher, state, json.dumps(report), publisher_name)
-            
+
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
             logger.error('ERROR with validating ' + file_hash)
             print(traceback.format_exc())
-            if hasattr(e, 'message'):                         
+            if hasattr(e, 'message'):
                 logger.error(e.message)
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 logger.error(e.msg)
             try:
                 logger.warning(e.args[0])
             except:
-                pass        
+                pass
 
     conn.close()
 
@@ -94,7 +94,7 @@ def service_loop():
     logger.info("Start service loop")
 
     while True:
-        main()            
+        main()
         time.sleep(60)
 
 def main():
