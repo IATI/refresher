@@ -65,7 +65,7 @@ def process_hash_list(document_datasets):
                 identifiers = activity.xpath("iati-identifier/text()")
                 if identifiers:
                     id_hash = utils.get_hash_for_identifier(clean_identifier(identifiers[0]))
-                    activity_xml = etree.tostring(activity)
+                    activity_xml = etree.tostring(activity, encoding='utf-8')
                     act_blob_client = blob_service_client.get_blob_client(container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(id_hash))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
                     act_blob_client.set_blob_tags({"dataset_hash": file_hash})
@@ -118,7 +118,7 @@ def main():
     db.resetUnfinishedLakifies(conn)
 
     file_hashes = db.getUnlakifiedDatasets(conn)
-
+    
     logger.info("Got unlakified datasets")
 
     if config['LAKIFY']['PARALLEL_PROCESSES'] == 1:
