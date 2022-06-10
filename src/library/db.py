@@ -273,7 +273,7 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
 
 def updateActivityLevelValidationError(conn, filehash, message):
     cur = conn.cursor()
-    sql = "UPDATE document SET alv_error=%(message)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET alv_error=%(message)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
 
     data = {
         "hash": filehash,
