@@ -37,8 +37,8 @@ env:
   COMMSHUB_URL: ${{ secrets.PROD_COMMSHUB_URL }}
   COMMSHUB_KEY: ${{ secrets.PROD_COMMSHUB_KEY }}
   REGISTRY_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-  REGISTRY_USERNAME: ${{ secrets.ACR_PASSWORD }}
-  REGISTRY_PASSWORD: ${{ secrets.ACR_USERNAME }}
+  REGISTRY_USERNAME: ${{ secrets.ACR_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
 jobs:
   build-and-deploy:
