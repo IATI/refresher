@@ -1,4 +1,4 @@
-name: Deploy_Refresher_To_Production_On_Push
+name: Deploy_Refresher_To_Production_On_Release
 
 on:
   release:
@@ -60,248 +60,271 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
       - name: "Build and push image"
         run: |
-          docker build . -f refresh-dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-refresh:$TAG
-          docker build . -f validate-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate:$TAG
-          docker build . -f validate-activity-level-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate-activity-level:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-validate-activity-level:$TAG
-          docker build . -f flatten-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-flatten:$TAG   
-          docker build . -f solrize-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-solrize:$TAG
-          docker build . -f lakify-dockerfile  -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME-lakify:$TAG
-      - name: "Deploy Refresh to Azure Container Instances"
+          docker build . -f Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+
+      - name: "Delete existing containers"
         uses: "azure/CLI@1.0.4"
         with:
             azcliversion: 2.30.0
             inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-refresh:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+              az container delete -y \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+                --resource-group "${{ env.RESOURCE_GROUP }}"
+                
+      - name: "Deploy Refresh to Azure Container Instances"
+        uses: "azure/CLI@1.0.4"
+        with:
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t refreshloop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
-                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
-                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
-                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
-                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-      
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t validateloop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+              SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
+              VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+              VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+              VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+
       - name: "Deploy Validate Activity Level to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-validate-activity-level:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
-                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
-                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
-                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
-                SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
-                SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
-                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t validate_activity_level_loop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
+              SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
+              VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+              VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+              SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
+              SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
+              VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-flatten:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
-                FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
-                FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-
-      - name: "Deploy Solrize to Azure Container Instances"
-        uses: "azure/CLI@1.0.4"
-        with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-solrize:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t flattenloop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
+              FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
+              FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}-lakify:${{ env.TAG }}" \
-              --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
-              --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t lakifyloop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+
+      - name: "Deploy Solrize to Azure Container Instances"
+        uses: "azure/CLI@1.0.4"
+        with:
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ secrets.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t solrizeloop" \
+            --registry-login-server "${{ secrets.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ secrets.REGISTRY_USERNAME }}" \
+            --registry-password "${{ secrets.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --vnet "${{ env.VNET }}" \
+            --subnet "default" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+
+      
