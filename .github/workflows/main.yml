@@ -127,6 +127,11 @@ jobs:
               ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -169,6 +174,11 @@ jobs:
               SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Validate Activity Level to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -213,6 +223,11 @@ jobs:
               SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+             az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -253,6 +268,11 @@ jobs:
               SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -289,6 +309,11 @@ jobs:
               DB_NAME="${{ env.DB_NAME }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
@@ -329,5 +354,10 @@ jobs:
               SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+                --tags avgCPU=true ACU=true ACUvalue=210 \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+                --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       
