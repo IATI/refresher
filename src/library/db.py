@@ -187,15 +187,16 @@ def removeBlackFlag(conn, org_id):
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
     sql = """
-    UPDATE publisher as pub
+    UPDATE publisher
     SET black_flag = NOW()
-    WHERE (
-        SELECT COUNT(document_hash)
+    WHERE org_id like (
+        SELECT publisher
         FROM validation 
-        WHERE publisher = pub.org_id
-        AND valid = false
+        WHERE valid = false
         AND NOW() - created < interval ' %(period_in_hours)s hours'
-    ) > %(threshold)s
+        GROUP BY publisher
+        HAVING COUNT(document_hash) >  %(threshold)s
+    )
     """
 
     data = {
