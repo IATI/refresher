@@ -84,7 +84,6 @@ def process_hash_list(document_datasets):
             logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}'.format(file_hash, doc_id, err_message))
             db.lakifyError(conn, doc_id, 'Failed to extract activities. Error: {}'.format(err_message))
         except Exception as e:
-            logger.error('ERROR with Lakifiying hash {} and doc id {}'.format(file_hash, doc_id))
             err_message = "Unknown error"
             if hasattr(e, 'args') and len(e.args) > 0:
                 err_message = e.args[0]
@@ -92,8 +91,7 @@ def process_hash_list(document_datasets):
                 err_message = e.message
             if hasattr(e, 'msg'):
                 err_message = e.msg 
-
-            logger.error(err_message)
+            logger.error('ERROR with Lakifiying hash {} and doc id {}. Error: {}'.format(file_hash, doc_id, err_message))
             db.lakifyError(conn, doc_id, err_message)
 
     conn.close()
