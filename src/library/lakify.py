@@ -35,10 +35,6 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             doc_id = file_data[2]
             file_url = file_data[3]
-            prior_error = file_data[4]
-
-            if prior_error == 422 or prior_error == 400 or prior_error == 413: #explicit error codes returned from Flattener
-                continue
 
             db.startLakify(conn, doc_id)
 
@@ -82,10 +78,12 @@ def process_hash_list(document_datasets):
             db.completeLakify(conn, doc_id)
 
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
-            logger.warning('Failed to extract activities to lake with hash {} and doc id {}'.format(file_hash, doc_id))
-            db.lakifyError(conn, doc_id, 'Failed to extract activities')
+            err_message = "Unknown error"
+            if hasattr(e, 'msg'):
+                err_message = e.msg 
+            logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}'.format(file_hash, doc_id, err_message))
+            db.lakifyError(conn, doc_id, 'Failed to extract activities. Error: {}'.format(err_message))
         except Exception as e:
-            logger.error('ERROR with Lakifiying hash {} and doc id {}'.format(file_hash, doc_id))
             err_message = "Unknown error"
             if hasattr(e, 'args') and len(e.args) > 0:
                 err_message = e.args[0]
@@ -93,8 +91,7 @@ def process_hash_list(document_datasets):
                 err_message = e.message
             if hasattr(e, 'msg'):
                 err_message = e.msg 
-
-            logger.error(err_message)
+            logger.error('ERROR with Lakifiying hash {} and doc id {}. Error: {}'.format(file_hash, doc_id, err_message))
             db.lakifyError(conn, doc_id, err_message)
 
     conn.close()
