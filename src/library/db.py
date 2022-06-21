@@ -132,7 +132,7 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND id = 'e56877dc-487f-41c9-aac9-c81ea0f923e8"
+        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"
     else:
         sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
 
