@@ -78,8 +78,11 @@ def process_hash_list(document_datasets):
             db.completeLakify(conn, doc_id)
 
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
-            logger.warning('Failed to extract activities to lake with hash {} and doc id {}'.format(file_hash, doc_id))
-            db.lakifyError(conn, doc_id, 'Failed to extract activities')
+            err_message = "Unknown error"
+            if hasattr(e, 'msg'):
+                err_message = e.msg 
+            logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}'.format(file_hash, doc_id, err_message))
+            db.lakifyError(conn, doc_id, 'Failed to extract activities. Error: {}'.format(err_message))
         except Exception as e:
             logger.error('ERROR with Lakifiying hash {} and doc id {}'.format(file_hash, doc_id))
             err_message = "Unknown error"
