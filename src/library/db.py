@@ -132,7 +132,7 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"
+        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND id = 'e56877dc-487f-41c9-aac9-c81ea0f923e8"
     else:
         sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
 
@@ -356,11 +356,12 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url, lakify_error
+    SELECT hash, downloaded, doc.id, url
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
+    AND doc.lakify_error is Null
     AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
@@ -377,7 +378,7 @@ def resetUnfinishedLakifies(conn):
         UPDATE document
         SET lakify_start=null
         WHERE lakify_end is null
-        AND lakify_error is not null
+        AND lakify_error is null
     """
 
     cur.execute(sql)
