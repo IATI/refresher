@@ -187,15 +187,16 @@ def removeBlackFlag(conn, org_id):
 def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     cur = conn.cursor()
     sql = """
-    UPDATE publisher as pub
+    UPDATE publisher
     SET black_flag = NOW()
-    WHERE (
-        SELECT COUNT(document_hash)
+    WHERE org_id like (
+        SELECT publisher
         FROM validation 
-        WHERE publisher = pub.org_id
-        AND valid = false
+        WHERE valid = false
         AND NOW() - created < interval ' %(period_in_hours)s hours'
-    ) > %(threshold)s
+        GROUP BY publisher
+        HAVING COUNT(document_hash) >  %(threshold)s
+    )
     """
 
     data = {
@@ -356,11 +357,12 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url, lakify_error
+    SELECT hash, downloaded, doc.id, url
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
     AND doc.lakify_start is Null
+    AND doc.lakify_error is Null
     AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
     AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
@@ -377,7 +379,7 @@ def resetUnfinishedLakifies(conn):
         UPDATE document
         SET lakify_start=null
         WHERE lakify_end is null
-        AND lakify_error is not null
+        AND lakify_error is null
     """
 
     cur.execute(sql)
