@@ -18,6 +18,7 @@ config = dict(DATA_SCHEMA = "public",
     DB_HOST = os.getenv('DB_HOST'),
     DB_PORT = os.getenv('DB_PORT'),
     DB_NAME = os.getenv('DB_NAME'),
+    DB_SSL_MODE = os.getenv('DB_SSL_MODE') or "require",
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
         ADHOC_PARALLEL_PROCESSES = 1,
