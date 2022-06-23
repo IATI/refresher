@@ -62,6 +62,7 @@ Setup a `.vscode/launch.json` to run locally with attached debugging like so:
         "DB_HOST": "localhost",
         "DB_NAME": "refresher",
         "DB_PORT": "5432",
+        "DB_SSL_MODE": "disable",
         "PARALLEL_PROCESSES": "10"
       }
     }
@@ -88,6 +89,7 @@ Example for connecting to local db you made above:
 - "DB_HOST": "localhost",
 - "DB_NAME": "refresher",
 - "DB_PORT": "5432",
+- "DB_SSL_MODE": "disable" - leaving blank with default to "require"
 
 See `src/constants/config.py` for additional required Environment variables per service.
 
