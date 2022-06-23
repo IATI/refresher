@@ -9,7 +9,7 @@ import time
 logger = getLogger()
 
 def getDirectConnection():
-    return psycopg2.connect(database=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'])
+    return psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'], sslmode="require")
 
 
 def isUpgrade(fromVersion, toVersion):
