@@ -49,7 +49,6 @@ def get_current_db_version(conn):
 def checkVersionMatch():
     conn = getDirectConnection()
     conn.set_session(autocommit=True)
-    cursor = conn.cursor()
     current_db_version = get_current_db_version(conn)
 
     while current_db_version['number'] != __version__['number']:
@@ -57,6 +56,7 @@ def checkVersionMatch():
         time.sleep(60)
         current_db_version = get_current_db_version(conn)
 
+    conn.close()
     return
 
 
@@ -121,6 +121,7 @@ def migrateIfRequired():
         sql = 'UPDATE public.version SET number = %s, migration = %s'
         cursor.execute(sql, (__version__['number'], __version__['migration']))
         conn.commit()
+        conn.close()
     except Exception as e:
         logger.warning('Encountered unexpected exemption during migration... Rolling back...')
         conn.rollback()
