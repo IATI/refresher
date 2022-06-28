@@ -5,28 +5,32 @@ import psycopg2
 from library.logger import getLogger
 from datetime import datetime
 import time
-from psycopg2 import Error as DbError
 
 logger = getLogger()
+LIMIT_RETRIES = 5
+SLEEP_START = 5
+SLEEP_MAX = 60
 
-def getDirectConnection():
+def getDirectConnection(retry_counter=0):
     try:
-        return psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'])
-    except DbError as e:
-        e_message = 'Unidentified'
-        if e.pgerror is not None:
-            e_message = e.pgerror
-        if hasattr(e, 'args'):
-            e_message = e.args[0]
-        logger.error('Failed to get database connection: DbError: {}'.format(e_message))
-        raise e
-    except Exception as e:
-        e_message = 'Unidentified'
-        if hasattr(e, 'args'):
-            e_message = e.args[0]
-        logger.error('Failed to get database connection: Exception: {}'.format(e_message))
-        raise e
-    return None
+        connection = psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=3)
+        retry_counter = 0
+        return connection
+    except psycopg2.OperationalError as e:
+        if retry_counter >= LIMIT_RETRIES:
+            raise e
+        else:
+            retry_counter += 1
+            logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(str(e).strip(), retry_counter))
+            sleep_time = SLEEP_START * retry_counter * retry_counter
+            if sleep_time > SLEEP_MAX:
+                sleep_time = SLEEP_MAX
+            logger.info("Sleeping {}s".format(sleep_time))
+            time.sleep(sleep_time)
+            return getDirectConnection(retry_counter)
+    except (Exception, psycopg2.Error) as e:
+            logger.error("Error connecting: {}. reconnecting {}".format(str(e).strip(), retry_counter))
+            raise e
 
 def isUpgrade(fromVersion, toVersion):
     fromSplit = fromVersion.split('.')

@@ -55,7 +55,7 @@ def main(args):
             else:
                 print("Type is required - either refresh, reload, validate, validate_activity_level, flatten, lakify, or solrize - or their related service loop.")
     except Exception as e:
-        logger.error('{} Failed'.format((args.type)))
+        logger.error('{} Failed. {}'.format(args.type, str(e).strip()))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh from IATI Registry')
