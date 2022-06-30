@@ -178,7 +178,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.error('Failed to remove stale docs with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+                    logger.error('Failed to remove stale docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
         
         for (file_id, file_hash) in changed_datasets:
             # remove source xml
@@ -192,7 +192,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.warn('Failed to remove changed docs with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+                    logger.warn('Failed to remove changed docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
 
 
 def sync_publishers():
