@@ -165,7 +165,22 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
 
         source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
-        for (file_id, file_hash) in combined_datasets_toclean:
+        # stale documents are more important to clean up as they won't be caught later in pipeline
+        for (file_id, file_hash) in stale_datasets:
+            # remove source xml
+            try:
+                source_container_client.delete_blob(file_hash + '.xml')
+            except (AzureExceptions.ResourceNotFoundError) as e:
+                logger.warning('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
+            
+            # remove from all solr collections
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.error('Failed to remove stale docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+        
+        for (file_id, file_hash) in changed_datasets:
             # remove source xml
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
@@ -177,7 +192,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.warn('Failed to remove docs with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+                    logger.warn('Failed to remove changed docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
 
 
 def sync_publishers():
