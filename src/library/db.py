@@ -790,6 +790,21 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
         curs.execute(sql, data)
     conn.commit()
 
+def updatePublisherAsSeen(conn, name, last_seen):
+    sql = """
+        UPDATE publisher
+        SET last_seen = %(last_seen)s
+        WHERE publisher.name = %(name)s
+    """
+
+    data = {
+        "last_seen": last_seen,
+        "name": name
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     sql1 = """

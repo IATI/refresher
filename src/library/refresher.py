@@ -210,6 +210,7 @@ def sync_publishers():
     for publisher_name in publisher_list:
         time.sleep(1)
         try:
+            db.updatePublisherAsSeen(conn, publisher_name, start_dt)
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
             response = requests_retry_session().get(url=api_url, timeout=30)
             response.raise_for_status()
@@ -224,13 +225,19 @@ def sync_publishers():
             e_message = ''
             if e.pgerror is not None:
                 e_message = e.pgerror
-            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e_message)
+            elif hasattr(e, 'args'):
+                e_message = e.args[0]
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ': DbError : ' + e_message)
             conn.rollback()
+            conn.close()
+            raise e
         except Exception as e:
             e_message = ''
             if hasattr(e, 'args'):
                 e_message = e.args[0]
             logger.error('Failed to sync publisher with name ' + publisher_name + ' : Unidentified Error: ' + e_message)
+            conn.close()
+            raise e
     
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
