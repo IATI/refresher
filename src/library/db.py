@@ -1,4 +1,7 @@
-import os, importlib, pathlib, sys
+import os
+import importlib
+import pathlib
+import sys
 from constants.version import __version__
 from constants.config import config
 import psycopg2
@@ -11,9 +14,11 @@ LIMIT_RETRIES = 5
 SLEEP_START = 5
 SLEEP_MAX = 60
 
+
 def getDirectConnection(retry_counter=0):
     try:
-        connection = psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'], host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=3)
+        connection = psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'],
+                                      host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=3)
         retry_counter = 0
         return connection
     except psycopg2.OperationalError as e:
@@ -21,7 +26,8 @@ def getDirectConnection(retry_counter=0):
             raise e
         else:
             retry_counter += 1
-            logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(str(e).strip(), retry_counter))
+            logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
+                str(e).strip(), retry_counter))
             sleep_time = SLEEP_START * retry_counter * retry_counter
             if sleep_time > SLEEP_MAX:
                 sleep_time = SLEEP_MAX
@@ -29,8 +35,10 @@ def getDirectConnection(retry_counter=0):
             time.sleep(sleep_time)
             return getDirectConnection(retry_counter)
     except (Exception, psycopg2.Error) as e:
-            logger.error("Error connecting: {}. reconnecting {}".format(str(e).strip(), retry_counter))
-            raise e
+        logger.error("Error connecting: {}. reconnecting {}".format(
+            str(e).strip(), retry_counter))
+        raise e
+
 
 def isUpgrade(fromVersion, toVersion):
     fromSplit = fromVersion.split('.')
@@ -99,7 +107,7 @@ def migrateIfRequired():
     if current_db_version['number'] == __version__['number']:
         logger.info('DB at correct version')
         return
-    
+
     upgrade = isUpgrade(current_db_version['number'], __version__['number'])
 
     if upgrade:
@@ -119,7 +127,8 @@ def migrateIfRequired():
             migration = 'mig_' + str(mig_num)
 
             parent = str(pathlib.Path(__file__).parent.absolute())
-            spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
+            spec = importlib.util.spec_from_file_location(
+                "migration", parent + "/../migrations/" + migration + ".py")
             mig = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mig)
 
@@ -134,7 +143,8 @@ def migrateIfRequired():
             sql = sql.replace('\n', ' ')
             sql = sql.replace('\t', ' ')
 
-            logger.info('Making schema ' + logmessage + ' in migration ' + str(mig_num))
+            logger.info('Making schema ' + logmessage +
+                        ' in migration ' + str(mig_num))
 
             cursor.execute(sql)
 
@@ -143,7 +153,8 @@ def migrateIfRequired():
         conn.commit()
         conn.close()
     except Exception as e:
-        logger.warning('Encountered unexpected exemption during migration... Rolling back...')
+        logger.warning(
+            'Encountered unexpected exemption during migration... Rolling back...')
         conn.rollback()
         conn.close()
         raise e
@@ -245,6 +256,7 @@ def getUnnotifiedBlackFlags(conn):
     cur.close()
     return results
 
+
 def updateBlackFlagNotified(conn, org_id, notified=True):
     cur = conn.cursor()
 
@@ -293,6 +305,7 @@ def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     cur.close()
     return results
 
+
 def updateActivityLevelValidationError(conn, filehash, message):
     cur = conn.cursor()
     sql = "UPDATE document SET alv_error=%(message)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
@@ -310,7 +323,7 @@ def updateActivityLevelValidationError(conn, filehash, message):
 def getUnvalidatedAdhocDocs(conn):
     cur = conn.cursor()
     sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
-    cur.execute(sql)    
+    cur.execute(sql)
     results = cur.fetchall()
     cur.close()
     return results
@@ -341,7 +354,7 @@ def getFlattenedActivitiesForDoc(conn, hash):
     FROM document as doc
     WHERE doc.hash = %(hash)s
     """
-    data = {"hash" : hash}
+    data = {"hash": hash}
 
     cur.execute(sql, data)
     results = cur.fetchall()
@@ -407,6 +420,7 @@ def resetUnfinishedLakifies(conn):
     conn.commit()
     cur.close()
 
+
 def resetUnfoundLakify(conn, doc_id):
     cur = conn.cursor()
     sql = """
@@ -453,6 +467,7 @@ def updateValidationRequestDate(conn, filehash):
     cur.execute(sql, data)
     conn.commit()
     cur.close()
+
 
 def updateActivityLevelValidationStart(conn, filehash):
     cur = conn.cursor()
@@ -537,7 +552,7 @@ def startFlatten(conn, doc_id):
     }
 
     cur.execute(sql, data)
-    
+
     conn.commit()
     cur.close()
 
@@ -557,7 +572,7 @@ def startLakify(conn, doc_id):
     }
 
     cur.execute(sql, data)
-    
+
     conn.commit()
     cur.close()
 
@@ -577,7 +592,7 @@ def updateFlattenError(conn, doc_id, error):
     }
 
     cur.execute(sql, data)
-    
+
     conn.commit()
     cur.close()
 
@@ -598,7 +613,7 @@ def completeFlatten(conn, doc_id, flattened_activities):
     }
 
     cur.execute(sql, data)
-    
+
     conn.commit()
     cur.close()
 
@@ -726,7 +741,7 @@ def updateFileAsDownloadError(conn, id, status):
 def updateAdhocFileAsUnavailable(conn, hash, status):
     cur = conn.cursor()
 
-    sql="UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
+    sql = "UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
 
     data = {
         "id": id,
@@ -838,7 +853,7 @@ def getFileWhereHashChanged(conn, id, hash):
         "hash": hash
     }
 
-    cur.execute(sql,data)
+    cur.execute(sql, data)
     results = cur.fetchone()
     cur.close()
     return results
@@ -955,7 +970,7 @@ def updateAdhocValidationState(conn, doc_hash, state, report):
     conn.commit()
 
 
-def getNumPublishers(conn): 
+def getNumPublishers(conn):
 
     cur = conn.cursor()
 
