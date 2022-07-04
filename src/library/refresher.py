@@ -165,7 +165,22 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
 
         source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
 
-        for (file_id, file_hash) in combined_datasets_toclean:
+        # stale documents are more important to clean up as they won't be caught later in pipeline
+        for (file_id, file_hash) in stale_datasets:
+            # remove source xml
+            try:
+                source_container_client.delete_blob(file_hash + '.xml')
+            except (AzureExceptions.ResourceNotFoundError) as e:
+                logger.warning('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
+            
+            # remove from all solr collections
+            for core_name in solr_cores:
+                try:
+                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                except:
+                    logger.error('Failed to remove stale docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+        
+        for (file_id, file_hash) in changed_datasets:
             # remove source xml
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
@@ -177,7 +192,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                 try:
                     solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
                 except:
-                    logger.warn('Failed to remove docs with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+                    logger.warn('Failed to remove changed docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
 
 
 def sync_publishers():
@@ -195,6 +210,7 @@ def sync_publishers():
     for publisher_name in publisher_list:
         time.sleep(1)
         try:
+            db.updatePublisherAsSeen(conn, publisher_name, start_dt)
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
             response = requests_retry_session().get(url=api_url, timeout=30)
             response.raise_for_status()
@@ -209,13 +225,19 @@ def sync_publishers():
             e_message = ''
             if e.pgerror is not None:
                 e_message = e.pgerror
-            logger.warning('Failed to sync publisher with name ' + publisher_name + ' : ' + e_message)
+            elif hasattr(e, 'args'):
+                e_message = e.args[0]
+            logger.warning('Failed to sync publisher with name ' + publisher_name + ': DbError : ' + e_message)
             conn.rollback()
+            conn.close()
+            raise e
         except Exception as e:
             e_message = ''
             if hasattr(e, 'args'):
                 e_message = e.args[0]
             logger.error('Failed to sync publisher with name ' + publisher_name + ' : Unidentified Error: ' + e_message)
+            conn.close()
+            raise e
     
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
