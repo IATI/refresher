@@ -12,7 +12,6 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  VNET: dev-iati-refresher
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher-dev
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.DEV_STORAGE_CONNECTION_STRING }}
@@ -111,8 +110,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
@@ -154,8 +151,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -201,8 +196,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
@@ -250,8 +243,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -295,8 +286,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -336,8 +325,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
