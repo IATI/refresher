@@ -12,7 +12,6 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  VNET: dev-iati-refresher
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher-dev
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.DEV_STORAGE_CONNECTION_STRING }}
@@ -37,8 +36,6 @@ env:
   DB_PORT: ${{ secrets.DB_PORT }}
   LOG_WORKSPACE_ID: ${{ secrets.DEV_LOG_WORKSPACE_ID }}
   LOG_WORKSPACE_KEY: ${{ secrets.DEV_LOG_WORKSPACE_KEY }}
-  TEST_LOG_WORKSPACE_ID: ${{ secrets.TEST_LOG_WORKSPACE_ID }}
-  TEST_LOG_WORKSPACE_KEY: ${{ secrets.TEST_LOG_WORKSPACE_KEY }}
   ACTIVITIES_LAKE_CONTAINER_NAME: ${{ secrets.DEV_ACTIVITIES_LAKE_CONTAINER_NAME }}
   SOLR_500_SLEEP: ${{ secrets.DEV_SOLR_500_SLEEP }}
   COMMSHUB_URL: ${{ secrets.DEV_COMMSHUB_URL }}
@@ -113,13 +110,11 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
-              --log-analytics-workspace "${{ env.TEST_LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.TEST_LOG_WORKSPACE_KEY }}" \
+              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -156,8 +151,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -203,8 +196,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
@@ -252,8 +243,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -297,8 +286,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
@@ -338,8 +325,6 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
