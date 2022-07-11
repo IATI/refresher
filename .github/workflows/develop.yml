@@ -1,6 +1,7 @@
 name: Deploy_Refresher_To_Development_On_Push
 
 on:
+  workflow_dispatch:
   push:
     paths-ignore: # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
       - '**/README.md'
@@ -11,9 +12,9 @@ on:
 env:
   STAGE: dev-aci-iati
   NAME: refresher
-  VNET: dev-iati-refresher
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher-dev
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.DEV_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.DEV_AZURE_STORAGE_CONTAINER_SOURCE }}
   FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
@@ -110,13 +111,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -153,13 +153,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -200,13 +199,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -249,13 +247,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -294,13 +291,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "2" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
@@ -335,13 +331,12 @@ jobs:
               --location "uksouth" \
               --restart-policy "Always" \
               --ip-address "Private" \
-              --vnet "${{ env.VNET }}" \
-              --subnet "default" \
               --memory "4" \
               --cpu "1" \
               --os-type "Linux" \
               --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
               --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
               --secure-environment-variables \
                 AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
                 AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
