@@ -60,7 +60,7 @@ def fetch_datasets():
     live_count = full_count
     last_live_count = None
     last_current_count = None
-    numbers_not_changing_count = 0    
+    numbers_not_changing_count = 0
 
     while current_count < live_count:
         time.sleep(1)
@@ -142,7 +142,7 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
         try:
             solr_cores = {}
             solr_cores['activity'] = addCore('activity')
-            explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])        
+            explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 
             for core_name in explode_elements:
                 solr_cores[core_name] = addCore(core_name)
@@ -152,11 +152,11 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
         except Exception as e:
             logger.error('ERROR with Initialising Solr to delete stale or changed documents')
             print(traceback.format_exc())
-            if hasattr(e, 'args'):                     
+            if hasattr(e, 'args'):
                 logger.error(e.args[0])
-            if hasattr(e, 'message'):                         
+            if hasattr(e, 'message'):
                 logger.error(e.message)
-            if hasattr(e, 'msg'):                         
+            if hasattr(e, 'msg'):
                 logger.error(e.msg)
             try:
                 logger.warning(e.args[0])
@@ -262,7 +262,7 @@ def sync_documents():
     
     changed_datasets = []
 
-    for dataset in all_datasets:   
+    for dataset in all_datasets:
         try:
             changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
             if changed is not None:
@@ -280,14 +280,14 @@ def sync_documents():
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
     if (len(changed_datasets) > 0 or len(stale_datasets) > 0):
-        clean_datasets(conn, stale_datasets, changed_datasets)   
+        clean_datasets(conn, stale_datasets, changed_datasets)
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 
     conn.close()
 
-def refresh():        
-    logger.info('Begin refresh')       
+def refresh():
+    logger.info('Begin refresh')
 
     logger.info('Syncing publishers from the Registry...')
     try:
@@ -346,9 +346,9 @@ def service_loop():
         if count > config['RETRY_ERRORS_AFTER_LOOP']:
             count = 0
             reload(True)
-        else:        
+        else:
             reload(False)
-            
+
         time.sleep(config['SERVICE_LOOP_SLEEP'])
 
 def split(lst, n):
@@ -400,4 +400,3 @@ def download_chunk(chunk, blob_service_client, datasets):
             if hasattr(e, 'args'):
                 e_message = e.args[0]
             logger.warning('Failed to upload or download file with url: ' + url + ' and hash: ' + hash + ' and id: ' + id + ' Error: ' + e_message)
-            

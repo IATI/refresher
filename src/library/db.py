@@ -850,28 +850,34 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     }
 
     with conn.cursor() as curs:
-        curs.execute(sql1, data)
+        if hash != "":
+            curs.execute(sql1, data)
+        else:
+            logger.warning("Dataset ID {} is hashless. Skipping update.".format(id)
         curs.execute(sql2, data)
     conn.commit()
 
 
 def getFileWhereHashChanged(conn, id, hash):
-    cur = conn.cursor()
+    if hash != "":
+        cur = conn.cursor()
 
-    sql = """
-        SELECT id, hash FROM document
-        WHERE document.id=%(id)s and document.hash != %(hash)s;
-    """
+        sql = """
+            SELECT id, hash FROM document
+            WHERE document.id=%(id)s and document.hash != %(hash)s;
+        """
 
-    data = {
-        "id": id,
-        "hash": hash
-    }
+        data = {
+            "id": id,
+            "hash": hash
+        }
 
-    cur.execute(sql, data)
-    results = cur.fetchone()
-    cur.close()
-    return results
+        cur.execute(sql, data)
+        results = cur.fetchone()
+        cur.close()
+        return results
+    else:
+        return None
 
 
 def getFilesNotSeenAfter(conn, dt):
