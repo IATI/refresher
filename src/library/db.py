@@ -807,39 +807,32 @@ def updatePublisherAsSeen(conn, name, last_seen):
     conn.commit()
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
-    if hash != "":
-        sql1 = """
-            INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
-            VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
-            ON CONFLICT (id) DO
-                UPDATE SET hash = %(hash)s,
-                    url = %(url)s,
-                    modified = %(dt)s,
-                    downloaded = null,
-                    download_error = null,
-                    validation_request = null,
-                    validation_api_error = null,
-                    validation = null,
-                    lakify_start = null,
-                    lakify_end = null,
-                    lakify_error = null,
-                    flatten_start = null,
-                    flatten_end = null,
-                    flatten_api_error = null,
-                    solrize_start = null,
-                    solrize_end = null,
-                    solr_api_error = null,
-                    alv_start = null,
-                    alv_end = null,
-                    alv_error = null
-                WHERE document.id=%(id)s and document.hash != %(hash)s;
-        """
-    else:
-        sql1 = """
-            INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
-            VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
-            ON CONFLICT (id) DO NOTHING;
-        """
+    sql1 = """
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
+        ON CONFLICT (id) DO 
+            UPDATE SET hash = %(hash)s,
+                url = %(url)s,
+                modified = %(dt)s,
+                downloaded = null,
+                download_error = null,
+                validation_request = null,
+                validation_api_error = null,
+                validation = null,
+                lakify_start = null,
+                lakify_end = null,
+                lakify_error = null,
+                flatten_start = null,
+                flatten_end = null,
+                flatten_api_error = null,
+                solrize_start = null,
+                solrize_end = null,
+                solr_api_error = null,
+                alv_start = null,
+                alv_end = null,
+                alv_error = null
+            WHERE document.id=%(id)s and document.hash != %(hash)s;
+    """
 
     sql2 = """
             UPDATE document SET
@@ -857,7 +850,10 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     }
 
     with conn.cursor() as curs:
-        curs.execute(sql1, data)
+        if hash != "":
+            curs.execute(sql1, data)
+        else:
+            logger.warning("Dataset ID {} is hashless. Skipping update.".format(id))
         curs.execute(sql2, data)
     conn.commit()
 
@@ -881,7 +877,6 @@ def getFileWhereHashChanged(conn, id, hash):
         cur.close()
         return results
     else:
-        logger.warning("Dataset ID {} is hashless. Marking as unchanged.".format(id))
         return None
 
 
