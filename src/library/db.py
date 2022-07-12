@@ -853,7 +853,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
         if hash != "":
             curs.execute(sql1, data)
         else:
-            logger.warning("Dataset ID {} is hashless. Skipping update.".format(id)
+            logger.warning("Dataset ID {} is hashless. Skipping update.".format(id))
         curs.execute(sql2, data)
     conn.commit()
 
