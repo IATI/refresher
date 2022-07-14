@@ -1,7 +1,5 @@
-import os
 import importlib
 import pathlib
-import sys
 from constants.version import __version__
 from constants.config import config
 import psycopg2
