@@ -22,7 +22,7 @@ config = dict(DATA_SCHEMA = "public",
     DB_CONN_RETRY_LIMIT = 5,
     DB_CONN_SLEEP_START = 5,
     DB_CONN_SLEEP_MAX = 60,
-    DB_CONN_TIMEOUT = 3,
+    DB_CONN_TIMEOUT = 5,
     VALIDATION = dict(
         PARALLEL_PROCESSES = 1,
         ADHOC_PARALLEL_PROCESSES = 1,
