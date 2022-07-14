@@ -1,7 +1,5 @@
-import os
 import importlib
 import pathlib
-import sys
 from constants.version import __version__
 from constants.config import config
 import psycopg2
@@ -10,27 +8,24 @@ from datetime import datetime
 import time
 
 logger = getLogger()
-LIMIT_RETRIES = 5
-SLEEP_START = 5
-SLEEP_MAX = 60
 
 
 def getDirectConnection(retry_counter=0):
     try:
         connection = psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'],
-                                      host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=3)
+                                      host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=config['DB_CONN_TIMEOUT'])
         retry_counter = 0
         return connection
     except psycopg2.OperationalError as e:
-        if retry_counter >= LIMIT_RETRIES:
+        if retry_counter >= config['DB_CONN_RETRY_LIMIT']:
             raise e
         else:
             retry_counter += 1
             logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
                 str(e).strip(), retry_counter))
-            sleep_time = SLEEP_START * retry_counter * retry_counter
-            if sleep_time > SLEEP_MAX:
-                sleep_time = SLEEP_MAX
+            sleep_time = config['DB_CONN_SLEEP_START'] * retry_counter * retry_counter
+            if sleep_time > config['DB_CONN_SLEEP_MAX']:
+                sleep_time = config['DB_CONN_SLEEP_MAX']
             logger.info("Sleeping {}s".format(sleep_time))
             time.sleep(sleep_time)
             return getDirectConnection(retry_counter)
@@ -790,6 +785,7 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
         curs.execute(sql, data)
     conn.commit()
 
+
 def updatePublisherAsSeen(conn, name, last_seen):
     sql = """
         UPDATE publisher
@@ -805,6 +801,7 @@ def updatePublisherAsSeen(conn, name, last_seen):
     with conn.cursor() as curs:
         curs.execute(sql, data)
     conn.commit()
+
 
 def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     sql1 = """
