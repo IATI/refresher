@@ -355,6 +355,19 @@ def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
+
+def clean_source_by_id(blob_service_client, document_id):
+    try:
+        logger.info('Removing document ID {} from source container.'.format(document_id))
+        source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
+        filter_config = "@container='"+ str(config["SOURCE_CONTAINER_NAME"]) + "' and document_id='" + document_id + "'"
+        assoc_blobs = source_container_client.find_blobs_by_tags(filter_config)
+        if len(assoc_blobs) > 0:
+            source_container_client.delete_blobs(assoc_blobs[0]["name"])
+    except Exception as e:
+        logger.warning('Failed to clean up source for id: '.format(document_id))
+
+
 def download_chunk(chunk, blob_service_client, datasets):
     conn = db.getDirectConnection()
 
@@ -376,6 +389,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                     # log error for undetectable charset, prevent PDFs from being downloaded to Unified Platform
                     if charset is None:
                         db.updateFileAsDownloadError(conn, id, 2 )
+                        clean_source_by_id(blob_service_client, id)
                         continue
                 except:
                     charset = 'UTF-8'
@@ -384,15 +398,20 @@ def download_chunk(chunk, blob_service_client, datasets):
                 db.updateFileAsDownloaded(conn, id)
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
+                clean_source_by_id(blob_service_client, id)
         except (requests.exceptions.SSLError) as e:
             db.updateFileAsDownloadError(conn, id, 1)
+            clean_source_by_id(blob_service_client, id)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
+            clean_source_by_id(blob_service_client, id)
         except (requests.exceptions.InvalidSchema) as e:
             logger.warning('Failed to download file with hash: ' + hash + ' and id: ' + id + ' Error: ' + e.args[0])
             db.updateFileAsDownloadError(conn, id, 3)
+            clean_source_by_id(blob_service_client, id)
         except (AzureExceptions.ResourceNotFoundError) as e:
             db.updateFileAsDownloadError(conn, id, e.status_code)
+            clean_source_by_id(blob_service_client, id)
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload file with url: ' + url + ' and hash: ' + hash + ' and id: ' + id + ' - Azure error message: ' + e.message)
         except Exception as e:
