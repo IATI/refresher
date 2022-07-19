@@ -110,6 +110,20 @@ def get_paginated_response(url, offset, limit, retval = []):
     except Exception as e:
         logger.error('IATI Registry returned other than 200 when getting the list of orgs')
 
+
+
+def clean_source_by_id(blob_service_client, document_id):
+    try:
+        logger.info('Removing document ID {} from source container.'.format(document_id))
+        source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
+        filter_config = "@container='"+ str(config["SOURCE_CONTAINER_NAME"]) + "' and document_id='" + document_id + "'"
+        assoc_blobs = source_container_client.find_blobs_by_tags(filter_config)
+        if len(assoc_blobs) > 0:
+            source_container_client.delete_blobs(assoc_blobs[0]["name"])
+    except Exception as e:
+        logger.warning('Failed to clean up source for id: '.format(document_id))
+
+
 def clean_datasets(conn, stale_datasets, changed_datasets):
     blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
     
@@ -171,7 +185,8 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
             except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
+                logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
+                clean_source_by_id(blob_service_client, file_id)
             
             # remove from all solr collections
             for core_name in solr_cores:
@@ -185,7 +200,8 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
             try:
                 source_container_client.delete_blob(file_hash + '.xml')
             except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.info('Can not delete blob as does not exist: ' + file_hash + '.xml and id: ' + file_id )
+                logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
+                clean_source_by_id(blob_service_client, file_id)
             
             # remove from all solr collections
             for core_name in solr_cores:
@@ -354,18 +370,6 @@ def service_loop():
 def split(lst, n):
     k, m = divmod(len(lst), n)
     return (lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
-
-
-def clean_source_by_id(blob_service_client, document_id):
-    try:
-        logger.info('Removing document ID {} from source container.'.format(document_id))
-        source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
-        filter_config = "@container='"+ str(config["SOURCE_CONTAINER_NAME"]) + "' and document_id='" + document_id + "'"
-        assoc_blobs = source_container_client.find_blobs_by_tags(filter_config)
-        if len(assoc_blobs) > 0:
-            source_container_client.delete_blobs(assoc_blobs[0]["name"])
-    except Exception as e:
-        logger.warning('Failed to clean up source for id: '.format(document_id))
 
 
 def download_chunk(chunk, blob_service_client, datasets):
