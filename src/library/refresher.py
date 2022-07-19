@@ -181,35 +181,39 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
 
         # stale documents are more important to clean up as they won't be caught later in pipeline
         for (file_id, file_hash) in stale_datasets:
-            # remove source xml
             try:
-                source_container_client.delete_blob(file_hash + '.xml')
-            except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
-                clean_source_by_id(blob_service_client, file_id)
-            
-            # remove from all solr collections
-            for core_name in solr_cores:
+                # remove source xml
                 try:
-                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
-                except:
-                    logger.error('Failed to remove stale docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
-        
-        for (file_id, file_hash) in changed_datasets:
-            # remove source xml
-            try:
-                source_container_client.delete_blob(file_hash + '.xml')
-            except (AzureExceptions.ResourceNotFoundError) as e:
-                logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
-                clean_source_by_id(blob_service_client, file_id)
-            
-            # remove from all solr collections
-            for core_name in solr_cores:
-                try:
-                    solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
-                except:
-                    logger.warn('Failed to remove changed docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)  
+                    source_container_client.delete_blob(file_hash + '.xml')
+                except (AzureExceptions.ResourceNotFoundError) as e:
+                    logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
+                    clean_source_by_id(blob_service_client, file_id)
 
+                # remove from all solr collections
+                for core_name in solr_cores:
+                    try:
+                        solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                    except:
+                        logger.error('Failed to remove stale docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)
+            except Exception as e:
+                logger.error('Unknown error occurred while attempting to remove scale document ID {} from Source and SOLR'.format(file_id))
+        for (file_id, file_hash) in changed_datasets:
+            try:
+                # remove source xml
+                try:
+                    source_container_client.delete_blob(file_hash + '.xml')
+                except (AzureExceptions.ResourceNotFoundError) as e:
+                    logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(file_id, file_hash))
+                    clean_source_by_id(blob_service_client, file_id)
+
+                # remove from all solr collections
+                for core_name in solr_cores:
+                    try:
+                        solr_cores[core_name].delete(q='iati_activities_document_id:' + file_id)
+                    except:
+                        logger.warn('Failed to remove changed docs from solr with hash: ' + file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)
+            except Exception as e:
+                logger.error('Unknown error occurred while attempting to remove changed document ID {} from Source and SOLR'.format(file_id))
 
 def sync_publishers():
     conn = db.getDirectConnection()
@@ -278,7 +282,7 @@ def sync_documents():
     
     changed_datasets = []
 
-    for dataset in all_datasets:   
+    for dataset in all_datasets:
         try:
             changed = db.getFileWhereHashChanged(conn,  dataset['id'],  dataset['hash'])
             if changed is not None:
