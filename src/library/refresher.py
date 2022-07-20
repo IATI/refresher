@@ -259,7 +259,7 @@ def sync_publishers():
             conn.close()
             raise e
     
-    stale_datasets = db.fetchDocumentsFromPublishersNotSeenAfter(conn, start_dt)
+    stale_datasets = db.getFilesFromPublishersNotSeenAfter(conn, start_dt)
     if (len(stale_datasets) > 0):
         clean_datasets(conn, stale_datasets, [])
     db.removePublishersNotSeenAfter(conn, start_dt)

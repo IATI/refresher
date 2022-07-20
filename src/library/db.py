@@ -900,7 +900,7 @@ def removeFilesNotSeenAfter(conn, dt):
     cur.close()
 
 
-def fetchDocumentsFromPublishersNotSeenAfter(conn, dt):
+def getFilesFromPublishersNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
     sql = """
