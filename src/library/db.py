@@ -900,6 +900,24 @@ def removeFilesNotSeenAfter(conn, dt):
     cur.close()
 
 
+def fetchDocumentsFromPublishersNotSeenAfter(conn, dt):
+    cur = conn.cursor()
+
+    sql = """
+        SELECT document.id, document.hash FROM document
+            LEFT JOIN publisher
+            ON document.publisher = publisher.org_id
+            WHERE publisher.last_seen < %s
+    """
+
+    data = (dt,)
+
+    cur.execute(sql, data)
+    results = cur.fetchall()
+    cur.close()
+    return results
+
+
 def removePublishersNotSeenAfter(conn, dt):
     cur = conn.cursor()
 
