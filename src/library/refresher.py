@@ -114,14 +114,14 @@ def get_paginated_response(url, offset, limit, retval = []):
 
 def clean_source_by_id(blob_service_client, document_id):
     try:
-        logger.info('Removing document ID {} from source container.'.format(document_id))
         source_container_client = blob_service_client.get_container_client(config['SOURCE_CONTAINER_NAME'])
         filter_config = "@container='"+ str(config["SOURCE_CONTAINER_NAME"]) + "' and document_id='" + document_id + "'"
-        assoc_blobs = source_container_client.find_blobs_by_tags(filter_config)
+        assoc_blobs = list(blob_service_client.find_blobs_by_tags(filter_config))
         if len(assoc_blobs) > 0:
+            logger.info('Removing document ID {} from source container.'.format(document_id))
             source_container_client.delete_blobs(assoc_blobs[0]["name"])
     except Exception as e:
-        logger.warning('Failed to clean up source for id: '.format(document_id))
+        logger.warning('Failed to clean up source for id: {}. {}'.format(document_id, e))
 
 
 def clean_datasets(conn, stale_datasets, changed_datasets):
