@@ -216,7 +216,7 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     sql = """
     UPDATE publisher
     SET black_flag = NOW()
-    WHERE org_id like (
+    WHERE org_id IN (
         SELECT publisher
         FROM validation 
         WHERE valid = false
