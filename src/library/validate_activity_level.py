@@ -191,7 +191,7 @@ def main():
             logger.warning('Could not process message with id:  ' + message.id + ' for publisher id: ' + message.content)
             continue
 
-    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['ALV_THRESHOLD'], config['VALIDATION']['ALV_PERIOD'])
+    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['SAFETY_VALVE_THRESHOLD'], config['VALIDATION']['SAFETY_VALVE_PERIOD'])
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
     
@@ -202,7 +202,7 @@ def main():
             "type": "NEW_BLACK_FLAG",
             "data": {
                 "publisherId": org_id,
-                "reason": "Over " + str(config['VALIDATION']['ALV_THRESHOLD']) + " critical documents in the last " + str(config['VALIDATION']['ALV_PERIOD']) + " hours."
+                "reason": "Over " + str(config['VALIDATION']['SAFETY_VALVE_THRESHOLD']) + " critical documents in the last " + str(config['VALIDATION']['SAFETY_VALVE_PERIOD']) + " hours."
             }
         }
         headers = { 
@@ -222,7 +222,7 @@ def main():
 
         db.updateBlackFlagNotified(conn, org_id)
 
-    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['ALV_PERIOD'])
+    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['SAFETY_VALVE_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
         logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for activity level validation")

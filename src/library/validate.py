@@ -1,5 +1,6 @@
 import time
 import traceback
+from datetime import timedelta, datetime
 from multiprocessing import Process
 from library.logger import getLogger
 import requests
@@ -21,6 +22,7 @@ def chunk_list(l, n):
 def process_hash_list(document_datasets):
 
     conn = db.getDirectConnection()
+    now = datetime.now()
 
     for file_data in document_datasets:
         try:
@@ -32,6 +34,10 @@ def process_hash_list(document_datasets):
             publisher = file_data[5]
             publisher_name = file_data[6]
             file_schema_valid = file_data[7]
+            
+            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_VALVE_PERIOD'])):
+                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_VALVE_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
+                continue
 
             blob_name = file_hash + '.xml'
 
@@ -48,47 +54,48 @@ def process_hash_list(document_datasets):
                 logger.warning(
                     f"Could not identify charset for hash: {file_hash} and id: {file_id}")
                 continue
+            
+            if file_schema_valid is None:
+                logger.info(
+                    f"Schema Validating file hash: {file_hash} and id: {file_id}")
+                schema_headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
+                schema_response = requests.post(
+                    config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
+                db.updateValidationRequestDate(conn, file_id)
 
-            logger.info(
-                f"Schema Validating file hash: {file_hash} and id: {file_id}")
-            schema_headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
-            schema_response = requests.post(
-                config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
-            db.updateValidationRequestDate(conn, file_id)
-
-            if schema_response.status_code != 200:
-                if schema_response.status_code >= 400 and schema_response.status_code < 500: # client errors
-                    # log in db and 'continue' to break out of for loop for this file
-                    db.updateValidationError(
-                        conn, file_id, schema_response.status_code)
-                    logger.warning(
-                        f"Schema Validator reports Client Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
-                    continue
-                elif schema_response.status_code >= 500:  # server errors
-                    # log in db and 'continue' to break out of for loop for this file
-                    db.updateValidationError(
-                        conn, file_id, schema_response.status_code)
-                    logger.warning(
-                        f"Schema Validator reports Server Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
-                    continue
-                else:
+                if schema_response.status_code != 200:
+                    if schema_response.status_code >= 400 and schema_response.status_code < 500: # client errors
+                        # log in db and 'continue' to break out of for loop for this file
+                        db.updateValidationError(
+                            conn, file_id, schema_response.status_code)
+                        logger.warning(
+                            f"Schema Validator reports Client Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+                        continue
+                    elif schema_response.status_code >= 500:  # server errors
+                        # log in db and 'continue' to break out of for loop for this file
+                        db.updateValidationError(
+                            conn, file_id, schema_response.status_code)
+                        logger.warning(
+                            f"Schema Validator reports Server Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+                        continue
+                    else:
+                        logger.error(
+                            f"Schema Validator reports HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+                try:
+                    body = schema_response.json()
+                    if body['valid'] == True or body['valid'] == False:
+                        db.updateDocumentSchemaValidationStatus(
+                            conn, file_id, body['valid'])
+                        file_schema_valid = body['valid']
+                    else:
+                        raise
+                except:
                     logger.error(
-                        f"Schema Validator reports HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
-            try:
-                body = schema_response.json()
-                if body['valid'] == True:
-                    db.updateDocumentSchemaValidationStatus(
-                        conn, file_id, True)
-                elif body['valid'] == False:
-                    db.updateDocumentSchemaValidationStatus(
-                        conn, file_id, False)
-                    # break out of loop for safety valve on full validation of schema-invalid files
+                        f"Unexpected response body from Schema validator for hash: {file_hash} and id: {file_id}")
                     continue
-                else:
-                    raise
-            except:
-                logger.error(
-                    f"Unexpected response body from Schema validator for hash: {file_hash} and id: {file_id}")
+            
+            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_VALVE_PERIOD'])):
+                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_VALVE_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
                 continue
 
             logger.info(
