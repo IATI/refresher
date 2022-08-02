@@ -5,7 +5,6 @@ from library.logger import getLogger
 import requests
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
-from itertools import islice
 from azure.core import exceptions as AzureExceptions
 import library.db as db
 import json
