@@ -803,6 +803,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 validation_request = null,
                 validation_api_error = null,
                 validation = null,
+                file_schema_valid = null,
                 lakify_start = null,
                 lakify_end = null,
                 lakify_error = null,
