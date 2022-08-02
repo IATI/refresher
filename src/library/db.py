@@ -315,15 +315,6 @@ def updateActivityLevelValidationError(conn, filehash, message):
     cur.close()
 
 
-def getUnvalidatedAdhocDocs(conn):
-    cur = conn.cursor()
-    sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
-    cur.execute(sql)
-    results = cur.fetchall()
-    cur.close()
-    return results
-
-
 def getUnflattenedDatasets(conn):
     cur = conn.cursor()
     sql = """
@@ -745,22 +736,6 @@ def updateFileAsDownloadError(conn, id, status):
     cur.close()
 
 
-def updateAdhocFileAsUnavailable(conn, hash, status):
-    cur = conn.cursor()
-
-    sql = "UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
-
-    data = {
-        "id": id,
-        "dt": datetime.now(),
-        "status": status
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-
 def insertOrUpdatePublisher(conn, organization, last_seen):
     sql = """
         INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)
@@ -977,35 +952,6 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         "report": report,
         "publisher": publisher,
         "publisher_name": publisher_name
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-
-
-def updateAdhocValidationState(conn, doc_hash, state, report):
-
-    cur = conn.cursor()
-
-    if state is None:
-        sql = "UPDATE adhoc_validation SET validated=null, report=null, validated=null WHERE hash=%s"
-        data = (doc_hash,)
-        cur.execute(sql, data)
-        conn.commit()
-        cur.close()
-        return
-
-    sql = """
-        UPDATE adhoc_validation (hash, valid, report)
-        SET valid=%(state)s, report=%(report)s, validated = %(validated)s
-        WHERE hash=%(doc_hash)s;
-        """
-
-    data = {
-        "doc_hash": doc_hash,
-        "validated": datetime.now(),
-        "valid": state,
-        "report": report
     }
 
     cur.execute(sql, data)

@@ -2,13 +2,10 @@ import argparse
 import library.refresher as refresher
 import library.validate as validate
 import library.validate_activity_level as validate_activity_level
-import library.validate_adhoc as validate_adhoc
 import library.flatten as flatten
 import library.lakify as lakify
 import library.solrize as solrize
 import library.db as db
-from datetime import datetime, timedelta
-from constants.config import config
 from library.logger import getLogger
 logger = getLogger()
 
@@ -32,8 +29,6 @@ def main(args):
                 validate.main()
             elif args.type == "validate_activity_level":
                 validate_activity_level.main()
-            elif args.type == "adhocvalidate":
-                validate_adhoc.main()
             elif args.type == "flatten":
                 flatten.main()
             elif args.type == "lakify":
@@ -42,8 +37,6 @@ def main(args):
                 solrize.main()
             elif args.type == "validateloop":
                 validate.service_loop()
-            elif args.type == "adhocvalidateloop":
-                validate_adhoc.service_loop()
             elif args.type == "flattenloop":
                 flatten.service_loop()
             elif args.type == "lakifyloop":
