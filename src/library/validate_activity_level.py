@@ -96,7 +96,7 @@ def process_hash_list(document_datasets):
                 payload = payload[:-1]
                 headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
                 response = requests.post(config['VALIDATION']['SCHEMA_VALIDATION_URL'], data = payload, headers=headers)
-                db.updateValidationRequestDate(conn, file_hash)
+                db.updateValidationRequestDate(conn, file_id)
                 if response.status_code != 200:
                     activities.remove(activity)
                     continue

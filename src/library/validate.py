@@ -1,22 +1,23 @@
-import os, time, sys, traceback
+import time
+import traceback
 from multiprocessing import Process
 from library.logger import getLogger
-import datetime
 import requests
 from constants.config import config
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient
 from itertools import islice
 from azure.core import exceptions as AzureExceptions
-import psycopg2
 import library.db as db
 import json
 import library.utils as utils
 
 logger = getLogger()
 
+
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
+
 
 def process_hash_list(document_datasets):
 
@@ -31,53 +32,111 @@ def process_hash_list(document_datasets):
             prior_error = file_data[4]
             publisher = file_data[5]
             publisher_name = file_data[6]
+            file_schema_valid = file_data[7]
 
-            logger.info('Validating file with hash ' + file_hash + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
-            blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+            blob_service_client = BlobServiceClient.from_connection_string(
+                config['STORAGE_CONNECTION_STR'])
+            blob_client = blob_service_client.get_blob_client(
+                container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
 
             try:
                 payload = utils.get_text_from_blob(downloader, file_hash)
             except:
-                logger.warning('Could not identify charset for ' + file_hash + '.xml')
+                logger.warning(
+                    f"Could not identify charset for hash: {file_hash} and id: {file_id}")
                 continue
 
-            headers = { config['VALIDATION']['FILE_VALIDATION_KEY_NAME']: config['VALIDATION']['FILE_VALIDATION_KEY_VALUE'] }
-            response = requests.post(config['VALIDATION']['FILE_VALIDATION_URL'], data = payload.encode('utf-8'), headers=headers)
-            db.updateValidationRequestDate(conn, file_hash)
+            logger.info(
+                f"Schema Validating file hash: {file_hash} and id: {file_id}")
+            schema_headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
+            schema_response = requests.post(
+                config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
+            db.updateValidationRequestDate(conn, file_id)
 
-            if response.status_code != 200:
-                if response.status_code == 400 or response.status_code == 413 or response.status_code == 422: # 'expected' error codes returned from Validator
+            if schema_response.status_code != 200:
+                if schema_response.status_code >= 400 and schema_response.status_code < 500: # client errors
+                    # log in db and 'continue' to break out of for loop for this file
+                    db.updateValidationError(
+                        conn, file_id, schema_response.status_code)
+                    logger.warning(
+                        f"Schema Validator reports Client Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+                    continue
+                elif schema_response.status_code >= 500:  # server errors
+                    # log in db and 'continue' to break out of for loop for this file
+                    db.updateValidationError(
+                        conn, file_id, schema_response.status_code)
+                    logger.warning(
+                        f"Schema Validator reports Server Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+                    continue
+                else:
+                    logger.error(
+                        f"Schema Validator reports HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
+            try:
+                body = schema_response.json()
+                if body['valid'] == True:
+                    db.updateDocumentSchemaValidationStatus(
+                        conn, file_id, True)
+                elif body['valid'] == False:
+                    db.updateDocumentSchemaValidationStatus(
+                        conn, file_id, False)
+                    # break out of loop for safety valve on full validation of schema-invalid files
+                    continue
+                else:
+                    raise
+            except:
+                logger.error(
+                    f"Unexpected response body from Schema validator for hash: {file_hash} and id: {file_id}")
+                continue
+
+            logger.info(
+                f"Full Validating file hash: {file_hash} and id: {file_id}")
+
+            full_headers = {config['VALIDATION']['FULL_VALIDATION_KEY_NAME']: config['VALIDATION']['FULL_VALIDATION_KEY_VALUE']}
+            full_response = requests.post(
+                config['VALIDATION']['FULL_VALIDATION_URL'], data=payload.encode('utf-8'), headers=full_headers)
+            db.updateValidationRequestDate(conn, file_id)
+
+            if full_response.status_code != 200:
+                # 'expected' error codes returned from Validator
+                if full_response.status_code == 400 or full_response.status_code == 413 or full_response.status_code == 422:
                     # log db and move on to save the validation report
-                    db.updateValidationError(conn, file_hash, response.status_code)
-                elif response.status_code >= 400 and response.status_code < 500: # unexpected client errors
+                    db.updateValidationError(
+                        conn, file_id, full_response.status_code)
+                elif full_response.status_code >= 400 and full_response.status_code < 500:  # unexpected client errors
                     # log in db and 'continue' to break out of for loop for this file
-                    db.updateValidationError(conn, file_hash, response.status_code)
-                    logger.warning('Validator reports Client Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                    db.updateValidationError(
+                        conn, file_id, full_response.status_code)
+                    logger.warning(
+                        f"Full Validator reports Client Error HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}")
                     continue
-                elif response.status_code >= 500: # server errors
+                elif full_response.status_code >= 500:  # server errors
                     # log in db and 'continue' to break out of for loop for this file
-                    db.updateValidationError(conn, file_hash, response.status_code)
-                    logger.warning('Validator reports Server Error with status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                    db.updateValidationError(
+                        conn, file_id, full_response.status_code)
+                    logger.warning(
+                        f"Full Validator reports Server Error HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}")
                     continue
-                else: 
-                    logger.warning('Validator reports status ' + str(response.status_code) + ' for source blob ' + file_hash + '.xml')
+                else:
+                    logger.error(
+                        f"Full Validator reports HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}")
 
-            report = response.json()
+            report = full_response.json()
 
             state = report.get('valid', None)
 
-            db.updateValidationState(conn, file_id, file_hash, file_url, publisher, state, json.dumps(report), publisher_name)
+            db.updateValidationState(
+                conn, file_id, file_hash, file_url, publisher, state, json.dumps(report), publisher_name)
 
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Blob not found for hash ' + file_hash + ' - updating as Not Downloaded for the refresher to pick up.')
+            logger.warning(
+                f"Blob not found for hash: {file_hash} and id: {file_id} updating as Not Downloaded for the refresher to pick up.")
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
-            logger.error('ERROR with validating ' + file_hash)
+            logger.error(f"ERROR with validating {file_hash}")
             print(traceback.format_exc())
             if hasattr(e, 'message'):
                 logger.error(e.message)
@@ -90,12 +149,14 @@ def process_hash_list(document_datasets):
 
     conn.close()
 
+
 def service_loop():
     logger.info("Start service loop")
 
     while True:
         main()
         time.sleep(60)
+
 
 def main():
     logger.info("Starting validation...")
@@ -105,14 +166,17 @@ def main():
     file_hashes = db.getUnvalidatedDatasets(conn)
 
     if config['VALIDATION']['PARALLEL_PROCESSES'] == 1:
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for validation")
+        logger.info(
+            f"Processing {len(file_hashes)} IATI files in a single process for validation")
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
+        chunked_hash_lists = list(chunk_list(
+            file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for validation")
+        logger.info(
+            f"Processing {len(file_hashes)} IATI files in a maximum of {config['VALIDATION']['PARALLEL_PROCESSES']} parallel processes for validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:

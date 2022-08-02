@@ -181,7 +181,7 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name
+    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name, document.file_schema_valid
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
@@ -448,14 +448,26 @@ def resetUnfinishedFlattens(conn):
     cur.close()
 
 
-def updateValidationRequestDate(conn, filehash):
+def updateDocumentSchemaValidationStatus(conn, id, valid):
+    sql = "UPDATE document SET file_schema_valid=%(valid)s WHERE id=%(id)s" 
+
+    data = {
+        "id": id,
+        "valid": valid,
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
+
+def updateValidationRequestDate(conn, id):
     cur = conn.cursor()
-    sql = "UPDATE document SET validation_request=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET validation_request=%(dt)s WHERE id=%(id)s"
 
     date = datetime.now()
 
     data = {
-        "hash": filehash,
+        "id": id,
         "dt": date,
     }
 
@@ -512,11 +524,11 @@ def updateSolrizeStartDate(conn, filehash):
     cur.close()
 
 
-def updateValidationError(conn, filehash, status):
+def updateValidationError(conn, id, status):
     cur = conn.cursor()
-    sql = "UPDATE document SET validation_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET validation_api_error=%s WHERE id=%s"
 
-    data = (status, filehash)
+    data = (status, id)
     cur.execute(sql, data)
     conn.commit()
     cur.close()
@@ -937,8 +949,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
     cur = conn.cursor()
 
     if state is None:
-        sql = "UPDATE document SET validation=null WHERE hash=%s"
-        data = (doc_hash,)
+        sql = "UPDATE document SET validation=null WHERE id=%s"
+        data = (doc_id,)
         cur.execute(sql, data)
         conn.commit()
         cur.close()
