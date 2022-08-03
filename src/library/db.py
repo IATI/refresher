@@ -272,6 +272,25 @@ def updateBlackFlagNotified(conn, org_id, notified=True):
     cur.close()
 
 
+def getValidActivitiesDocsToClean(conn):
+    sql = """
+    SELECT doc.hash, doc.id
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.id
+    WHERE 
+    doc.downloaded is not null
+    AND doc.hash != ''
+    AND doc.clean_start is null
+    AND clean_end is null
+    AND val.valid = true
+    AND val.report ->> 'fileType' = 'iati-activities'
+    """
+
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
+
+
 def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
     cur = conn.cursor()
     sql = """
@@ -440,6 +459,18 @@ def resetUnfinishedFlattens(conn):
     cur.close()
 
 
+def resetUnfinishedCleans(conn):
+    sql = """
+        UPDATE document
+        SET clean_start = null
+        WHERE clean_end is null
+    """
+
+    with conn.cursor() as curs:
+        curs.execute(sql)
+    conn.commit()
+
+
 def updateDocumentSchemaValidationStatus(conn, id, valid):
     sql = "UPDATE document SET file_schema_valid=%(valid)s WHERE id=%(id)s"
 
@@ -577,6 +608,23 @@ def startLakify(conn, doc_id):
     cur.close()
 
 
+def startClean(conn, doc_id):
+    sql = """
+        UPDATE document
+        SET clean_start = %(now)s, clean_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
+
+
 def updateFlattenError(conn, doc_id, error):
     cur = conn.cursor()
 
@@ -595,6 +643,23 @@ def updateFlattenError(conn, doc_id, error):
 
     conn.commit()
     cur.close()
+
+
+def updateCleanError(conn, doc_id, error):
+    sql = """
+        UPDATE document
+        SET clean_error = %(error)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "error": error,
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
 
 
 def completeFlatten(conn, doc_id, flattened_activities):
@@ -616,6 +681,25 @@ def completeFlatten(conn, doc_id, flattened_activities):
 
     conn.commit()
     cur.close()
+
+
+def completeClean(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET clean_end = %(now)s, clean_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
 
 
 def lakifyError(conn, doc_id, msg):

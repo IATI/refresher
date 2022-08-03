@@ -115,7 +115,7 @@ def process_hash_list(document_datasets):
                 payload = payload.replace('\\"', '"')
                 payload = payload[1:]
                 payload = payload[:-1]
-                headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']                           : config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
+                headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
                 response = requests.post(
                     config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_id)
@@ -196,17 +196,9 @@ def process_hash_list(document_datasets):
     conn.close()
 
 
-def service_loop():
-    logger.info("Start service loop")
-
-    while True:
-        main()
-        time.sleep(60)
-
-
 def main():
     logger.info(
-        "Starting validation of critically invalid docs at activity level...")
+        "Starting ")
 
     conn = db.getDirectConnection()
 
@@ -244,3 +236,65 @@ def main():
 
     conn.close()
     logger.info("Finished.")
+
+# copy valid activities docs to clean container storage
+
+
+def copy_valid():
+    try:
+        logger.info(
+            "Starting copy of valid activities documents to container...")
+
+        conn = db.getDirectConnection()
+
+        db.resetUnfinishedCleans(conn)
+
+        documents = db.getValidActivitiesDocsToClean(conn)
+
+        for document in documents:
+            hash = document[0]
+            id = document[1]
+
+            logger.info(
+                f"Copying source xml to clean container for valid activity document id: {id} and hash: {hash}")
+            blob_name = f"{hash}.xml"
+
+            db.startClean(conn, id)
+
+            try:
+                blob_service_client = BlobServiceClient.from_connection_string(
+                    config['STORAGE_CONNECTION_STR'])
+
+                source_blob_client = blob_service_client.get_blob_client(
+                    container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+
+                clean_blob = blob_service_client.get_blob_client(
+                    container=config['CLEAN_CONTAINER_NAME'], blob=blob_name)
+                clean_blob.start_copy_from_url(source_blob_client.url)
+            except (AzureExceptions.ResourceNotFoundError) as e:
+                err_msg = f"Blob not found for hash: {hash} and id: {id} updating as Not Downloaded for the refresher to pick up."
+                logger.warning(
+                    err_msg)
+                db.updateCleanError(conn, id, err_msg)
+                db.updateFileAsNotDownloaded(conn, id)
+
+            db.completeClean(conn, id)
+    except Exception as e:
+        logger.error(f"ERROR with copying valid documents to clean storage")
+        print(traceback.format_exc())
+        if hasattr(e, 'message'):
+            logger.error(e.message)
+        if hasattr(e, 'msg'):
+            logger.error(e.msg)
+        try:
+            logger.warning(e.args[0])
+        except:
+            pass
+
+
+def service_loop():
+    logger.info("Start service loop")
+
+    while True:
+        copy_valid()
+        time.sleep(60)
