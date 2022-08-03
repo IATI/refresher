@@ -23,7 +23,8 @@ def getDirectConnection(retry_counter=0):
             retry_counter += 1
             logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
                 str(e).strip(), retry_counter))
-            sleep_time = config['DB_CONN_SLEEP_START'] * retry_counter * retry_counter
+            sleep_time = config['DB_CONN_SLEEP_START'] * \
+                retry_counter * retry_counter
             if sleep_time > config['DB_CONN_SLEEP_MAX']:
                 sleep_time = config['DB_CONN_SLEEP_MAX']
             logger.info("Sleeping {}s".format(sleep_time))
@@ -440,7 +441,7 @@ def resetUnfinishedFlattens(conn):
 
 
 def updateDocumentSchemaValidationStatus(conn, id, valid):
-    sql = "UPDATE document SET file_schema_valid=%(valid)s WHERE id=%(id)s" 
+    sql = "UPDATE document SET file_schema_valid=%(valid)s WHERE id=%(id)s"
 
     data = {
         "id": id,
@@ -450,6 +451,7 @@ def updateDocumentSchemaValidationStatus(conn, id, valid):
     with conn.cursor() as curs:
         curs.execute(sql, data)
     conn.commit()
+
 
 def updateValidationRequestDate(conn, id):
     cur = conn.cursor()
