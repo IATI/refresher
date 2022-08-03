@@ -31,11 +31,10 @@ def process_hash_list(document_datasets):
             downloaded = file_data[1]
             file_id = file_data[2]
             file_url = file_data[3]
-            prior_error = file_data[4]
-            publisher = file_data[5]
-            publisher_name = file_data[6]
-            file_schema_valid = file_data[7]
-            publisher_black_flag = file_data[8] is not None
+            publisher = file_data[4]
+            publisher_name = file_data[5]
+            file_schema_valid = file_data[6]
+            publisher_black_flag = file_data[7] is not None
 
             if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
                 logger.info(

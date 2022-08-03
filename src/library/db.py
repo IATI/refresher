@@ -182,7 +182,7 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
+    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
