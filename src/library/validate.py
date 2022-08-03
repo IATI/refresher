@@ -60,8 +60,7 @@ def process_hash_list(document_datasets):
             if file_schema_valid is None:
                 logger.info(
                     f"Schema Validating file hash: {file_hash} and id: {file_id}")
-                schema_headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']
-                    : config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
+                schema_headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']                                  : config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
                 schema_response = requests.post(
                     config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
                 db.updateValidationRequestDate(conn, file_id)
@@ -110,7 +109,8 @@ def process_hash_list(document_datasets):
             logger.info(
                 f"Full Validating file hash: {file_hash} and id: {file_id}")
 
-            full_headers = {config['VALIDATION']['FULL_VALIDATION_KEY_NAME']: config['VALIDATION']['FULL_VALIDATION_KEY_VALUE']}
+            full_headers = {config['VALIDATION']['FULL_VALIDATION_KEY_NAME']
+                : config['VALIDATION']['FULL_VALIDATION_KEY_VALUE']}
             full_response = requests.post(
                 config['VALIDATION']['FULL_VALIDATION_URL'], data=payload.encode('utf-8'), headers=full_headers)
             db.updateValidationRequestDate(conn, file_id)
@@ -202,7 +202,7 @@ def validate():
                     finished = False
 
     conn.close()
-    logger.info("Finished.")
+    logger.info("Finished validation.")
 
 
 def safety_check():
@@ -266,6 +266,9 @@ def safety_check():
             continue
 
         db.updateBlackFlagNotified(conn, org_id)
+
+    conn.close()
+    logger.info("Finished safety check.")
 
 
 def service_loop():
