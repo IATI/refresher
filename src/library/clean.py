@@ -1,4 +1,7 @@
-import os, time, sys, traceback
+import os
+import time
+import sys
+import traceback
 from signal import pause
 from re import A
 from multiprocessing import Process
@@ -18,9 +21,11 @@ import re
 
 logger = getLogger()
 
+
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
+
 
 def process_hash_list(document_datasets):
 
@@ -34,49 +39,65 @@ def process_hash_list(document_datasets):
 
             db.updateActivityLevelValidationStart(conn, file_hash)
 
-            logger.info('Processing for individual activity indexing the critically invalid doc with hash: ' + file_hash + ' and id: ' + file_id + ', downloaded at ' + downloaded.isoformat())
+            logger.info('Processing for individual activity indexing the critically invalid doc with hash: ' +
+                        file_hash + ' and id: ' + file_id + ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
-            blob_service_client = BlobServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+            blob_service_client = BlobServiceClient.from_connection_string(
+                config['STORAGE_CONNECTION_STR'])
+            blob_client = blob_service_client.get_blob_client(
+                container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
 
             downloader = blob_client.download_blob()
 
             try:
                 large_parser = etree.XMLParser(huge_tree=True)
-                root = etree.parse(BytesIO(downloader.content_as_bytes()), parser=large_parser)
+                root = etree.parse(
+                    BytesIO(downloader.content_as_bytes()), parser=large_parser)
                 iati_activities_el = root.getroot()
                 file_encoding = 'utf-8'
             except etree.XMLSyntaxError as e:
-                logger.warning('Cannot parse entire XML for hash {} doc {}, attempting regex activity extraction.'.format(file_hash, file_id))
+                logger.warning('Cannot parse entire XML for hash {} doc {}, attempting regex activity extraction.'.format(
+                    file_hash, file_id))
                 try:
-                    file_text, file_encoding = utils.get_text_from_blob(downloader, file_hash, True)
+                    file_text, file_encoding = utils.get_text_from_blob(
+                        downloader, file_hash, True)
                 except:
-                    logger.warning('Can not identify charset for ' + file_hash + '.xml for activity-level validation.')
-                    db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
+                    logger.warning('Can not identify charset for ' +
+                                   file_hash + '.xml for activity-level validation.')
+                    db.updateActivityLevelValidationError(
+                        conn, file_hash, 'Could not parse')
                     continue
 
                 activities_matcher = re.compile(r'<iati-activities[\s\S]*?>')
-                activities_element_match = re.findall(activities_matcher, file_text)
+                activities_element_match = re.findall(
+                    activities_matcher, file_text)
                 if len(activities_element_match) > 0:
-                    iati_activities_el = etree.fromstring(activities_element_match[0].encode(file_encoding) + b"</iati-activities>")
+                    iati_activities_el = etree.fromstring(
+                        activities_element_match[0].encode(file_encoding) + b"</iati-activities>")
                 else:
-                    logger.warning('No IATI activities element found for hash {} doc {}. Cannot ALV.'.format(file_hash, file_id))
-                    db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
+                    logger.warning('No IATI activities element found for hash {} doc {}. Cannot ALV.'.format(
+                        file_hash, file_id))
+                    db.updateActivityLevelValidationError(
+                        conn, file_hash, 'Could not parse')
                     continue
 
-                activity_matcher = re.compile(r'<iati-activity[\s\S]*?>[\s\S]*?<\/iati-activity>')
-                activity_element_match = re.findall(activity_matcher, file_text)
+                activity_matcher = re.compile(
+                    r'<iati-activity[\s\S]*?>[\s\S]*?<\/iati-activity>')
+                activity_element_match = re.findall(
+                    activity_matcher, file_text)
                 for activity_element_text in activity_element_match:
                     try:
-                        act_el = etree.fromstring(activity_element_text.encode(file_encoding))
+                        act_el = etree.fromstring(
+                            activity_element_text.encode(file_encoding))
                         iati_activities_el.append(act_el)
                     except Exception as e:
                         pass
             except Exception as e:
                 print(e)
                 logger.warning('Could not parse ' + file_hash + '.xml')
-                db.updateActivityLevelValidationError(conn, file_hash, 'Could not parse')
+                db.updateActivityLevelValidationError(
+                    conn, file_hash, 'Could not parse')
                 continue
 
             activities_loop = iati_activities_el.xpath("iati-activity")
@@ -88,13 +109,15 @@ def process_hash_list(document_datasets):
                 for att in iati_activities_el.attrib:
                     singleActivityDoc.attrib[att] = iati_activities_el.attrib[att]
                 singleActivityDoc.append(activity)
-                payload = etree.tostring(singleActivityDoc, encoding=file_encoding, method="xml").decode()
+                payload = etree.tostring(
+                    singleActivityDoc, encoding=file_encoding, method="xml").decode()
                 payload = "".join(json.dumps(payload).split("\\n"))
                 payload = payload.replace('\\"', '"')
                 payload = payload[1:]
                 payload = payload[:-1]
-                headers = { config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE'] }
-                response = requests.post(config['VALIDATION']['SCHEMA_VALIDATION_URL'], data = payload, headers=headers)
+                headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']                           : config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
+                response = requests.post(
+                    config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload, headers=headers)
                 db.updateValidationRequestDate(conn, file_id)
                 if response.status_code != 200:
                     activities.remove(activity)
@@ -111,13 +134,17 @@ def process_hash_list(document_datasets):
             for activity in activities:
                 cleanDoc.append(activity)
 
-            logger.info(str(len(activities)) + ' of ' + str(origLen) + ' parsable activities valid for hash: ' + file_hash + ' and id: ' + file_id)
-            if len(activities) == 0: # To prevent overwriting content with blank element
-                db.updateActivityLevelValidationError(conn, file_hash, 'No valid activities')
+            logger.info(str(len(activities)) + ' of ' + str(origLen) +
+                        ' parsable activities valid for hash: ' + file_hash + ' and id: ' + file_id)
+            if len(activities) == 0:  # To prevent overwriting content with blank element
+                db.updateActivityLevelValidationError(
+                    conn, file_hash, 'No valid activities')
                 continue
             activities_xml = etree.tostring(cleanDoc, encoding=file_encoding)
-            blob_client = blob_service_client.get_blob_client(container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
-            blob_client.upload_blob(activities_xml, overwrite=True, encoding=file_encoding)
+            blob_client = blob_service_client.get_blob_client(
+                container=config['SOURCE_CONTAINER_NAME'], blob=blob_name)
+            blob_client.upload_blob(
+                activities_xml, overwrite=True, encoding=file_encoding)
             blob_client.set_blob_tags({"dataset_hash": file_hash})
 
             try:
@@ -144,24 +171,30 @@ def process_hash_list(document_datasets):
             db.updateActivityLevelValidationEnd(conn, file_hash)
 
         except (AzureExceptions.ResourceNotFoundError) as e:
-            logger.warning('Blob not found for hash ' + file_hash + ' and id: ' + file_id + ' - updating as Not Downloaded for the refresher to pick up.')
+            logger.warning('Blob not found for hash ' + file_hash + ' and id: ' +
+                           file_id + ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
-            logger.error('ERROR with validating ' + file_hash+ ' and id: ' + file_id)
+            logger.error('ERROR with validating ' +
+                         file_hash + ' and id: ' + file_id)
             print(traceback.format_exc())
             if hasattr(e, 'message'):
                 logger.error(e.message)
-                db.updateActivityLevelValidationError(conn, file_hash, e.message)
+                db.updateActivityLevelValidationError(
+                    conn, file_hash, e.message)
             if hasattr(e, 'msg'):
                 logger.error(e.msg)
                 db.updateActivityLevelValidationError(conn, file_hash, e.msg)
             try:
                 logger.warning(e.args[0])
-                db.updateActivityLevelValidationError(conn, file_hash, e.args[0])
+                db.updateActivityLevelValidationError(
+                    conn, file_hash, e.args[0])
             except:
-                db.updateActivityLevelValidationError(conn, file_hash, 'Unknown error')  
+                db.updateActivityLevelValidationError(
+                    conn, file_hash, 'Unknown error')
 
     conn.close()
+
 
 def service_loop():
     logger.info("Start service loop")
@@ -170,22 +203,28 @@ def service_loop():
         main()
         time.sleep(60)
 
+
 def main():
-    logger.info("Starting validation of critically invalid docs at activity level...")
+    logger.info(
+        "Starting validation of critically invalid docs at activity level...")
 
     conn = db.getDirectConnection()
 
-    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['SAFETY_CHECK_PERIOD'])
+    file_hashes = db.getInvalidDatasetsForActivityLevelVal(
+        conn, config['VALIDATION']['SAFETY_CHECK_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for activity level validation")
+        logger.info("Processing " + str(len(file_hashes)) +
+                    " IATI files in a single process for activity level validation")
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
+        chunked_hash_lists = list(chunk_list(
+            file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
 
-        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for activity level validation")
+        logger.info("Processing " + str(len(file_hashes)) + " IATI files in a maximum of " + str(
+            config['VALIDATION']['PARALLEL_PROCESSES']) + " parallel processes for activity level validation")
 
         for chunk in chunked_hash_lists:
             if len(chunk) == 0:
