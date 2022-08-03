@@ -25,8 +25,10 @@ def main(args):
                 refresher.reload(
                     args.errors
                 )
+            elif args.type == "safety_check":
+                validate.safety_check()
             elif args.type == "validate":
-                validate.main()
+                validate.validate()
             elif args.type == "validate_activity_level":
                 validate_activity_level.main()
             elif args.type == "flatten":

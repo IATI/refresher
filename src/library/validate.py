@@ -6,6 +6,7 @@ from library.logger import getLogger
 import requests
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
+from azure.storage.queue import QueueServiceClient
 from azure.core import exceptions as AzureExceptions
 import library.db as db
 import json
@@ -34,9 +35,10 @@ def process_hash_list(document_datasets):
             publisher = file_data[5]
             publisher_name = file_data[6]
             file_schema_valid = file_data[7]
+            publisher_black_flag = file_data[8] is not None
             
-            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_VALVE_PERIOD'])):
-                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_VALVE_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
+            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
+                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
                 continue
 
             blob_name = file_hash + '.xml'
@@ -94,8 +96,12 @@ def process_hash_list(document_datasets):
                         f"Unexpected response body from Schema validator for hash: {file_hash} and id: {file_id}")
                     continue
             
-            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_VALVE_PERIOD'])):
-                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_VALVE_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
+            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
+                logger.info(f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
+                continue
+
+            if file_schema_valid == False and publisher_black_flag == True:
+                logger.info(f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}")
                 continue
 
             logger.info(
@@ -155,16 +161,7 @@ def process_hash_list(document_datasets):
 
     conn.close()
 
-
-def service_loop():
-    logger.info("Start service loop")
-
-    while True:
-        main()
-        time.sleep(60)
-
-
-def main():
+def validate():
     logger.info("Starting validation...")
 
     conn = db.getDirectConnection()
@@ -202,3 +199,65 @@ def main():
 
     conn.close()
     logger.info("Finished.")
+
+def safety_check():
+    conn = db.getDirectConnection()
+
+    logger.info(f"Starting validation safety check / publisher black flag check")
+
+    try:
+        queue_service_client = QueueServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
+        queue_client = queue_service_client.get_queue_client("publisher-black-flag-remove")
+        
+        messages = queue_client.receive_messages()
+
+        for message in messages:
+            try:
+                logger.info(f"Received message to remove black flag for publisher id: {message.content}")
+                db.removeBlackFlag(conn, message.content)
+                logger.info(f"Dequeueing message: {message.content}")
+                queue_client.delete_message(message.id, message.pop_receipt)
+            except Exception as e:
+                logger.warning(f"Could not process message with id: {message.id} for publisher id: {message.content}")
+                continue
+    except Exception as e:
+        logger.warning(f"Failed to process removal of publisher black flags")
+
+    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['SAFETY_CHECK_THRESHOLD'], config['VALIDATION']['SAFETY_CHECK_PERIOD'])
+
+    black_flags = db.getUnnotifiedBlackFlags(conn)
+    
+    for black_flag in black_flags:
+        org_id = black_flag[0]
+
+        notification = {
+            "type": "NEW_BLACK_FLAG",
+            "data": {
+                "publisherId": org_id,
+                "reason": f"Over {config['VALIDATION']['SAFETY_CHECK_THRESHOLD']} critical documents in the last {config['VALIDATION']['SAFETY_CHECK_PERIOD']}) hours."
+            }
+        }
+        headers = { 
+            config['NOTIFICATION_KEY_NAME']: config['NOTIFICATION_KEY_VALUE'],
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            response = requests.post(config['NOTIFICATION_URL'], data = json.dumps(notification), headers=headers)
+        except Exception as e:
+            logger.warning(f"Could not notify Black Flag for publisher id: {org_id}")
+            continue
+
+        if response.status_code != 200:
+            logger.warning(f"Could not notify Black Flag for publisher id: {org_id}, Comms Hub Responded HTTP {response.status_code}")
+            continue
+
+        db.updateBlackFlagNotified(conn, org_id)
+
+def service_loop():
+    logger.info("Start service loop")
+
+    while True:
+        safety_check()
+        validate()
+        time.sleep(60)

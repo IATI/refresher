@@ -14,7 +14,6 @@ from io import BytesIO
 import library.db as db
 import json
 import library.utils as utils
-from azure.storage.queue import QueueServiceClient
 import re
 
 logger = getLogger()
@@ -176,53 +175,7 @@ def main():
 
     conn = db.getDirectConnection()
 
-    queue_service_client = QueueServiceClient.from_connection_string(config['STORAGE_CONNECTION_STR'])
-    queue_client = queue_service_client.get_queue_client("publisher-black-flag-remove")
-    
-    messages = queue_client.receive_messages()
-
-    for message in messages:
-        try:
-            logger.info('Received message to remove black flag for publisher id: ' + message.content)
-            db.removeBlackFlag(conn, message.content)
-            logger.info("Dequeueing message: " + message.content)
-            queue_client.delete_message(message.id, message.pop_receipt)
-        except Exception as e:
-            logger.warning('Could not process message with id:  ' + message.id + ' for publisher id: ' + message.content)
-            continue
-
-    db.blackFlagDubiousPublishers(conn, config['VALIDATION']['SAFETY_VALVE_THRESHOLD'], config['VALIDATION']['SAFETY_VALVE_PERIOD'])
-
-    black_flags = db.getUnnotifiedBlackFlags(conn)
-    
-    for black_flag in black_flags:
-        org_id = black_flag[0]
-
-        notification = {
-            "type": "NEW_BLACK_FLAG",
-            "data": {
-                "publisherId": org_id,
-                "reason": "Over " + str(config['VALIDATION']['SAFETY_VALVE_THRESHOLD']) + " critical documents in the last " + str(config['VALIDATION']['SAFETY_VALVE_PERIOD']) + " hours."
-            }
-        }
-        headers = { 
-            config['NOTIFICATION_KEY_NAME']: config['NOTIFICATION_KEY_VALUE'],
-            'Content-Type': 'application/json'
-        }
-
-        try:
-            response = requests.post(config['NOTIFICATION_URL'], data = json.dumps(notification), headers=headers)
-        except Exception as e:
-            logger.warning('Could not notify Black Flag for publisher id: ' + org_id)
-            continue
-
-        if response.status_code != 200:
-            logger.warning('Could not notify Black Flag for publisher id: ' + org_id + ', Comms Hub Responded HTTP ' + str(response.status_code))
-            continue
-
-        db.updateBlackFlagNotified(conn, org_id)
-
-    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['SAFETY_VALVE_PERIOD'])
+    file_hashes = db.getInvalidDatasetsForActivityLevelVal(conn, config['VALIDATION']['SAFETY_CHECK_PERIOD'])
 
     if config['VALIDATION']['ACTIVITY_LEVEL_PARALLEL_PROCESSES'] == 1:
         logger.info("Processing " + str(len(file_hashes)) + " IATI files in a single process for activity level validation")

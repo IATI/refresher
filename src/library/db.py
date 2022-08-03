@@ -181,7 +181,7 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name, document.file_schema_valid
+    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
@@ -216,13 +216,13 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     sql = """
     UPDATE publisher
     SET black_flag = NOW()
-    WHERE org_id like (
+    WHERE org_id IN (
         SELECT publisher
-        FROM validation 
-        WHERE valid = false
-        AND NOW() - created < interval ' %(period_in_hours)s hours'
+        FROM document 
+        WHERE file_schema_valid = false
+        AND NOW() - downloaded < interval ' %(period_in_hours)s hours'
         GROUP BY publisher
-        HAVING COUNT(document_hash) >  %(threshold)s
+        HAVING COUNT(*) >  %(threshold)s
     )
     """
 
