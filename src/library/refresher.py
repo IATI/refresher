@@ -123,25 +123,26 @@ def get_paginated_response(url, offset, limit, retval=[]):
             'IATI Registry returned other than 200 when getting the list of orgs')
 
 
-def clean_source_by_id(blob_service_client, document_id):
-    try:
-        source_container_client = blob_service_client.get_container_client(
-            config['SOURCE_CONTAINER_NAME'])
-        filter_config = "@container='" + \
-            str(config["SOURCE_CONTAINER_NAME"]) + \
-            "' and document_id='" + document_id + "'"
-        assoc_blobs = list(
-            blob_service_client.find_blobs_by_tags(filter_config))
-        if len(assoc_blobs) > 0:
-            logger.info(
-                'Removing document ID {} from source container.'.format(document_id))
-            source_container_client.delete_blobs(assoc_blobs[0]["name"])
-    except Exception as e:
-        logger.warning(
-            'Failed to clean up source for id: {}. {}'.format(document_id, e))
+def clean_containers_by_id(blob_service_client, document_id):
+    for container_name in [config['SOURCE_CONTAINER_NAME'],  config['CLEAN_CONTAINER_NAME']]:
+        try:
+            container_client = blob_service_client.get_container_client(
+                container_name)
+            filter_config = "@container='" + \
+                str(container_name) + \
+                "' and document_id='" + document_id + "'"
+            assoc_blobs = list(
+                blob_service_client.find_blobs_by_tags(filter_config))
+            if len(assoc_blobs) > 0:
+                logger.info(
+                    f"Removing document ID {document_id} from {container_name} container.")
+                container_client.delete_blobs(assoc_blobs[0]["name"])
+        except Exception as e:
+            logger.warning(
+                f"Failed to clean up {container_name} for id: {document_id}. {e}")
 
 
-def clean_datasets(conn, stale_datasets, changed_datasets):
+def clean_datasets(stale_datasets, changed_datasets):
     blob_service_client = BlobServiceClient.from_connection_string(
         config['STORAGE_CONNECTION_STR'])
 
@@ -207,17 +208,20 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
 
         source_container_client = blob_service_client.get_container_client(
             config['SOURCE_CONTAINER_NAME'])
+        clean_container_client = blob_service_client.get_container_client(
+            config['CLEAN_CONTAINER_NAME'])
 
         # stale documents are more important to clean up as they won't be caught later in pipeline
         for (file_id, file_hash) in stale_datasets:
             try:
-                # remove source xml
+                # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + '.xml')
+                    clean_container_client.delete_blob(file_hash + '.xml')
                 except (AzureExceptions.ResourceNotFoundError) as e:
                     logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(
                         file_id, file_hash))
-                    clean_source_by_id(blob_service_client, file_id)
+                    clean_containers_by_id(blob_service_client, file_id)
 
                 # remove from all solr collections
                 for core_name in solr_cores:
@@ -229,16 +233,17 @@ def clean_datasets(conn, stale_datasets, changed_datasets):
                                      file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)
             except Exception as e:
                 logger.error(
-                    'Unknown error occurred while attempting to remove scale document ID {} from Source and SOLR'.format(file_id))
+                    'Unknown error occurred while attempting to remove stale document ID {} from Source and SOLR'.format(file_id))
         for (file_id, file_hash) in changed_datasets:
             try:
-                # remove source xml
+                # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + '.xml')
+                    clean_container_client.delete_blob(file_hash + '.xml')
                 except (AzureExceptions.ResourceNotFoundError) as e:
                     logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(
                         file_id, file_hash))
-                    clean_source_by_id(blob_service_client, file_id)
+                    clean_containers_by_id(blob_service_client, file_id)
 
                 # remove from all solr collections
                 for core_name in solr_cores:
@@ -304,7 +309,7 @@ def sync_publishers():
 
     stale_datasets = db.getFilesFromPublishersNotSeenAfter(conn, start_dt)
     if (len(stale_datasets) > 0):
-        clean_datasets(conn, stale_datasets, [])
+        clean_datasets(stale_datasets, [])
     db.removePublishersNotSeenAfter(conn, start_dt)
     conn.close()
 
@@ -352,7 +357,7 @@ def sync_documents():
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
     if (len(changed_datasets) > 0 or len(stale_datasets) > 0):
-        clean_datasets(conn, stale_datasets, changed_datasets)
+        clean_datasets(stale_datasets, changed_datasets)
 
     db.removeFilesNotSeenAfter(conn, start_dt)
 
@@ -459,7 +464,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                     # log error for undetectable charset, prevent PDFs from being downloaded to Unified Platform
                     if charset is None:
                         db.updateFileAsDownloadError(conn, id, 2)
-                        clean_source_by_id(blob_service_client, id)
+                        clean_containers_by_id(blob_service_client, id)
                         continue
                 except:
                     charset = 'UTF-8'
@@ -470,21 +475,21 @@ def download_chunk(chunk, blob_service_client, datasets):
             else:
                 db.updateFileAsDownloadError(
                     conn, id, download_response.status_code)
-                clean_source_by_id(blob_service_client, id)
+                clean_containers_by_id(blob_service_client, id)
         except (requests.exceptions.SSLError) as e:
             db.updateFileAsDownloadError(conn, id, 1)
-            clean_source_by_id(blob_service_client, id)
+            clean_containers_by_id(blob_service_client, id)
         except (requests.exceptions.ConnectionError) as e:
             db.updateFileAsDownloadError(conn, id, 0)
-            clean_source_by_id(blob_service_client, id)
+            clean_containers_by_id(blob_service_client, id)
         except (requests.exceptions.InvalidSchema) as e:
             logger.warning('Failed to download file with hash: ' +
                            hash + ' and id: ' + id + ' Error: ' + e.args[0])
             db.updateFileAsDownloadError(conn, id, 3)
-            clean_source_by_id(blob_service_client, id)
+            clean_containers_by_id(blob_service_client, id)
         except (AzureExceptions.ResourceNotFoundError) as e:
             db.updateFileAsDownloadError(conn, id, e.status_code)
-            clean_source_by_id(blob_service_client, id)
+            clean_containers_by_id(blob_service_client, id)
         except (AzureExceptions.ServiceResponseError) as e:
             logger.warning('Failed to upload file with url: ' + url + ' and hash: ' +
                            hash + ' and id: ' + id + ' - Azure error message: ' + e.message)

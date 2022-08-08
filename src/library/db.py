@@ -899,9 +899,9 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 solrize_start = null,
                 solrize_end = null,
                 solr_api_error = null,
-                alv_start = null,
-                alv_end = null,
-                alv_error = null
+                clean_start = null,
+                clean_end = null,
+                clean_error = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
