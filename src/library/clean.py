@@ -271,6 +271,7 @@ def copy_valid():
                 clean_blob = blob_service_client.get_blob_client(
                     container=config['CLEAN_CONTAINER_NAME'], blob=blob_name)
                 clean_blob.start_copy_from_url(source_blob_client.url)
+                clean_blob.set_blob_tags({"document_id": id})
             except (AzureExceptions.ResourceNotFoundError) as e:
                 err_msg = f"Blob not found for hash: {hash} and id: {id} updating as Not Downloaded for the refresher to pick up."
                 logger.warning(
