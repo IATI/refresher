@@ -243,7 +243,7 @@ def main():
 def copy_valid():
     try:
         logger.info(
-            "Starting copy of valid activities documents to container...")
+            "Starting copy of valid activities documents to clean container...")
 
         conn = db.getDirectConnection()
 
