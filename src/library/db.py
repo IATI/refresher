@@ -186,7 +186,10 @@ def getUnvalidatedDatasets(conn):
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
-    WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True) 
+    WHERE downloaded is not null 
+    AND download_error is null
+    AND hash != ''
+    AND (validation is Null OR regenerate_validation_report is True) 
     ORDER BY regenerate_validation_report DESC, downloaded
     """
     cur.execute(sql)

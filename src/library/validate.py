@@ -15,11 +15,6 @@ import library.utils as utils
 logger = getLogger()
 
 
-def chunk_list(l, n):
-    for i in range(0, n):
-        yield l[i::n]
-
-
 def process_hash_list(document_datasets):
 
     conn = db.getDirectConnection()
@@ -177,7 +172,7 @@ def validate():
             f"Processing {len(file_hashes)} IATI files in a single process for validation")
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(
+        chunked_hash_lists = list(utils.chunk_list(
             file_hashes, config['VALIDATION']['PARALLEL_PROCESSES']))
 
         processes = []
