@@ -1,14 +1,8 @@
 import traceback
-import sys
-import os
 from constants.version import __version__
 from psycopg2 import Error as DbError
 from library.solrize import addCore
-import hashlib
-from io import BytesIO
-from lxml import etree
 import chardet
-import pysolr
 from datetime import datetime
 from constants.config import config
 from library.logger import getLogger
@@ -17,7 +11,7 @@ import time
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import requests
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient
 from azure.core import exceptions as AzureExceptions
 import json
 import multiprocessing
