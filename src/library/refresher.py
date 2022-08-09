@@ -123,8 +123,8 @@ def get_paginated_response(url, offset, limit, retval=[]):
             'IATI Registry returned other than 200 when getting the list of orgs')
 
 
-def clean_containers_by_id(blob_service_client, document_id):
-    for container_name in [config['SOURCE_CONTAINER_NAME'],  config['CLEAN_CONTAINER_NAME']]:
+def clean_containers_by_id(blob_service_client, document_id, containers=[config['SOURCE_CONTAINER_NAME'],  config['CLEAN_CONTAINER_NAME']]):
+    for container_name in containers:
         try:
             container_client = blob_service_client.get_container_client(
                 container_name)
@@ -217,11 +217,18 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + '.xml')
+                except (AzureExceptions.ResourceNotFoundError) as e:
+                    logger.error(
+                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID.")
+                    clean_containers_by_id(blob_service_client, file_id, containers=[
+                                           config['SOURCE_CONTAINER_NAME']])
+                try:
                     clean_container_client.delete_blob(file_hash + '.xml')
                 except (AzureExceptions.ResourceNotFoundError) as e:
-                    logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(
-                        file_id, file_hash))
-                    clean_containers_by_id(blob_service_client, file_id)
+                    logger.warning(
+                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID.")
+                    clean_containers_by_id(blob_service_client, file_id, containers=[
+                                           config['CLEAN_CONTAINER_NAME']])
 
                 # remove from all solr collections
                 for core_name in solr_cores:
@@ -239,11 +246,18 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + '.xml')
+                except (AzureExceptions.ResourceNotFoundError) as e:
+                    logger.warning(
+                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID.")
+                    clean_containers_by_id(blob_service_client, file_id, containers=[
+                                           config['SOURCE_CONTAINER_NAME']])
+                try:
                     clean_container_client.delete_blob(file_hash + '.xml')
                 except (AzureExceptions.ResourceNotFoundError) as e:
-                    logger.warning('Can not delete blob as does not exist: {}.xml and id: {}. Attempting to delete by ID.'.format(
-                        file_id, file_hash))
-                    clean_containers_by_id(blob_service_client, file_id)
+                    logger.info(
+                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID.")
+                    clean_containers_by_id(blob_service_client, file_id, containers=[
+                                           config['CLEAN_CONTAINER_NAME']])
 
                 # remove from all solr collections
                 for core_name in solr_cores:
