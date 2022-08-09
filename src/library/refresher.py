@@ -18,7 +18,7 @@ import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 
-logger = getLogger()  # /action/organization_list
+logger = getLogger()
 
 
 def requests_retry_session(
