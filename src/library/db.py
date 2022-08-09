@@ -327,21 +327,17 @@ def updateCleanError(conn, id, message):
 
 
 def getUnflattenedDatasets(conn):
-    cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url, flatten_api_error
+    SELECT hash, downloaded, doc.id, flatten_api_error
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE doc.downloaded is not null 
+    WHERE doc.downloaded is not Null 
+    AND doc.clean_end is not Null
     AND doc.flatten_start is Null
-    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
-    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
-    cur.execute(sql)
-    results = cur.fetchall()
-    cur.close()
-    return results
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
 
 
 def getFlattenedActivitiesForDoc(conn, hash):
@@ -388,14 +384,13 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url
+    SELECT hash, downloaded, doc.id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
     WHERE doc.downloaded is not null 
+    AND doc.clean_end is not Null
     AND doc.lakify_start is Null
     AND doc.lakify_error is Null
-    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
-    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)
@@ -749,7 +744,10 @@ def updateFileAsNotDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = null
+        SET downloaded = null,
+        clean_start = null,
+        clean_end = null,
+        clean_error = null
         WHERE id = %(id)s
     """
 
