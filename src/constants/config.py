@@ -42,6 +42,9 @@ config = dict(DATA_SCHEMA="public",
                   SAFETY_CHECK_THRESHOLD=100,
                   SAFETY_CHECK_PERIOD=2
               ),
+              CLEAN=dict(
+                  PARALLEL_PROCESSES=5
+              ),
               FLATTEN=dict(
                   PARALLEL_PROCESSES=1,
                   FLATTENER_URL=os.getenv('FLATTENER_API_URL'),

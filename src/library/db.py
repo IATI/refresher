@@ -272,7 +272,7 @@ def updateBlackFlagNotified(conn, org_id, notified=True):
     cur.close()
 
 
-def getValidActivitiesDocsToClean(conn):
+def getValidActivitiesDocsToCopy(conn):
     sql = """
     SELECT doc.hash, doc.id
     FROM document as doc
@@ -291,48 +291,39 @@ def getValidActivitiesDocsToClean(conn):
         return curs.fetchall()
 
 
-def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
-    cur = conn.cursor()
+def getInvalidActivitiesDocsToClean(conn):
     sql = """
-    SELECT hash, downloaded, doc.id, url, validation_api_error, pub.org_id
+    SELECT doc.hash, doc.id, val.report -> 'iati-activities' as valid_index
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
-	WHERE pub.black_flag is null
-    AND doc.downloaded is not null
-    AND doc.flatten_start is null
+    WHERE 
+    doc.downloaded is not null
+    AND doc.hash != ''
+    AND doc.clean_start is null
+    AND clean_end is null
     AND val.valid = false
-    AND (NOW() - val.created > interval ' %(period_in_hours)s hours' OR doc.alv_revalidate = True)
+    AND val.report ->> 'fileType' = 'iati-activities'
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%%'
-    AND ((doc.alv_start is null AND doc.alv_error is null) OR doc.alv_revalidate = True)
-    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.2.1"%%', '%%"id": "0.6.1"%%'])
-    AND val.report ->> 'fileType' = 'iati-activities'
-    ORDER BY downloaded
+    AND report->>'iati-activities' LIKE '%%"valid": true%%'
     """
 
-    data = {
-        "period_in_hours": period_in_hours,
-    }
-
-    cur.execute(sql, data)
-    results = cur.fetchall()
-    cur.close()
-    return results
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
 
 
-def updateActivityLevelValidationError(conn, filehash, message):
-    cur = conn.cursor()
-    sql = "UPDATE document SET alv_error=%(message)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
+def updateCleanError(conn, id, message):
+    sql = "UPDATE document SET clean_error=%(message)s WHERE id=%(id)s"
 
     data = {
-        "hash": filehash,
+        "id": id,
         "message": message
     }
 
-    cur.execute(sql, data)
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
     conn.commit()
-    cur.close()
 
 
 def getUnflattenedDatasets(conn):
@@ -492,38 +483,6 @@ def updateValidationRequestDate(conn, id):
 
     data = {
         "id": id,
-        "dt": date,
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-
-def updateActivityLevelValidationStart(conn, filehash):
-    cur = conn.cursor()
-    sql = "UPDATE document SET alv_start=%(dt)s WHERE hash=%(hash)s"
-
-    date = datetime.now()
-
-    data = {
-        "hash": filehash,
-        "dt": date,
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-
-def updateActivityLevelValidationEnd(conn, filehash):
-    cur = conn.cursor()
-    sql = "UPDATE document SET alv_end=%(dt)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
-
-    date = datetime.now()
-
-    data = {
-        "hash": filehash,
         "dt": date,
     }
 
