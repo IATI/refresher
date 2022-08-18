@@ -4,13 +4,6 @@ ALTER TABLE public.document ADD COLUMN clean_end timestamp without time zone;
 ALTER TABLE public.document ADD COLUMN clean_error character varying;
 UPDATE public.document
 SET 
-    regenerate_validation_report = 't'
-WHERE
-    validation is not Null
-    AND alv_end is null
-    AND alv_error is null;
-UPDATE public.document
-SET 
     regenerate_validation_report = 't',
     solrize_reindex = 't',
     lakify_start = null,
