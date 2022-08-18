@@ -55,7 +55,7 @@ def process_hash_list(document_datasets):
             if file_schema_valid is None:
                 logger.info(
                     f"Schema Validating file hash: {file_hash} and id: {file_id}")
-                schema_headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']                                  : config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
+                schema_headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
                 schema_response = requests.post(
                     config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
                 db.updateValidationRequestDate(conn, file_id)
@@ -104,10 +104,15 @@ def process_hash_list(document_datasets):
             logger.info(
                 f"Full Validating file hash: {file_hash} and id: {file_id}")
 
-            full_headers = {config['VALIDATION']['FULL_VALIDATION_KEY_NAME']
-                : config['VALIDATION']['FULL_VALIDATION_KEY_VALUE']}
+            full_headers = {config['VALIDATION']['FULL_VALIDATION_KEY_NAME']: config['VALIDATION']['FULL_VALIDATION_KEY_VALUE']}
+
+            full_url = config['VALIDATION']['FULL_VALIDATION_URL']
+
+            # only need meta=true for invalid files to "clean" them later
+            if file_schema_valid == False:
+                full_url += '?meta=true'
             full_response = requests.post(
-                config['VALIDATION']['FULL_VALIDATION_URL'], data=payload.encode('utf-8'), headers=full_headers)
+                full_url, data=payload.encode('utf-8'), headers=full_headers)
             db.updateValidationRequestDate(conn, file_id)
 
             if full_response.status_code != 200:
