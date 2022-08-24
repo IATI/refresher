@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths-ignore: # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
-      - '**/README.md'
-      - '.github/workflows/main.yml'
+      - "**/README.md"
+      - ".github/workflows/main.yml"
     branches:
       - develop
 
@@ -17,7 +17,8 @@ env:
   AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.DEV_STORAGE_CONNECTION_STRING }}
   AZURE_STORAGE_CONTAINER_SOURCE: ${{ secrets.DEV_AZURE_STORAGE_CONTAINER_SOURCE }}
-  FILE_VALIDATION_URL: ${{ secrets.FILE_VALIDATION_URL }}
+  AZURE_STORAGE_CONTAINER_CLEAN: ${{ secrets.DEV_AZURE_STORAGE_CONTAINER_CLEAN }}
+  FILE_VALIDATION_URL: ${{ secrets.DEV_FILE_VALIDATION_URL }}
   FILE_VALIDATION_KEY_NAME: ${{ secrets.DEV_FILE_VALIDATION_KEY_NAME }}
   FILE_VALIDATION_KEY_VALUE: ${{ secrets.DEV_FILE_VALIDATION_KEY_VALUE }}
   SCHEMA_VALIDATION_URL: ${{ secrets.DEV_SCHEMA_VALIDATION_URL }}
@@ -74,289 +75,292 @@ jobs:
       - name: "Delete existing containers"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
-              az container delete -y \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
-                --resource-group "${{ env.RESOURCE_GROUP }}"
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-clean" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
+            az container delete -y \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+              --resource-group "${{ env.RESOURCE_GROUP }}"
 
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t refreshloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t refreshloop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
-                
+              --resource-type "Microsoft.ContainerInstance/containerGroups"
+
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t validateloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
+              SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
+              SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
+              SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
+              VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+              VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+              VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t validateloop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                VALIDATOR_API_URL="${{ env.FILE_VALIDATION_URL }}" \
-                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
-                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
-                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
-                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
+              --resource-type "Microsoft.ContainerInstance/containerGroups"
 
-      - name: "Deploy Validate Activity Level to Azure Container Instances"
+      - name: "Deploy Clean to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t cleanloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-clean" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              AZURE_STORAGE_CONTAINER_CLEAN="${{ env.AZURE_STORAGE_CONTAINER_CLEAN }}" \
+              VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
+              SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
+              VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
+              VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
+              SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
+              SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
+              VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t validate_activity_level_loop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                VALIDATOR_API_URL="${{ env.ACTIVITY_VALIDATION_URL }}" \
-                SCHEMA_VALIDATION_API_URL="${{ env.SCHEMA_VALIDATION_URL }}" \
-                VALIDATOR_API_KEY_NAME="${{ env.FILE_VALIDATION_KEY_NAME }}" \
-                VALIDATOR_API_KEY_VALUE="${{ env.FILE_VALIDATION_KEY_VALUE }}" \
-                SCHEMA_VALIDATION_KEY_NAME="${{ env.SCHEMA_VALIDATION_KEY_NAME }}" \
-                SCHEMA_VALIDATION_KEY_VALUE="${{ env.SCHEMA_VALIDATION_KEY_VALUE }}" \
-                VALIDATOR_PARALLEL="${{ env.VALIDATOR_PARALLEL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
-     
+              --resource-type "Microsoft.ContainerInstance/containerGroups"
+
       - name: "Deploy Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t flattenloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              AZURE_STORAGE_CONTAINER_CLEAN="${{ env.AZURE_STORAGE_CONTAINER_CLEAN }}" \
+              FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
+              FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
+              FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t flattenloop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
-                FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
-                FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
+              --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t lakifyloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "2" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              AZURE_STORAGE_CONTAINER_CLEAN="${{ env.AZURE_STORAGE_CONTAINER_CLEAN }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t lakifyloop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "2" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
+              --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Solrize to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
-            azcliversion: 2.30.0
-            inlineScript: |
-              az container create \
+          azcliversion: 2.30.0
+          inlineScript: |
+            az container create \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
+            --command-line "/usr/local/bin/python /code/handler.py -t solrizeloop" \
+            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
+            --registry-username "${{ env.REGISTRY_USERNAME }}" \
+            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
+            --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
+            --location "uksouth" \
+            --restart-policy "Always" \
+            --ip-address "Private" \
+            --memory "4" \
+            --cpu "1" \
+            --os-type "Linux" \
+            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
+            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+            --secure-environment-variables \
+              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
+              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
+              SOLR_USER="${{ env.SOLR_USER }}" \
+              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
+              SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
+              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
+              DB_HOST="${{ env.DB_HOST }}" \
+              DB_PORT="${{ env.DB_PORT }}" \
+              DB_USER="${{ env.DB_USER }}" \
+              DB_PASS="${{ env.DB_PASS }}" \
+              DB_NAME="${{ env.DB_NAME }}" \
+              SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
+              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
+              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
+            az resource tag \
+              --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-              --command-line "/usr/local/bin/python /code/handler.py -t solrizeloop" \
-              --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-              --registry-username "${{ env.REGISTRY_USERNAME }}" \
-              --registry-password "${{ env.REGISTRY_PASSWORD }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
-              --location "uksouth" \
-              --restart-policy "Always" \
-              --ip-address "Private" \
-              --memory "4" \
-              --cpu "1" \
-              --os-type "Linux" \
-              --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-              --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-              --secure-environment-variables \
-                AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-                AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-                SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-                SOLR_USER="${{ env.SOLR_USER }}" \
-                SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-                SOLR_PARALLEL_PROCESSES="${{ env.SOLR_PARALLEL_PROCESSES }}" \
-                ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-                DB_HOST="${{ env.DB_HOST }}" \
-                DB_PORT="${{ env.DB_PORT }}" \
-                DB_USER="${{ env.DB_USER }}" \
-                DB_PASS="${{ env.DB_PASS }}" \
-                DB_NAME="${{ env.DB_NAME }}" \
-                SOLR_500_SLEEP="${{ env.SOLR_500_SLEEP }}" \
-                COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-                COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-              az resource tag \
-                --tags avgCPU=true ACU=true ACUvalue=210 \
-                --resource-group "${{ env.RESOURCE_GROUP }}" \
-                --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
-                --resource-type "Microsoft.ContainerInstance/containerGroups"
-    
-
+              --resource-type "Microsoft.ContainerInstance/containerGroups"

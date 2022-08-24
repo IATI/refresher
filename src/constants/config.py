@@ -1,57 +1,67 @@
 import os
 
-config = dict(DATA_SCHEMA = "public",
-    PARALLEL_PROCESSES = 10,
-    SOURCE_CONTAINER_NAME = os.getenv('AZURE_STORAGE_CONTAINER_SOURCE'),
-    ACTIVITIES_LAKE_CONTAINER_NAME = os.getenv('ACTIVITIES_LAKE_CONTAINER_NAME'),
-    STORAGE_CONNECTION_STR = os.getenv('AZURE_STORAGE_CONNECTION_STRING'),
-    SERVICE_LOOP_SLEEP = 60,
-    RETRY_ERRORS_AFTER_LOOP = 30,
-    PUBLISHER_SAFETY_PERCENTAGE = 50,
-    DOCUMENT_SAFETY_PERCENTAGE = 50,
-    MAX_BLOB_DELETE = 250,
-    NOTIFICATION_URL = os.getenv('COMMSHUB_URL'),
-    NOTIFICATION_KEY_NAME = 'x-functions-key',
-    NOTIFICATION_KEY_VALUE = os.getenv('COMMSHUB_KEY'),
-    DB_USER = os.getenv('DB_USER'),
-    DB_PASS = os.getenv('DB_PASS'),
-    DB_HOST = os.getenv('DB_HOST'),
-    DB_PORT = os.getenv('DB_PORT'),
-    DB_NAME = os.getenv('DB_NAME'),
-    DB_SSL_MODE = os.getenv('DB_SSL_MODE') or "require",
-    DB_CONN_RETRY_LIMIT = 8,
-    DB_CONN_SLEEP_START = 5,
-    DB_CONN_SLEEP_MAX = 60,
-    DB_CONN_TIMEOUT = 5,
-    VALIDATION = dict(
-        PARALLEL_PROCESSES = 1,
-        ADHOC_PARALLEL_PROCESSES = 1,
-        ACTIVITY_LEVEL_PARALLEL_PROCESSES = 1,
-        FILE_VALIDATION_URL = os.getenv('VALIDATOR_API_URL'),
-        SCHEMA_VALIDATION_URL = os.getenv('SCHEMA_VALIDATION_API_URL'),
-        FILE_VALIDATION_KEY_NAME = os.getenv('VALIDATOR_API_KEY_NAME'),
-        FILE_VALIDATION_KEY_VALUE = os.getenv('VALIDATOR_API_KEY_VALUE'),
-        SCHEMA_VALIDATION_KEY_NAME = os.getenv('SCHEMA_VALIDATION_KEY_NAME'),
-        SCHEMA_VALIDATION_KEY_VALUE = os.getenv('SCHEMA_VALIDATION_KEY_VALUE'),
-        ALV_THRESHOLD = 100,
-        ALV_PERIOD = 24
-    ),
-    FLATTEN = dict(
-        PARALLEL_PROCESSES = 1,
-        FLATTENER_URL = os.getenv('FLATTENER_API_URL'),
-        FLATTENER_KEY_NAME = os.getenv('FLATTENER_KEY_NAME'),
-        FLATTENER_KEY_VALUE = os.getenv('FLATTENER_KEY_VALUE')
-    ),
-    SOLRIZE = dict(
-        PARALLEL_PROCESSES = int(os.getenv('SOLR_PARALLEL_PROCESSES') or 1),
-        MAX_BATCH_LENGTH = 1000,
-        SOLR_API_URL = os.getenv('SOLR_API_URL'),
-        SOLR_USER = os.getenv('SOLR_USER'),
-        SOLR_PASSWORD = os.getenv('SOLR_PASSWORD'),
-        EXPLODE_ELEMENTS = '["transaction", "budget"]',
-        SOLR_500_SLEEP = os.getenv('SOLR_500_SLEEP')
-    ),
-    LAKIFY = dict(
-        PARALLEL_PROCESSES = 10
-    )
-)
+config = dict(DATA_SCHEMA="public",
+              PARALLEL_PROCESSES=10,
+              SOURCE_CONTAINER_NAME=os.getenv(
+                  'AZURE_STORAGE_CONTAINER_SOURCE'),
+              CLEAN_CONTAINER_NAME=os.getenv('AZURE_STORAGE_CONTAINER_CLEAN'),
+              ACTIVITIES_LAKE_CONTAINER_NAME=os.getenv(
+                  'ACTIVITIES_LAKE_CONTAINER_NAME'),
+              STORAGE_CONNECTION_STR=os.getenv(
+                  'AZURE_STORAGE_CONNECTION_STRING'),
+              SERVICE_LOOP_SLEEP=60,
+              RETRY_ERRORS_AFTER_LOOP=30,
+              PUBLISHER_SAFETY_PERCENTAGE=50,
+              DOCUMENT_SAFETY_PERCENTAGE=50,
+              MAX_BLOB_DELETE=250,
+              NOTIFICATION_URL=os.getenv('COMMSHUB_URL'),
+              NOTIFICATION_KEY_NAME='x-functions-key',
+              NOTIFICATION_KEY_VALUE=os.getenv('COMMSHUB_KEY'),
+              DB_USER=os.getenv('DB_USER'),
+              DB_PASS=os.getenv('DB_PASS'),
+              DB_HOST=os.getenv('DB_HOST'),
+              DB_PORT=os.getenv('DB_PORT'),
+              DB_NAME=os.getenv('DB_NAME'),
+              DB_SSL_MODE=os.getenv('DB_SSL_MODE') or "require",
+              DB_CONN_RETRY_LIMIT=8,
+              DB_CONN_SLEEP_START=5,
+              DB_CONN_SLEEP_MAX=60,
+              DB_CONN_TIMEOUT=5,
+              VALIDATION=dict(
+                  PARALLEL_PROCESSES=1,
+                  ACTIVITY_LEVEL_PARALLEL_PROCESSES=1,
+                  FULL_VALIDATION_URL=os.getenv('VALIDATOR_API_URL'),
+                  SCHEMA_VALIDATION_URL=os.getenv('SCHEMA_VALIDATION_API_URL'),
+                  FULL_VALIDATION_KEY_NAME=os.getenv('VALIDATOR_API_KEY_NAME'),
+                  FULL_VALIDATION_KEY_VALUE=os.getenv(
+                      'VALIDATOR_API_KEY_VALUE'),
+                  SCHEMA_VALIDATION_KEY_NAME=os.getenv(
+                      'SCHEMA_VALIDATION_KEY_NAME'),
+                  SCHEMA_VALIDATION_KEY_VALUE=os.getenv(
+                      'SCHEMA_VALIDATION_KEY_VALUE'),
+                  SAFETY_CHECK_THRESHOLD=100,
+                  SAFETY_CHECK_PERIOD=2
+              ),
+              CLEAN=dict(
+                  PARALLEL_PROCESSES=5
+              ),
+              FLATTEN=dict(
+                  PARALLEL_PROCESSES=1,
+                  FLATTENER_URL=os.getenv('FLATTENER_API_URL'),
+                  FLATTENER_KEY_NAME=os.getenv('FLATTENER_KEY_NAME'),
+                  FLATTENER_KEY_VALUE=os.getenv('FLATTENER_KEY_VALUE')
+              ),
+              SOLRIZE=dict(
+                  PARALLEL_PROCESSES=int(
+                      os.getenv('SOLR_PARALLEL_PROCESSES') or 1),
+                  MAX_BATCH_LENGTH=1000,
+                  SOLR_API_URL=os.getenv('SOLR_API_URL'),
+                  SOLR_USER=os.getenv('SOLR_USER'),
+                  SOLR_PASSWORD=os.getenv('SOLR_PASSWORD'),
+                  EXPLODE_ELEMENTS='["transaction", "budget"]',
+                  SOLR_500_SLEEP=os.getenv('SOLR_500_SLEEP')
+              ),
+              LAKIFY=dict(
+                  PARALLEL_PROCESSES=10
+              )
+              )
