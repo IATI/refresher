@@ -88,7 +88,7 @@ def process_hash_list(document_datasets):
             file_id = file_data[1]
 
             flattened_activities = db.getFlattenedActivitiesForDoc(
-                conn, file_hash)
+                conn, file_id)
 
             if flattened_activities is None or flattened_activities[0] is None:
                 raise SolrizeSourceError(
