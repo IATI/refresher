@@ -343,14 +343,14 @@ def getUnflattenedDatasets(conn):
         return curs.fetchall()
 
 
-def getFlattenedActivitiesForDoc(conn, hash):
+def getFlattenedActivitiesForDoc(conn, id):
     cur = conn.cursor()
     sql = """
     SELECT flattened_activities
     FROM document as doc
-    WHERE doc.hash = %(hash)s
+    WHERE doc.id = %(id)s
     """
-    data = {"hash": hash}
+    data = {"id": id}
 
     cur.execute(sql, data)
     results = cur.fetchall()
