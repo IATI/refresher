@@ -232,7 +232,7 @@ jobs:
             az resource tag \
               --tags avgCPU=true ACU=true ACUvalue=210 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-validate-activity-level" \
+              --name "${{ env.STAGE }}-${{ env.NAME }}-clean" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Flatten to Azure Container Instances"
