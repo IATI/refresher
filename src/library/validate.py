@@ -36,6 +36,11 @@ def process_hash_list(document_datasets):
                     f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
                 continue
 
+            if file_schema_valid == False and publisher_black_flag == True:
+                logger.info(
+                    f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}")
+                continue
+
             blob_name = file_hash + '.xml'
 
             blob_service_client = BlobServiceClient.from_connection_string(
