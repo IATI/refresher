@@ -88,7 +88,7 @@ jobs:
               az container delete -y \
                 --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
                 --resource-group "${{ env.RESOURCE_GROUP }}"
-                
+
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
@@ -347,4 +347,4 @@ jobs:
                 --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
                 --resource-type "Microsoft.ContainerInstance/containerGroups"
 
-      
+
