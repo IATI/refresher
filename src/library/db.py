@@ -186,10 +186,10 @@ def getUnvalidatedDatasets(conn):
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
-    WHERE downloaded is not null 
+    WHERE downloaded is not null
     AND download_error is null
     AND hash != ''
-    AND (validation is Null OR regenerate_validation_report is True) 
+    AND (validation is Null OR regenerate_validation_report is True)
     ORDER BY regenerate_validation_report DESC, downloaded
     """
     cur.execute(sql)
@@ -222,7 +222,7 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     SET black_flag = NOW()
     WHERE org_id IN (
         SELECT publisher
-        FROM document 
+        FROM document
         WHERE file_schema_valid = false
         AND NOW() - downloaded < interval ' %(period_in_hours)s hours'
         GROUP BY publisher
@@ -280,7 +280,7 @@ def getValidActivitiesDocsToCopy(conn):
     SELECT doc.hash, doc.id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE 
+    WHERE
     doc.downloaded is not null
     AND doc.hash != ''
     AND doc.clean_start is null
@@ -299,7 +299,7 @@ def getInvalidActivitiesDocsToClean(conn):
     SELECT doc.hash, doc.id, val.report -> 'iati-activities' as valid_index
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE 
+    WHERE
     doc.downloaded is not null
     AND doc.hash != ''
     AND doc.clean_start is null
@@ -333,7 +333,7 @@ def getUnflattenedDatasets(conn):
     sql = """
     SELECT hash, downloaded, doc.id, flatten_api_error
     FROM document as doc
-    WHERE doc.downloaded is not Null 
+    WHERE doc.downloaded is not Null
     AND doc.clean_end is not Null
     AND doc.flatten_start is Null
     ORDER BY downloaded
@@ -390,7 +390,7 @@ def getUnlakifiedDatasets(conn):
     SELECT hash, downloaded, doc.id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE doc.downloaded is not null 
+    WHERE doc.downloaded is not null
     AND doc.clean_end is not Null
     AND doc.lakify_start is Null
     AND doc.lakify_error is Null
@@ -704,7 +704,7 @@ def completeSolrize(conn, doc_hash):
 
     sql = """
         UPDATE document
-        SET solrize_end = %(now)s, 
+        SET solrize_end = %(now)s,
             solr_api_error = null,
             solrize_reindex = 'f'
         WHERE hash = %(doc_hash)s
@@ -726,7 +726,7 @@ def updateFileAsDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = %(dt)s, download_error = null 
+        SET downloaded = %(dt)s, download_error = null
         WHERE id = %(id)s
     """
 
@@ -840,7 +840,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     sql1 = """
         INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
         VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
-        ON CONFLICT (id) DO 
+        ON CONFLICT (id) DO
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
                 modified = %(dt)s,

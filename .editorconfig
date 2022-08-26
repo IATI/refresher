@@ -1,0 +1,18 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{js,jsx,ts,tsx,coffee,html,less,css,json,py,yml,vue}]
+indent_style = space
+indent_size = 4
+quote_type = single
+
+[*.md]
+trim_trailing_whitespace = false

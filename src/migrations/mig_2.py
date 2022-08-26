@@ -3,7 +3,7 @@ CREATE TABLE public.publisher (
     org_id character varying NOT NULL,
     name character varying NOT NULL,
     description character varying,
-	title character varying NOT NULL,	
+	title character varying NOT NULL,
 	state character varying,
 	image_url character varying,
 	country_code character varying,
