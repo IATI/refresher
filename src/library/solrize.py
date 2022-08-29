@@ -158,6 +158,27 @@ def process_hash_list(document_datasets):
                 # don't index iati_xml into exploded elements
                 del fa['iati_xml']
 
+                # transform location_point_pos for default SOLR LatLonPointSpatialField
+                location_latlon = []
+                try:
+                    for point_pos in fa['location_point_pos']:
+                        try:
+                            lat_str, lon_str = point_pos.split()
+                            try:
+                                lat = float(lat_str)
+                                lon = float(lon_str)
+                                if abs(lat) <= 90 and abs(lon) <= 180:
+                                    location_latlon.append("{},{}".format(lat, lon))
+                                else:
+                                    location_latlon.append("")
+                            except ValueError:
+                                location_latlon.append("")
+                        except (AttributeError, ValueError) as e:
+                            location_latlon.append("")
+                    fa['location_latlon'] = location_latlon
+                except KeyError:
+                    pass
+
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
                     addToSolr(element_name, res, file_hash, file_id)
