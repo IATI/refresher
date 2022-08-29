@@ -175,9 +175,9 @@ def process_hash_list(document_datasets):
                                 location_latlon.append("")
                         except (AttributeError, ValueError) as e:
                             location_latlon.append("")
-                    fa['location_latlon'] = location_latlon
                 except KeyError:
                     pass
+                fa['location_latlon'] = location_latlon
 
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
