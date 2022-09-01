@@ -75,6 +75,16 @@ def chunk_list(l, n):
 def addCore(core_name):
     return pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + core_name + '_solrize/', always_commit=False, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
 
+def validateLatLon(point_pos):
+    try:
+        lat_str, lon_str = point_pos.split()
+        lat = float(lat_str)
+        lon = float(lon_str)
+        if abs(lat) <= 90 and abs(lon) <= 180:
+            return "{},{}".format(lat, lon)
+    except (AttributeError, ValueError) as e:
+        pass
+    return None
 
 def process_hash_list(document_datasets):
 
@@ -153,6 +163,21 @@ def process_hash_list(document_datasets):
                                              ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
 
                 fa['iati_activities_document_id'] = file_id
+
+                # transform location_point_pos for default SOLR LatLonPointSpatialField
+                try:
+                    if isinstance(fa['location_point_pos'], str):
+                        location_point_pos = [fa['location_point_pos']]
+                    elif isinstance(fa['location_point_pos'], list):
+                        location_point_pos = fa['location_point_pos']
+                    location_point_latlon = [
+                        validateLatLon(point_pos) for point_pos in location_point_pos if validateLatLon(point_pos) is not None
+                    ]
+                    if len(location_point_latlon) > 0:
+                        fa['location_point_latlon'] = location_point_latlon
+                except KeyError:
+                    pass
+
                 addToSolr('activity', [fa], file_hash, file_id)
 
                 # don't index iati_xml into exploded elements
