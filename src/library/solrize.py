@@ -138,11 +138,9 @@ def process_hash_list(document_datasets):
                     )
                 
                 try:
-                    fa['iati_xml'] = utils.get_text_from_blob(
-                        downloader, blob_name)
+                    fa['iati_xml'] = utils.get_text_from_blob(downloader, blob_name)
                 except:
-                    raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name + 
-                                             ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
+                    raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name + ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
              
                 fa['iati_activities_document_id'] = file_id
 
