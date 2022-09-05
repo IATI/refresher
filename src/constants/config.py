@@ -54,7 +54,8 @@ config = dict(DATA_SCHEMA="public",
               SOLRIZE=dict(
                   PARALLEL_PROCESSES=int(
                       os.getenv('SOLR_PARALLEL_PROCESSES') or 1),
-                  MAX_BATCH_LENGTH=1000,
+                  MAX_BATCH_LENGTH=500,
+                  PYSOLR_TIMEOUT=600,
                   SOLR_API_URL=os.getenv('SOLR_API_URL'),
                   SOLR_USER=os.getenv('SOLR_USER'),
                   SOLR_PASSWORD=os.getenv('SOLR_PASSWORD'),
