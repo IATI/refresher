@@ -80,7 +80,7 @@ def chunk_list(l, n):
 
 
 def addCore(core_name):
-    return pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + core_name + '_solrize/', always_commit=False, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']))
+    return pysolr.Solr(config['SOLRIZE']['SOLR_API_URL'] + core_name + '_solrize/', always_commit=False, auth=(config['SOLRIZE']['SOLR_USER'], config['SOLRIZE']['SOLR_PASSWORD']), timeout=config['SOLRIZE']['PYSOLR_TIMEOUT'])
 
 
 def process_hash_list(document_datasets):
