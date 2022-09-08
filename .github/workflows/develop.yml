@@ -204,7 +204,7 @@ jobs:
             --restart-policy "Always" \
             --ip-address "Private" \
             --memory "4" \
-            --cpu "1" \
+            --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
             --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
@@ -253,7 +253,7 @@ jobs:
             --restart-policy "Always" \
             --ip-address "Private" \
             --memory "2" \
-            --cpu "1" \
+            --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
             --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
@@ -298,7 +298,7 @@ jobs:
             --restart-policy "Always" \
             --ip-address "Private" \
             --memory "2" \
-            --cpu "1" \
+            --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
             --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
@@ -339,7 +339,7 @@ jobs:
             --restart-policy "Always" \
             --ip-address "Private" \
             --memory "4" \
-            --cpu "1" \
+            --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
             --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
