@@ -134,7 +134,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
@@ -182,7 +182,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
@@ -231,7 +231,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-clean" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
@@ -276,7 +276,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
@@ -317,7 +317,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-lakify" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
@@ -361,7 +361,7 @@ jobs:
               COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
               COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
             az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=210 \
+              --tags avgCPU=true ACU=true ACUvalue=21 \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
               --resource-type "Microsoft.ContainerInstance/containerGroups"
