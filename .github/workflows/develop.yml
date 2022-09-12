@@ -112,7 +112,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "4" \
+            --memory "2" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
@@ -155,7 +155,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "2" \
+            --memory "0.3" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
@@ -203,7 +203,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "4" \
+            --memory "0.1" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
@@ -252,7 +252,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "2" \
+            --memory "0.3" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
@@ -297,7 +297,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "2" \
+            --memory "0.5" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
@@ -338,7 +338,7 @@ jobs:
             --location "uksouth" \
             --restart-policy "Always" \
             --ip-address "Private" \
-            --memory "4" \
+            --memory "2" \
             --cpu "0.1" \
             --os-type "Linux" \
             --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
