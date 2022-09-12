@@ -43,7 +43,7 @@ config = dict(DATA_SCHEMA="public",
                   SAFETY_CHECK_PERIOD=2
               ),
               CLEAN=dict(
-                  PARALLEL_PROCESSES=5
+                  PARALLEL_PROCESSES=1
               ),
               FLATTEN=dict(
                   PARALLEL_PROCESSES=1,
