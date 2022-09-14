@@ -53,6 +53,7 @@ def process_hash_list(document_datasets):
                 : config['FLATTEN']['FLATTENER_KEY_VALUE']}
             response = requests.post(
                 config['FLATTEN']['FLATTENER_URL'], data=payload.encode('utf-8'), headers=headers)
+            del payload
             db.updateSolrizeStartDate(conn, file_hash)
 
             if response.status_code != 200:
