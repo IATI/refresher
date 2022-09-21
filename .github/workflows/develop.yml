@@ -70,7 +70,8 @@ jobs:
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: "Build and push image"
         run: |
-          $IMAGE_NAME=$REGISTRY_LOGIN_SERVER/$STAGE-$NAME:$TAG
+          IMAGE_NAME=$REGISTRY_LOGIN_SERVER/$STAGE-$NAME:$TAG
+          echo $IMAGE_NAME
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           docker build . -f Dockerfile -t $IMAGE_NAME
           docker push $IMAGE_NAME
