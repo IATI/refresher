@@ -1,0 +1,59 @@
+name: 'aci-iati-refresher-#{ENVIRONMENT}#' # Name of the container group
+apiVersion: '2021-10-01'
+location: 'uksouth'
+tags: {
+    avgCPU: True,
+    ACU: True,
+    ACUValue: 126
+}
+properties: # Properties of container group
+  imageRegistryCredentials: # Credentials to pull a private image
+    - server: '#{REGISTRY_LOGIN_SERVER}#'
+      username: '#{REGISTRY_USERNAME}#'
+      password: '#{REGISTRY_PASSWORD}#'
+  restartPolicy: 'Always'
+  osType: 'Linux'
+  diagnostics:
+    logAnalytics:
+      workspaceId: '#{LOG_WORKSPACE_ID}#'
+      workspaceKey: '#{LOG_WORKSPACE_KEY}#'
+  containers: # Array of container instances in the group
+  - name: 'aci-iati-refresher-refresh-#{ENVIRONMENT}#' # Name of an instance
+    properties: # Properties of an instance
+      image: '#{IMAGE}#' # Container image used to create the instance
+      command:
+      - '/usr/local/bin/python /code/handler.py -t refreshloop'
+      environmentVariables:
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#{AZURE_STORAGE_CONNECTION_STRING}#'
+      - name: AZURE_STORAGE_CONTAINER_SOURCE
+        value: 'source'
+      - name: AZURE_STORAGE_CONTAINER_CLEAN
+        value: 'clean'
+      - name: ACTIVITIES_LAKE_CONTAINER_NAME
+        value: 'activity-lake'
+      - name: DB_HOST
+        secureValue: '#{DB_HOST}#'
+      - name: DB_PORT
+        secureValue: '#{DB_PORT}#'
+      - name: DB_USER
+        secureValue: '#{DB_USER}#'
+      - name: DB_PASS
+        secureValue: '#{DB_PASS}#'
+      - name: DB_NAME
+        secureValue: '#{DB_NAME}#'
+      - name: SOLR_API_URL
+        secureValue: '#{SOLR_API_URL}#'
+      - name: SOLR_USER
+        secureValue: '#{SOLR_USER}#'
+      - name: SOLR_PASSWORD
+        secureValue: '#{SOLR_PASSWORD}#'
+      - name: COMMSHUB_URL
+        secureValue: '#{COMMSHUB_KEY}#'
+      resources: # Resource requirements of the instance
+        requests:
+          memoryInGB: 2
+          cpu: 0.1
+        limits:
+          memoryInGB: 3
+          cpu: 0.5
