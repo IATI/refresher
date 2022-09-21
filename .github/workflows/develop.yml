@@ -71,8 +71,9 @@ jobs:
       - name: "Build and push image"
         run: |
           IMAGE_NAME=$REGISTRY_LOGIN_SERVER/$STAGE-$NAME:$TAG
-          echo $IMAGE_NAME
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          IMAGE_NAME_ESC=$REGISTRY_LOGIN_SERVER\\/$STAGE-$NAME:$TAG
+          echo $IMAGE_NAME_ESC
+          echo "IMAGE_NAME=$IMAGE_NAME_ESC" >> $GITHUB_ENV
           docker build . -f Dockerfile -t $IMAGE_NAME
           docker push $IMAGE_NAME
 
@@ -108,7 +109,7 @@ jobs:
             sed -i ''s/#{REGISTRY_PASSWORD}#/${{ env.REGISTRY_PASSWORD }}/g'' ./deployment/deployment.yml
             sed -i ''s/#{LOG_WORKSPACE_ID}#/${{ env.LOG_WORKSPACE_ID }}/g'' ./deployment/deployment.yml
             sed -i ''s/#{LOG_WORKSPACE_KEY}#/${{ env.LOG_WORKSPACE_KEY }}/g'' ./deployment/deployment.yml
-            sed -i ''s/#{IMAGE_NAME}#/${{ env.IMAGE_NAME }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{IMAGE_NAME}#/${{ env.IMAGE_NAME_ESC }}/g'' ./deployment/deployment.yml
             sed -i ''s/#{AZURE_STORAGE_CONNECTION_STRING}#/${{ env.AZURE_STORAGE_CONNECTION_STRING }}/g'' ./deployment/deployment.yml
             sed -i ''s/#{DB_HOST}#/${{ env.DB_HOST }}/g'' ./deployment/deployment.yml
             sed -i ''s/#{DB_PORT}#/${{ env.DB_PORT }}/g'' ./deployment/deployment.yml

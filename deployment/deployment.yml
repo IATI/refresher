@@ -20,7 +20,7 @@ properties: # Properties of container group
       workspaceId: '#{LOG_WORKSPACE_ID}#'
       workspaceKey: '#{LOG_WORKSPACE_KEY}#'
   containers: # Array of container instances in the group
-  - name: 'aci-iati-refresher-refresh-#{ENVIRONMENT}#' # Name of an instance
+  - name: 'refresh' # Name of an instance
     properties: # Properties of an instance
       image: '#{IMAGE_NAME}#' # Container image used to create the instance
       command:
