@@ -11,6 +11,7 @@ on:
 
 env:
   STAGE: dev-aci-iati
+  ENVIRONMENT: dev
   NAME: refresher
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher-dev
@@ -69,8 +70,10 @@ jobs:
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: "Build and push image"
         run: |
-          docker build . -f Dockerfile -t ${{ env.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-          docker push ${{ env.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+          $IMAGE_NAME=$REGISTRY_LOGIN_SERVER/$STAGE-$NAME:$TAG
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          docker build . -f Dockerfile -t $IMAGE_NAME
+          docker push $IMAGE_NAME
 
       - name: "Delete existing containers"
         uses: "azure/CLI@1.0.4"
@@ -96,6 +99,28 @@ jobs:
               --name "${{ env.STAGE }}-${{ env.NAME }}-solrize" \
               --resource-group "${{ env.RESOURCE_GROUP }}"
 
+      - name: 'Replace Env Vars and Secrets in Yaml template'
+        run: |
+            sed -i ''s/#{ENVIRONMENT}#/${{ env.ENVIRONMENT }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{REGISTRY_LOGIN_SERVER}#/${{ env.REGISTRY_LOGIN_SERVER }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{REGISTRY_USERNAME}#/${{ env.REGISTRY_USERNAME }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{REGISTRY_PASSWORD}#/${{ env.REGISTRY_PASSWORD }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{LOG_WORKSPACE_ID}#/${{ env.LOG_WORKSPACE_ID }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{LOG_WORKSPACE_KEY}#/${{ env.LOG_WORKSPACE_KEY }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{IMAGE_NAME}#/${{ env.IMAGE_NAME }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{AZURE_STORAGE_CONNECTION_STRING}#/${{ env.AZURE_STORAGE_CONNECTION_STRING }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{DB_HOST}#/${{ env.DB_HOST }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{DB_PORT}#/${{ env.DB_PORT }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{DB_USER}#/${{ env.DB_USER }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{DB_PASS}#/${{ env.DB_PASS }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{DB_NAME}#/${{ env.DB_NAME }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{SOLR_API_URL}#/${{ env.SOLR_API_URL }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{SOLR_USER}#/${{ env.SOLR_USER }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{SOLR_PASSWORD}#/${{ env.SOLR_PASSWORD }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{COMMSHUB_URL}#/${{ env.COMMSHUB_URL }}/g'' ./deployment/deployment.yml
+            sed -i ''s/#{COMMSHUB_KEY}#/${{ env.COMMSHUB_KEY }}/g'' ./deployment/deployment.yml
+
+
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
@@ -103,41 +128,7 @@ jobs:
           inlineScript: |
             az container create \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-            --command-line "/usr/local/bin/python /code/handler.py -t refreshloop" \
-            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-            --registry-username "${{ env.REGISTRY_USERNAME }}" \
-            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
-            --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-            --location "uksouth" \
-            --restart-policy "Always" \
-            --ip-address "Private" \
-            --memory "2" \
-            --cpu "0.1" \
-            --os-type "Linux" \
-            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-            --secure-environment-variables \
-              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-              AZURE_STORAGE_CONTAINER_CLEAN="${{ env.AZURE_STORAGE_CONTAINER_CLEAN }}" \
-              DB_HOST="${{ env.DB_HOST }}" \
-              DB_PORT="${{ env.DB_PORT }}" \
-              DB_USER="${{ env.DB_USER }}" \
-              DB_PASS="${{ env.DB_PASS }}" \
-              DB_NAME="${{ env.DB_NAME }}" \
-              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-              SOLR_USER="${{ env.SOLR_USER }}" \
-              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-              ACTIVITIES_LAKE_CONTAINER_NAME="${{ env.ACTIVITIES_LAKE_CONTAINER_NAME }}" \
-              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-            az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=21 \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --resource-type "Microsoft.ContainerInstance/containerGroups"
+            --file ./deployment/deployment.yml
 
       - name: "Deploy Validate to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
