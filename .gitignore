@@ -140,5 +140,3 @@ cython_debug/
 .vscode/*
 !.vscode/extensions.json
 pyenv
-
-scratch
