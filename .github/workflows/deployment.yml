@@ -13,6 +13,8 @@ properties: # Properties of container group
       password: '#{REGISTRY_PASSWORD}#'
   restartPolicy: 'Always'
   osType: 'Linux'
+  ipAddress:
+    type: 'Private'
   diagnostics:
     logAnalytics:
       workspaceId: '#{LOG_WORKSPACE_ID}#'
@@ -20,7 +22,7 @@ properties: # Properties of container group
   containers: # Array of container instances in the group
   - name: 'aci-iati-refresher-refresh-#{ENVIRONMENT}#' # Name of an instance
     properties: # Properties of an instance
-      image: '#{IMAGE}#' # Container image used to create the instance
+      image: '#{IMAGE_NAME}#' # Container image used to create the instance
       command:
       - '/usr/local/bin/python /code/handler.py -t refreshloop'
       environmentVariables:
@@ -49,6 +51,8 @@ properties: # Properties of container group
       - name: SOLR_PASSWORD
         secureValue: '#{SOLR_PASSWORD}#'
       - name: COMMSHUB_URL
+        secureValue: '#{COMMSHUB_URL}#'
+      - name: COMMSHUB_KEY
         secureValue: '#{COMMSHUB_KEY}#'
       resources: # Resource requirements of the instance
         requests:
