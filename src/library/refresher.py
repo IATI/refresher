@@ -49,7 +49,7 @@ def fetch_datasets():
         json_response = json.loads(response.content)
         full_count = json_response["result"]["count"]
         current_count = len(json_response["result"]["results"])
-        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]}
+        results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"], "name": result["name"]}
                     for result in json_response["result"]["results"] for resource in result["resources"]]
     else:
         logger.error('IATI Registry returned ' + str(response.status_code) +
@@ -88,7 +88,7 @@ def fetch_datasets():
             last_current_count = current_count
             last_live_count = live_count
 
-            results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"]}
+            results += [{"id": resource["package_id"], "hash": resource["hash"], "url": resource["url"], "org_id": result["owner_org"], "name": result["name"]}
                         for result in json_response["result"]["results"] for resource in result["resources"]]
         else:
             logger.error('IATI Registry returned ' + str(response.status_code) +
@@ -350,7 +350,7 @@ def sync_documents():
             if changed is not None:
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(
-                conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt)
+                conn, dataset['id'], dataset['hash'], dataset['url'], dataset['org_id'], start_dt, dataset['name'])
         except DbError as e:
             e_message = ''
             if e.pgerror is not None:
