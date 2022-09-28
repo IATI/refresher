@@ -70,8 +70,10 @@ jobs:
           password: ${{ env.REGISTRY_PASSWORD }}
       - name: "Build and push image"
         run: |
-          docker build . -f Dockerfile -t ${{ env.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
-          docker push ${{ env.REGISTRY_LOGIN_SERVER }}/$STAGE-$NAME:$TAG
+          IMAGE_NAME=$REGISTRY_LOGIN_SERVER/$STAGE-$NAME:$TAG
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          docker build . -f Dockerfile -t $IMAGE_NAME
+          docker push $IMAGE_NAME
 
       - name: "Delete existing containers"
         uses: "azure/CLI@1.0.4"
