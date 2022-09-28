@@ -13,8 +13,6 @@ properties: # Properties of container group
       password: '#REGISTRY_PASSWORD#'
   restartPolicy: 'Always'
   osType: 'Linux'
-  ipAddress:
-    type: 'Private'
   diagnostics:
     logAnalytics:
       workspaceId: '#LOG_WORKSPACE_ID#'
@@ -24,7 +22,10 @@ properties: # Properties of container group
     properties: # Properties of an instance
       image: '#IMAGE_NAME#' # Container image used to create the instance
       command:
-      - '/usr/local/bin/python /code/handler.py -t refreshloop'
+      - '/usr/local/bin/python'
+      - '/code/handler.py'
+      - '-t'
+      -  'refreshloop'
       environmentVariables:
       - name: AZURE_STORAGE_CONNECTION_STRING
         secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
@@ -58,6 +59,3 @@ properties: # Properties of container group
         requests:
           memoryInGB: 2
           cpu: 0.1
-        limits:
-          memoryInGB: 3
-          cpu: 0.5
