@@ -103,24 +103,24 @@ jobs:
         run: |
             echo $IMAGE_NAME
             cat ./deployment/deployment.yml
-            sed -i ''s^#ENVIRONMENT#^${{ env.ENVIRONMENT }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#REGISTRY_LOGIN_SERVER#^${{ env.REGISTRY_LOGIN_SERVER }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#REGISTRY_USERNAME#^${{ env.REGISTRY_USERNAME }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#REGISTRY_PASSWORD#^${{ env.REGISTRY_PASSWORD }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#LOG_WORKSPACE_ID#^${{ env.LOG_WORKSPACE_ID }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#LOG_WORKSPACE_KEY#^${{ env.LOG_WORKSPACE_KEY }}^g'' ./deployment/deployment.yml
+            sed -i ''s^#ENVIRONMENT#^$ENVIRONMENT^g'' ./deployment/deployment.yml
+            sed -i ''s^#REGISTRY_LOGIN_SERVER#^$REGISTRY_LOGIN_SERVER^g'' ./deployment/deployment.yml
+            sed -i ''s^#REGISTRY_USERNAME#^$REGISTRY_USERNAME^g'' ./deployment/deployment.yml
+            sed -i ''s^#REGISTRY_PASSWORD#^$REGISTRY_PASSWORD^g'' ./deployment/deployment.yml
+            sed -i ''s^#LOG_WORKSPACE_ID#^$LOG_WORKSPACE_ID^g'' ./deployment/deployment.yml
+            sed -i ''s^#LOG_WORKSPACE_KEY#^$LOG_WORKSPACE_KEY^g'' ./deployment/deployment.yml
             sed -i ''s^#IMAGE_NAME#^$IMAGE_NAME^g'' ./deployment/deployment.yml
-            sed -i ''s^#AZURE_STORAGE_CONNECTION_STRING#^${{ env.AZURE_STORAGE_CONNECTION_STRING }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#DB_HOST#^${{ env.DB_HOST }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#DB_PORT#^${{ env.DB_PORT }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#DB_USER#^${{ env.DB_USER }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#DB_PASS#^${{ env.DB_PASS }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#DB_NAME#^${{ env.DB_NAME }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#SOLR_API_URL#^${{ env.SOLR_API_URL }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#SOLR_USER#^${{ env.SOLR_USER }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#SOLR_PASSWORD#^${{ env.SOLR_PASSWORD }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#COMMSHUB_URL#^${{ env.COMMSHUB_URL }}^g'' ./deployment/deployment.yml
-            sed -i ''s^#COMMSHUB_KEY#^${{ env.COMMSHUB_KEY }}^g'' ./deployment/deployment.yml
+            sed -i ''s^#AZURE_STORAGE_CONNECTION_STRING#^$AZURE_STORAGE_CONNECTION_STRING^g'' ./deployment/deployment.yml
+            sed -i ''s^#DB_HOST#^$DB_HOST^g'' ./deployment/deployment.yml
+            sed -i ''s^#DB_PORT#^$DB_PORT^g'' ./deployment/deployment.yml
+            sed -i ''s^#DB_USER#^$DB_USER^g'' ./deployment/deployment.yml
+            sed -i ''s^#DB_PASS#^$DB_PASS^g'' ./deployment/deployment.yml
+            sed -i ''s^#DB_NAME#^$DB_NAME^g'' ./deployment/deployment.yml
+            sed -i ''s^#SOLR_API_URL#^$SOLR_API_URL^g'' ./deployment/deployment.yml
+            sed -i ''s^#SOLR_USER#^$SOLR_USER^g'' ./deployment/deployment.yml
+            sed -i ''s^#SOLR_PASSWORD#^$SOLR_PASSWORD^g'' ./deployment/deployment.yml
+            sed -i ''s^#COMMSHUB_URL#^$COMMSHUB_URL^g'' ./deployment/deployment.yml
+            sed -i ''s^#COMMSHUB_KEY#^$COMMSHUB_KEY^g'' ./deployment/deployment.yml
 
       - name: "Deploy Refresh to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
