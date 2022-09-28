@@ -102,6 +102,7 @@ jobs:
       - name: 'Replace Env Vars and Secrets in Yaml template'
         run: |
             echo $IMAGE_NAME
+            cat ./deployment/deployment.yml
             sed -i ''s^#ENVIRONMENT#^${{ env.ENVIRONMENT }}^g'' ./deployment/deployment.yml
             sed -i ''s^#REGISTRY_LOGIN_SERVER#^${{ env.REGISTRY_LOGIN_SERVER }}^g'' ./deployment/deployment.yml
             sed -i ''s^#REGISTRY_USERNAME#^${{ env.REGISTRY_USERNAME }}^g'' ./deployment/deployment.yml
