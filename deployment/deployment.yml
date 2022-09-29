@@ -1,4 +1,4 @@
-name: 'aci-iati-refresher-#ENVIRONMENT#' # Name of the container group
+name: '#NAME#-#ENVIRONMENT#' # Name of the container group
 apiVersion: '2021-10-01'
 location: 'uksouth'
 tags: {
@@ -31,14 +31,14 @@ properties: # Properties of container group
       - '-t'
       -  'refreshloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
       - name: ACTIVITIES_LAKE_CONTAINER_NAME
         value: 'activity-lake'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -72,10 +72,10 @@ properties: # Properties of container group
       - '-t'
       -  'validateloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -121,12 +121,12 @@ properties: # Properties of container group
       - '-t'
       -  'cleanloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -172,12 +172,12 @@ properties: # Properties of container group
       - '-t'
       -  'flattenloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -204,3 +204,81 @@ properties: # Properties of container group
         secureValue: '#FLATTENER_KEY_NAME#'
       - name: FLATTENER_KEY_VALUE
         secureValue: '#FLATTENER_KEY_VALUE#'
+  - name: 'lakify'
+    properties:
+      resources:
+          requests:
+            memoryInGB: 0.8
+            cpu: 0.1
+      image: '#IMAGE_NAME#'
+      command:
+      - '/usr/local/bin/python'
+      - '/code/handler.py'
+      - '-t'
+      -  'lakifyloop'
+      environmentVariables:
+      - name: AZURE_STORAGE_CONTAINER_SOURCE
+        value: 'source'
+      - name: AZURE_STORAGE_CONTAINER_CLEAN
+        value: 'clean'
+      - name: ACTIVITIES_LAKE_CONTAINER_NAME
+        value: 'activity-lake'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+      - name: DB_HOST
+        secureValue: '#DB_HOST#'
+      - name: DB_PORT
+        secureValue: '#DB_PORT#'
+      - name: DB_USER
+        secureValue: '#DB_USER#'
+      - name: DB_PASS
+        secureValue: '#DB_PASS#'
+      - name: DB_NAME
+        secureValue: '#DB_NAME#'
+      - name: SOLR_API_URL
+        secureValue: '#SOLR_API_URL#'
+      - name: COMMSHUB_URL
+        secureValue: '#COMMSHUB_URL#'
+      - name: COMMSHUB_KEY
+        secureValue: '#COMMSHUB_KEY#'
+  - name: 'solrize'
+    properties:
+      resources:
+          requests:
+            memoryInGB: 2
+            cpu: 0.1
+      image: '#IMAGE_NAME#'
+      command:
+      - '/usr/local/bin/python'
+      - '/code/handler.py'
+      - '-t'
+      -  'solrizeloop'
+      environmentVariables:
+      - name: AZURE_STORAGE_CONTAINER_SOURCE
+        value: 'source'
+      - name: ACTIVITIES_LAKE_CONTAINER_NAME
+        value: 'activity-lake'
+      - name: SOLR_500_SLEEP
+        value: 60
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+      - name: DB_HOST
+        secureValue: '#DB_HOST#'
+      - name: DB_PORT
+        secureValue: '#DB_PORT#'
+      - name: DB_USER
+        secureValue: '#DB_USER#'
+      - name: DB_PASS
+        secureValue: '#DB_PASS#'
+      - name: DB_NAME
+        secureValue: '#DB_NAME#'
+      - name: SOLR_API_URL
+        secureValue: '#SOLR_API_URL#'
+      - name: SOLR_USER
+        secureValue: '#SOLR_USER#'
+      - name: SOLR_PASSWORD
+        secureValue: '#SOLR_PASSWORD#'
+      - name: COMMSHUB_URL
+        secureValue: '#COMMSHUB_URL#'
+      - name: COMMSHUB_KEY
+        secureValue: '#COMMSHUB_KEY#'
