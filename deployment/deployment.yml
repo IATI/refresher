@@ -31,14 +31,14 @@ properties: # Properties of container group
       - '-t'
       -  'refreshloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
       - name: ACTIVITIES_LAKE_CONTAINER_NAME
         value: 'activity-lake'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -72,10 +72,10 @@ properties: # Properties of container group
       - '-t'
       -  'validateloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -121,12 +121,12 @@ properties: # Properties of container group
       - '-t'
       -  'cleanloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -172,12 +172,12 @@ properties: # Properties of container group
       - '-t'
       -  'flattenloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -217,14 +217,14 @@ properties: # Properties of container group
       - '-t'
       -  'lakifyloop'
       environmentVariables:
-      - name: AZURE_STORAGE_CONNECTION_STRING
-        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
       - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
       - name: ACTIVITIES_LAKE_CONTAINER_NAME
         value: 'activity-lake'
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
@@ -256,12 +256,12 @@ properties: # Properties of container group
       environmentVariables:
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
+      - name: ACTIVITIES_LAKE_CONTAINER_NAME
+        value: 'activity-lake'
       - name: SOLR_500_SLEEP
         value: 60
       - name: AZURE_STORAGE_CONNECTION_STRING
         secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
-      - name: ACTIVITIES_LAKE_CONTAINER_NAME
-        value: 'activity-lake'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
       - name: DB_PORT
