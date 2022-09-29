@@ -22,8 +22,8 @@ properties: # Properties of container group
     properties: # Properties of an instance
       resources: # Resource requirements of the instance
         requests:
-            memoryInGB: 2
-            cpu: 0.1
+          memoryInGB: 2
+          cpu: 0.1
       image: '#IMAGE_NAME#' # Container image used to create the instance
       command:
       - '/usr/local/bin/python'
@@ -63,8 +63,8 @@ properties: # Properties of container group
     properties:
       resources:
           requests:
-          memoryInGB: 0.5
-          cpu: 0.1
+            memoryInGB: 0.5
+            cpu: 0.1
       image: '#IMAGE_NAME#'
       command:
       - '/usr/local/bin/python'
