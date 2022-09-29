@@ -125,7 +125,7 @@ properties: # Properties of container group
         secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
       - name: AZURE_STORAGE_CONTAINER_SOURCE
         value: 'source'
-      - name: AZURE_STORAGE_CONTAINER_SOURCE
+      - name: AZURE_STORAGE_CONTAINER_CLEAN
         value: 'clean'
       - name: DB_HOST
         secureValue: '#DB_HOST#'
