@@ -9,9 +9,14 @@ charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[*.{js,jsx,ts,tsx,coffee,html,less,css,json,py,yml,vue}]
+[*.{js,jsx,ts,tsx,coffee,html,less,css,json,py,vue}]
 indent_style = space
 indent_size = 4
+quote_type = single
+
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
 quote_type = single
 
 [*.md]
