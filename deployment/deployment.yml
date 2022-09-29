@@ -241,3 +241,44 @@ properties: # Properties of container group
         secureValue: '#COMMSHUB_URL#'
       - name: COMMSHUB_KEY
         secureValue: '#COMMSHUB_KEY#'
+  - name: 'solrize'
+    properties:
+      resources:
+          requests:
+            memoryInGB: 2
+            cpu: 0.1
+      image: '#IMAGE_NAME#'
+      command:
+      - '/usr/local/bin/python'
+      - '/code/handler.py'
+      - '-t'
+      -  'solrizeloop'
+      environmentVariables:
+      - name: AZURE_STORAGE_CONTAINER_SOURCE
+        value: 'source'
+      - name: SOLR_500_SLEEP
+        value: 60
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+      - name: ACTIVITIES_LAKE_CONTAINER_NAME
+        value: 'activity-lake'
+      - name: DB_HOST
+        secureValue: '#DB_HOST#'
+      - name: DB_PORT
+        secureValue: '#DB_PORT#'
+      - name: DB_USER
+        secureValue: '#DB_USER#'
+      - name: DB_PASS
+        secureValue: '#DB_PASS#'
+      - name: DB_NAME
+        secureValue: '#DB_NAME#'
+      - name: SOLR_API_URL
+        secureValue: '#SOLR_API_URL#'
+      - name: SOLR_USER
+        secureValue: '#SOLR_USER#'
+      - name: SOLR_PASSWORD
+        secureValue: '#SOLR_PASSWORD#'
+      - name: COMMSHUB_URL
+        secureValue: '#COMMSHUB_URL#'
+      - name: COMMSHUB_KEY
+        secureValue: '#COMMSHUB_KEY#'
