@@ -101,31 +101,44 @@ jobs:
             echo $IMAGE_NAME
             cat ./deployment/deployment.yml
             sed -i ''s^#ENVIRONMENT#^$ENVIRONMENT^g'' ./deployment/deployment.yml
+
+            sed -i ''s^#IMAGE_NAME#^$IMAGE_NAME^g'' ./deployment/deployment.yml
+
             sed -i ''s^#REGISTRY_LOGIN_SERVER#^$REGISTRY_LOGIN_SERVER^g'' ./deployment/deployment.yml
             sed -i ''s^#REGISTRY_USERNAME#^$REGISTRY_USERNAME^g'' ./deployment/deployment.yml
             sed -i ''s^#REGISTRY_PASSWORD#^$REGISTRY_PASSWORD^g'' ./deployment/deployment.yml
+
             sed -i ''s^#LOG_WORKSPACE_ID#^$LOG_WORKSPACE_ID^g'' ./deployment/deployment.yml
             sed -i ''s^#LOG_WORKSPACE_KEY#^$LOG_WORKSPACE_KEY^g'' ./deployment/deployment.yml
-            sed -i ''s^#IMAGE_NAME#^$IMAGE_NAME^g'' ./deployment/deployment.yml
+
             sed -i ''s^#AZURE_STORAGE_CONNECTION_STRING#^$AZURE_STORAGE_CONNECTION_STRING^g'' ./deployment/deployment.yml
+
             sed -i ''s^#DB_HOST#^$DB_HOST^g'' ./deployment/deployment.yml
             sed -i ''s^#DB_PORT#^$DB_PORT^g'' ./deployment/deployment.yml
             sed -i ''s^#DB_USER#^$DB_USER^g'' ./deployment/deployment.yml
             sed -i ''s^#DB_PASS#^$DB_PASS^g'' ./deployment/deployment.yml
             sed -i ''s^#DB_NAME#^$DB_NAME^g'' ./deployment/deployment.yml
+
             sed -i ''s^#SOLR_API_URL#^$SOLR_API_URL^g'' ./deployment/deployment.yml
             sed -i ''s^#SOLR_USER#^$SOLR_USER^g'' ./deployment/deployment.yml
             sed -i ''s^#SOLR_PASSWORD#^$SOLR_PASSWORD^g'' ./deployment/deployment.yml
+
             sed -i ''s^#COMMSHUB_URL#^$COMMSHUB_URL^g'' ./deployment/deployment.yml
             sed -i ''s^#COMMSHUB_KEY#^$COMMSHUB_KEY^g'' ./deployment/deployment.yml
+
             sed -i ''s^#VALIDATOR_API_URL#^$FILE_VALIDATION_URL^g'' ./deployment/deployment.yml
             sed -i ''s^#VALIDATOR_API_KEY_NAME#^$FILE_VALIDATION_KEY_NAME^g'' ./deployment/deployment.yml
             sed -i ''s^#VALIDATOR_API_KEY_VALUE#^$FILE_VALIDATION_KEY_VALUE^g'' ./deployment/deployment.yml
+
             sed -i ''s^#SCHEMA_VALIDATION_API_URL#^$SCHEMA_VALIDATION_URL^g'' ./deployment/deployment.yml
             sed -i ''s^#SCHEMA_VALIDATION_KEY_NAME#^$SCHEMA_VALIDATION_KEY_NAME^g'' ./deployment/deployment.yml
             sed -i ''s^#SCHEMA_VALIDATION_KEY_VALUE#^$SCHEMA_VALIDATION_KEY_VALUE^g'' ./deployment/deployment.yml
 
-      - name: "Deploy Refresh, Validate, Clean to Azure Container Instances"
+            sed -i ''s^#FLATTENER_API_URL#^$FLATTENER_API_URL^g'' ./deployment/deployment.yml
+            sed -i ''s^#FLATTENER_KEY_NAME#^$FLATTENER_KEY_NAME^g'' ./deployment/deployment.yml
+            sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
+
+      - name: "Deploy Refresh, Validate, Clean, Flatten to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
         with:
           azcliversion: 2.30.0
@@ -133,51 +146,6 @@ jobs:
             az container create \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
             --file ./deployment/deployment.yml
-
-      - name: "Deploy Flatten to Azure Container Instances"
-        uses: "azure/CLI@1.0.4"
-        with:
-          azcliversion: 2.30.0
-          inlineScript: |
-            az container create \
-            --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --image "${{ env.REGISTRY_LOGIN_SERVER }}/${{env.STAGE}}-${{env.NAME}}:${{ env.TAG }}" \
-            --command-line "/usr/local/bin/python /code/handler.py -t flattenloop" \
-            --registry-login-server "${{ env.REGISTRY_LOGIN_SERVER }}" \
-            --registry-username "${{ env.REGISTRY_USERNAME }}" \
-            --registry-password "${{ env.REGISTRY_PASSWORD }}" \
-            --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-            --location "uksouth" \
-            --restart-policy "Always" \
-            --ip-address "Private" \
-            --memory "0.8" \
-            --cpu "0.1" \
-            --os-type "Linux" \
-            --log-analytics-workspace "${{ env.LOG_WORKSPACE_ID }}" \
-            --log-analytics-workspace-key "${{ env.LOG_WORKSPACE_KEY }}" \
-            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
-            --secure-environment-variables \
-              AZURE_STORAGE_CONNECTION_STRING="${{ env.AZURE_STORAGE_CONNECTION_STRING }}" \
-              AZURE_STORAGE_CONTAINER_SOURCE="${{ env.AZURE_STORAGE_CONTAINER_SOURCE }}" \
-              AZURE_STORAGE_CONTAINER_CLEAN="${{ env.AZURE_STORAGE_CONTAINER_CLEAN }}" \
-              FLATTENER_API_URL="${{ env.FLATTENER_API_URL }}" \
-              FLATTENER_KEY_NAME="${{ env.FLATTENER_KEY_NAME }}" \
-              FLATTENER_KEY_VALUE="${{ env.FLATTENER_KEY_VALUE }}" \
-              DB_HOST="${{ env.DB_HOST }}" \
-              DB_PORT="${{ env.DB_PORT }}" \
-              DB_USER="${{ env.DB_USER }}" \
-              DB_PASS="${{ env.DB_PASS }}" \
-              DB_NAME="${{ env.DB_NAME }}" \
-              SOLR_API_URL="${{ env.SOLR_API_URL }}" \
-              SOLR_USER="${{ env.SOLR_USER }}" \
-              SOLR_PASSWORD="${{ env.SOLR_PASSWORD }}" \
-              COMMSHUB_URL="${{ env.COMMSHUB_URL }}" \
-              COMMSHUB_KEY="${{ env.COMMSHUB_KEY }}"
-            az resource tag \
-              --tags avgCPU=true ACU=true ACUvalue=21 \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-flatten" \
-              --resource-type "Microsoft.ContainerInstance/containerGroups"
 
       - name: "Deploy Lakify to Azure Container Instances"
         uses: "azure/CLI@1.0.4"
