@@ -1,4 +1,4 @@
-name: 'aci-iati-refresher-#ENVIRONMENT#' # Name of the container group
+name: '#NAME#-#ENVIRONMENT#' # Name of the container group
 apiVersion: '2021-10-01'
 location: 'uksouth'
 tags: {
