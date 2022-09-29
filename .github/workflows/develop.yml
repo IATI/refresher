@@ -81,10 +81,7 @@ jobs:
           azcliversion: 2.30.0
           inlineScript: |
             az container delete -y \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-refresh" \
-              --resource-group "${{ env.RESOURCE_GROUP }}"
-            az container delete -y \
-              --name "${{ env.STAGE }}-${{ env.NAME }}-validate" \
+              --name "aci-iati-refresher-${{ env.ENVIRONMENT }}" \
               --resource-group "${{ env.RESOURCE_GROUP }}"
             az container delete -y \
               --name "${{ env.STAGE }}-${{ env.NAME }}-clean" \
