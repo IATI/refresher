@@ -20,6 +20,10 @@ properties: # Properties of container group
   containers: # Array of container instances in the group
   - name: 'refresh' # Name of an instance
     properties: # Properties of an instance
+      resources: # Resource requirements of the instance
+        requests:
+            memoryInGB: 2
+            cpu: 0.1
       image: '#IMAGE_NAME#' # Container image used to create the instance
       command:
       - '/usr/local/bin/python'
@@ -55,7 +59,52 @@ properties: # Properties of container group
         secureValue: '#COMMSHUB_URL#'
       - name: COMMSHUB_KEY
         secureValue: '#COMMSHUB_KEY#'
-      resources: # Resource requirements of the instance
-        requests:
-          memoryInGB: 2
+  - name: 'validate'
+    properties:
+      resources:
+          requests:
+          memoryInGB: 0.5
           cpu: 0.1
+      image: '#IMAGE_NAME#'
+      command:
+      - '/usr/local/bin/python'
+      - '/code/handler.py'
+      - '-t'
+      -  'validateloop'
+      environmentVariables:
+      - name: AZURE_STORAGE_CONNECTION_STRING
+        secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+      - name: AZURE_STORAGE_CONTAINER_SOURCE
+        value: 'source'
+      - name: DB_HOST
+        secureValue: '#DB_HOST#'
+      - name: DB_PORT
+        secureValue: '#DB_PORT#'
+      - name: DB_USER
+        secureValue: '#DB_USER#'
+      - name: DB_PASS
+        secureValue: '#DB_PASS#'
+      - name: DB_NAME
+        secureValue: '#DB_NAME#'
+      - name: SOLR_API_URL
+        secureValue: '#SOLR_API_URL#'
+      - name: SOLR_USER
+        secureValue: '#SOLR_USER#'
+      - name: SOLR_PASSWORD
+        secureValue: '#SOLR_PASSWORD#'
+      - name: COMMSHUB_URL
+        secureValue: '#COMMSHUB_URL#'
+      - name: COMMSHUB_KEY
+        secureValue: '#COMMSHUB_KEY#'
+      - name: VALIDATOR_API_URL
+        secureValue: '#VALIDATOR_API_URL#'
+      - name: VALIDATOR_API_KEY_NAME
+        secureValue: '#VALIDATOR_API_KEY_NAME#'
+      - name: VALIDATOR_API_KEY_VALUE
+        secureValue: '#VALIDATOR_API_KEY_VALUE#'
+      - name: SCHEMA_VALIDATION_API_URL
+        secureValue: '#SCHEMA_VALIDATION_API_URL#'
+      - name: SCHEMA_VALIDATION_KEY_NAME
+        secureValue: '#SCHEMA_VALIDATION_KEY_NAME#'
+      - name: SCHEMA_VALIDATION_KEY_VALUE
+        secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
