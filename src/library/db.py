@@ -836,13 +836,14 @@ def updatePublisherAsSeen(conn, name, last_seen):
     conn.commit()
 
 
-def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
+def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt, name):
     sql1 = """
-        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s)
         ON CONFLICT (id) DO
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
+                name = %(name)s,
                 modified = %(dt)s,
                 downloaded = null,
                 download_error = null,
@@ -868,7 +869,8 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
     sql2 = """
             UPDATE document SET
             last_seen = %(dt)s,
-            publisher = %(publisher_id)s
+            publisher = %(publisher_id)s,
+            name = %(name)s
             WHERE document.id=%(id)s;
     """
 
@@ -877,7 +879,8 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
         "hash": hash,
         "url": url,
         "dt": dt,
-        "publisher_id": publisher_id
+        "publisher_id": publisher_id,
+        "name": name
     }
 
     with conn.cursor() as curs:
