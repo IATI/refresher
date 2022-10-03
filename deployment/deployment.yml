@@ -4,7 +4,7 @@ location: 'uksouth'
 tags: {
     avgCPU: True,
     ACU: True,
-    ACUValue: 126
+    ACUValue: 210
 }
 properties: # Properties of container group
   imageRegistryCredentials: # Credentials to pull a private image
