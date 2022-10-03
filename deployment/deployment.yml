@@ -2,9 +2,9 @@ name: '#NAME#-#ENVIRONMENT#' # Name of the container group
 apiVersion: '2021-10-01'
 location: 'uksouth'
 tags: {
-    avgCPU: true,
-    ACU: true,
-    ACUValue: 210
+    avgCPU: 'true',
+    ACU: 'true',
+    ACUvalue: 210
 }
 properties: # Properties of container group
   imageRegistryCredentials: # Credentials to pull a private image
