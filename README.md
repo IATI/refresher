@@ -298,3 +298,16 @@ SELECT flattened_activities
   - Remove `iati_xml` field, index to exploded collections
   - Update db that solrizing is complete for that hash (db.completeSolrize)
   
+
+  # Deployment
+
+  The Docker container is built containing all of the Python code. Then 6 individual containers are run using different entry point loops.
+
+  We've deployed this to Azure Container Instances using GitHub Actions and the Azure/CLI Action. 
+
+  The `az container create` command is used with a deployment YAML `deployment/deployment.yml`. Specification [here](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-reference-yaml)
+
+  We use `sed` in the GitHub Actions workflow to repace the variable #PLACEHOLDERS# in the deployment YAML template. Note that any variables with a `^` might have issues with the `sed` command since we are using `^` as the delimiter in the `sed` command.
+
+
+   
