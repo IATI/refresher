@@ -1,4 +1,5 @@
 import time
+import json
 from multiprocessing import Process
 from library.logger import getLogger
 from constants.config import config
@@ -13,6 +14,19 @@ logger = getLogger()
 
 def clean_identifier(identifier):
     return identifier.strip().replace('\n', '')
+
+
+def recursive_json_nest(element, output):
+    element_dict = {'@{}'.format(e_key): element.get(e_key) for e_key in element.keys()}
+    if element.text is not None and element.text.strip()!='':
+        element_dict['text()'] = element.text
+    for e_child in element.getchildren():
+        element_dict = recursive_json_nest(e_child, element_dict)
+    if element.tag in output.keys():
+        output[element.tag].append(element_dict)
+    else:
+        output[element.tag] = [element_dict]
+    return output
 
 
 def process_hash_list(document_datasets):
@@ -57,10 +71,18 @@ def process_hash_list(document_datasets):
                     id_hash = utils.get_hash_for_identifier(
                         clean_identifier(identifiers[0]))
                     activity_xml = etree.tostring(activity, encoding='utf-8')
+                    activity_json = recursive_json_nest(activity, {})
                     act_blob_client = blob_service_client.get_blob_client(
                         container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(id_hash))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
                     act_blob_client.set_blob_tags({"dataset_hash": file_hash})
+                    act_blob_json_client = blob_service_client.get_blob_client(
+                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.json'.format(id_hash))
+                    act_blob_json_client.upload_blob(
+                        json.dumps(activity_json).replace('{http://www.w3.org/XML/1998/namespace}', 'xml:'),
+                        overwrite=True
+                    )
+                    act_blob_json_client.set_blob_tags({"dataset_hash": file_hash})
                 # Free memory
                 activity.clear()
                 for ancestor in activity.xpath('ancestor-or-self::*'):
