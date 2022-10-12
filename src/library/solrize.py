@@ -141,8 +141,8 @@ def process_hash_list(document_datasets):
                         file_hash + ' and id: ' + file_id)
 
             for fa in flattened_activities[0]:
-                blob_name = '{}.xml'.format(
-                    utils.get_hash_for_identifier(fa['iati_identifier']))
+                hashed_identifier = utils.get_hash_for_identifier(fa['iati_identifier'])
+                blob_name = '{}.xml'.format(hashed_identifier)
 
                 try:
                     blob_client = blob_service_client.get_blob_client(
@@ -160,6 +160,28 @@ def process_hash_list(document_datasets):
                 try:
                     fa['iati_xml'] = utils.get_text_from_blob(
                         downloader, blob_name)
+                except:
+                    raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name +
+                                             ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
+
+                json_blob_name = '{}.json'.format(hashed_identifier)
+
+                try:
+                    json_blob_client = blob_service_client.get_blob_client(
+                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob=json_blob_name)
+                    json_downloader = json_blob_client.download_blob()
+                except:
+                    db.resetUnfoundLakify(conn, file_id)
+                    raise SolrizeSourceError(
+                        'Could not download JSON activity blob: ' + json_blob_name +
+                        ', file hash: ' + file_hash +
+                        ', iati-identifier: ' + fa['iati_identifier'] +
+                        '. Sending back to Lakify.'
+                    )
+
+                try:
+                    fa['iati_json'] = utils.get_text_from_blob(
+                        json_downloader, json_blob_name)
                 except:
                     raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name +
                                              ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
@@ -182,8 +204,9 @@ def process_hash_list(document_datasets):
 
                 addToSolr('activity', [fa], file_hash, file_id)
 
-                # don't index iati_xml into exploded elements
+                # don't index iati_xml or iati_json into exploded elements
                 del fa['iati_xml']
+                del fa['iati_json']
 
                 for element_name in explode_elements:
                     res = explode_element(element_name, fa)
