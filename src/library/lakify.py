@@ -79,7 +79,7 @@ def process_hash_list(document_datasets):
                     act_blob_json_client = blob_service_client.get_blob_client(
                         container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.json'.format(id_hash))
                     act_blob_json_client.upload_blob(
-                        json.dumps(activity_json).replace('{http://www.w3.org/XML/1998/namespace}', 'xml:'),
+                        json.dumps(activity_json, ensure_ascii=False).replace('{http://www.w3.org/XML/1998/namespace}', 'xml:').encode('utf-8'),
                         overwrite=True
                     )
                     act_blob_json_client.set_blob_tags({"dataset_hash": file_hash})
