@@ -29,8 +29,10 @@ def main(args):
                 validate.safety_check()
             elif args.type == "validate":
                 validate.validate()
-            elif args.type == "clean":
-                clean.main()
+            elif args.type == "copy_valid":
+                clean.copy_valid()
+            elif args.type == "clean_invalid":
+                clean.clean_invalid()
             elif args.type == "flatten":
                 flatten.main()
             elif args.type == "lakify":
