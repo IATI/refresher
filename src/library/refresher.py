@@ -155,7 +155,7 @@ def clean_datasets(stale_datasets, changed_datasets):
                 assoc_blobs = blob_service_client.find_blobs_by_tags(
                     filter_config)
                 name_list = [blob['name'] for blob in assoc_blobs]
-                max_blob_delete = config['MAX_BLOB_DELETE']
+                max_blob_delete = config['REFRESHER']['MAX_BLOB_DELETE']
                 if len(name_list) > max_blob_delete:
                     chunked_list = [name_list[i:i + max_blob_delete]
                                     for i in range(0, len(name_list), max_blob_delete)]
@@ -273,9 +273,9 @@ def sync_publishers():
         "https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
 
     known_publishers_num = db.getNumPublishers(conn)
-    if len(publisher_list) < (config['PUBLISHER_SAFETY_PERCENTAGE']/100) * known_publishers_num:
+    if len(publisher_list) < (config['REFRESHER']['PUBLISHER_SAFETY_PERCENTAGE']/100) * known_publishers_num:
         logger.error('Number of publishers reported by registry: ' + str(len(publisher_list)) + ', is less than ' + str(
-            config['PUBLISHER_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_publishers_num) + ', NOT Updating Publishers at this time.')
+            config['REFRESHER']['PUBLISHER_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_publishers_num) + ', NOT Updating Publishers at this time.')
         conn.close()
         raise
 
@@ -335,9 +335,9 @@ def sync_documents():
         raise
 
     known_documents_num = db.getNumDocuments(conn)
-    if len(all_datasets) < (config['DOCUMENT_SAFETY_PERCENTAGE']/100) * known_documents_num:
+    if len(all_datasets) < (config['REFRESHER']['DOCUMENT_SAFETY_PERCENTAGE']/100) * known_documents_num:
         logger.error('Number of documents reported by registry: ' + str(len(all_datasets)) + ', is less than ' + str(
-            config['DOCUMENT_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_documents_num) + ', NOT Updating Documents at this time.')
+            config['REFRESHER']['DOCUMENT_SAFETY_PERCENTAGE']) + r'% of previously known publishers: ' + str(known_documents_num) + ', NOT Updating Documents at this time.')
         conn.close()
         raise
 
@@ -399,12 +399,13 @@ def reload(retry_errors):
     conn = db.getDirectConnection()
 
     datasets = db.getRefreshDataset(conn, retry_errors)
-    chunked_datasets = list(split(datasets, config['PARALLEL_PROCESSES']))
+    chunked_datasets = list(
+        split(datasets, config['REFRESHER']['PARALLEL_PROCESSES']))
 
     processes = []
 
     logger.info('Downloading ' + str(len(datasets)) + ' files in a maximum of ' +
-                str(config['PARALLEL_PROCESSES']) + ' processes.')
+                str(config['REFRESHER']['PARALLEL_PROCESSES']) + ' processes.')
 
     for chunk in chunked_datasets:
         if len(chunk) == 0:
@@ -434,13 +435,13 @@ def service_loop():
         count = count + 1
         refresh()
 
-        if count > config['RETRY_ERRORS_AFTER_LOOP']:
+        if count > config['REFRESHER']['RETRY_ERRORS_AFTER_LOOP']:
             count = 0
             reload(True)
         else:
             reload(False)
 
-        time.sleep(config['SERVICE_LOOP_SLEEP'])
+        time.sleep(config['REFRESHER']['SERVICE_LOOP_SLEEP'])
 
 
 def split(lst, n):
