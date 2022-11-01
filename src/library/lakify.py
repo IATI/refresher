@@ -17,17 +17,23 @@ def clean_identifier(identifier):
 
 
 def recursive_json_nest(element, output):
-    element_dict = {'@{}'.format(e_key): element.get(e_key) for e_key in element.keys()}
+    element_dict = {'@{}'.format(e_key): element.get(e_key)
+                    for e_key in element.keys()}
     if element.text is not None and element.text.strip() != '':
         element_dict['text()'] = element.text
     elif element.tag == 'narrative':
         element_dict['text()'] = ''
     for e_child in element.getchildren():
         element_dict = recursive_json_nest(e_child, element_dict)
-    if element.tag in output.keys():
-        output[element.tag].append(element_dict)
+    element_tag = element.tag
+    if element_tag is etree.Comment:
+        element_tag = 'comment()'
+    if element_tag is etree.PI:
+        element_tag = 'PI()'
+    if element_tag in output.keys():
+        output[element_tag].append(element_dict)
     else:
-        output[element.tag] = [element_dict]
+        output[element_tag] = [element_dict]
     return output
 
 
@@ -81,10 +87,12 @@ def process_hash_list(document_datasets):
                     act_blob_json_client = blob_service_client.get_blob_client(
                         container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.json'.format(id_hash))
                     act_blob_json_client.upload_blob(
-                        json.dumps(activity_json, ensure_ascii=False).replace('{http://www.w3.org/XML/1998/namespace}', 'xml:').encode('utf-8'),
+                        json.dumps(activity_json, ensure_ascii=False).replace(
+                            '{http://www.w3.org/XML/1998/namespace}', 'xml:').encode('utf-8'),
                         overwrite=True
                     )
-                    act_blob_json_client.set_blob_tags({"dataset_hash": file_hash})
+                    act_blob_json_client.set_blob_tags(
+                        {"dataset_hash": file_hash})
                 # Free memory
                 activity.clear()
                 for ancestor in activity.xpath('ancestor-or-self::*'):
