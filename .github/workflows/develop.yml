@@ -29,6 +29,7 @@ env:
   SOLR_API_URL: ${{ secrets.DEV_SOLR_API_URL }}
   SOLR_USER: ${{ secrets.DEV_SOLR_USER }}
   SOLR_PASSWORD: ${{ secrets.DEV_SOLR_PASSWORD }}
+  SOLR_PARALLEL_PROCESSES: 5
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
   DB_HOST: ${{ secrets.DB_HOST }}
@@ -108,6 +109,7 @@ jobs:
           sed -i ''s^#SOLR_API_URL#^$SOLR_API_URL^g'' ./deployment/deployment.yml
           sed -i ''s^#SOLR_USER#^$SOLR_USER^g'' ./deployment/deployment.yml
           sed -i ''s^#SOLR_PASSWORD#^$SOLR_PASSWORD^g'' ./deployment/deployment.yml
+          sed -i ''s^#SOLR_PARALLEL_PROCESSES#^$SOLR_PARALLEL_PROCESSES^g'' ./deployment/deployment.yml
 
           sed -i ''s^#COMMSHUB_URL#^$COMMSHUB_URL^g'' ./deployment/deployment.yml
           sed -i ''s^#COMMSHUB_KEY#^$COMMSHUB_KEY^g'' ./deployment/deployment.yml

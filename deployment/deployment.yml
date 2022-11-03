@@ -256,6 +256,8 @@ properties: # Properties of container group
             value: 'activity-lake'
           - name: SOLR_500_SLEEP
             value: 60
+          - name: SOLR_PARALLEL_PROCESSES
+            value: '#SOLR_PARALLEL_PROCESSES#'
           - name: AZURE_STORAGE_CONNECTION_STRING
             secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
           - name: DB_HOST
