@@ -15,7 +15,6 @@ env:
   TAG: ${{ github.sha }}
   RESOURCE_GROUP: rg-refresher
   AZURE_CREDENTIALS: ${{ secrets.DEV_AZURE_CREDENTIALS }}
-  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.DEV_STORAGE_CONNECTION_STRING }}
   FILE_VALIDATION_URL: ${{ secrets.DEV_FILE_VALIDATION_URL }}
   FILE_VALIDATION_KEY_NAME: ${{ secrets.DEV_FILE_VALIDATION_KEY_NAME }}
@@ -81,7 +80,7 @@ jobs:
           azcliversion: 2.30.0
           inlineScript: |
             az container delete -y \
-              --name "aci-iati-refresher-${{ env.ENVIRONMENT }}" \
+              --name "${{ env.NAME }}-${{ env.ENVIRONMENT }}" \
               --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}"
 
       - name: 'Replace Env Vars and Secrets in Yaml template'
