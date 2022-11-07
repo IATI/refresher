@@ -75,7 +75,7 @@ jobs:
           azcliversion: 2.30.0
           inlineScript: |
             az container delete -y \
-              --name "aci-iati-refresher-${{ env.ENVIRONMENT }}" \
+              --name "${{ env.NAME }}-${{ env.ENVIRONMENT }}" \
               --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}"
 
       - name: 'Replace Env Vars and Secrets in Yaml template'
