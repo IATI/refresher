@@ -23,7 +23,8 @@ def getDirectConnection(retry_counter=0):
             retry_counter += 1
             logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
                 str(e).strip(), retry_counter))
-            sleep_time = config['DB_CONN_SLEEP_START'] * retry_counter * retry_counter
+            sleep_time = config['DB_CONN_SLEEP_START'] * \
+                retry_counter * retry_counter
             if sleep_time > config['DB_CONN_SLEEP_MAX']:
                 sleep_time = config['DB_CONN_SLEEP_MAX']
             logger.info("Sleeping {}s".format(sleep_time))
@@ -181,11 +182,14 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.validation_api_error, document.publisher, publisher.name
+    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
-    WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True) 
+    WHERE downloaded is not null
+    AND download_error is null
+    AND hash != ''
+    AND (validation is Null OR regenerate_validation_report is True)
     ORDER BY regenerate_validation_report DESC, downloaded
     """
     cur.execute(sql)
@@ -218,11 +222,11 @@ def blackFlagDubiousPublishers(conn, threshold, period_in_hours):
     SET black_flag = NOW()
     WHERE org_id IN (
         SELECT publisher
-        FROM validation 
-        WHERE valid = false
-        AND NOW() - created < interval ' %(period_in_hours)s hours'
+        FROM document
+        WHERE file_schema_valid = false
+        AND NOW() - downloaded < interval ' %(period_in_hours)s hours'
         GROUP BY publisher
-        HAVING COUNT(document_hash) >  %(threshold)s
+        HAVING COUNT(*) >  %(threshold)s
     )
     """
 
@@ -271,85 +275,82 @@ def updateBlackFlagNotified(conn, org_id, notified=True):
     cur.close()
 
 
-def getInvalidDatasetsForActivityLevelVal(conn, period_in_hours):
-    cur = conn.cursor()
+def getValidActivitiesDocsToCopy(conn):
     sql = """
-    SELECT hash, downloaded, doc.id, url, validation_api_error, pub.org_id
+    SELECT doc.hash, doc.id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    LEFT JOIN publisher as pub ON doc.publisher = pub.org_id
-	WHERE pub.black_flag is null
-    AND doc.downloaded is not null
-    AND doc.flatten_start is null
-    AND val.valid = false
-    AND (NOW() - val.created > interval ' %(period_in_hours)s hours' OR doc.alv_revalidate = True)
-    AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
-    AND report->>'iatiVersion' NOT LIKE '1%%'
-    AND ((doc.alv_start is null AND doc.alv_error is null) OR doc.alv_revalidate = True)
-    AND cast(val.report -> 'errors' as varchar) NOT LIKE ANY (array['%%"id": "0.2.1"%%', '%%"id": "0.6.1"%%'])
+    WHERE
+    doc.downloaded is not null
+    AND doc.hash != ''
+    AND doc.clean_start is null
+    AND clean_end is null
+    AND val.valid = true
     AND val.report ->> 'fileType' = 'iati-activities'
-    ORDER BY downloaded
     """
 
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
+
+
+def getInvalidActivitiesDocsToClean(conn):
+    sql = """
+    SELECT doc.hash, doc.id, val.report -> 'iati-activities' as valid_index
+    FROM document as doc
+    LEFT JOIN validation as val ON doc.validation = val.id
+    WHERE
+    doc.downloaded is not null
+    AND doc.hash != ''
+    AND doc.clean_start is null
+    AND clean_end is null
+    AND val.valid = false
+    AND val.report ->> 'fileType' = 'iati-activities'
+    AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
+    AND report->>'iatiVersion' NOT LIKE '1%%'
+    AND report->>'iati-activities' LIKE '%%"valid": true%%'
+    """
+
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
+
+
+def updateCleanError(conn, id, message):
+    sql = "UPDATE document SET clean_error=%(message)s WHERE id=%(id)s"
+
     data = {
-        "period_in_hours": period_in_hours,
-    }
-
-    cur.execute(sql, data)
-    results = cur.fetchall()
-    cur.close()
-    return results
-
-
-def updateActivityLevelValidationError(conn, filehash, message):
-    cur = conn.cursor()
-    sql = "UPDATE document SET alv_error=%(message)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
-
-    data = {
-        "hash": filehash,
+        "id": id,
         "message": message
     }
 
-    cur.execute(sql, data)
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
     conn.commit()
-    cur.close()
-
-
-def getUnvalidatedAdhocDocs(conn):
-    cur = conn.cursor()
-    sql = "SELECT hash, id, validation_api_error FROM adhoc_validation WHERE valid is null ORDER BY created"
-    cur.execute(sql)
-    results = cur.fetchall()
-    cur.close()
-    return results
 
 
 def getUnflattenedDatasets(conn):
-    cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url, flatten_api_error
+    SELECT hash, downloaded, doc.id, flatten_api_error
     FROM document as doc
-    LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE doc.downloaded is not null 
+    WHERE doc.downloaded is not Null
+    AND doc.clean_end is not Null
     AND doc.flatten_start is Null
-    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
-    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
-    cur.execute(sql)
-    results = cur.fetchall()
-    cur.close()
-    return results
+    with conn.cursor() as curs:
+        curs.execute(sql)
+        return curs.fetchall()
 
 
-def getFlattenedActivitiesForDoc(conn, hash):
+def getFlattenedActivitiesForDoc(conn, id):
     cur = conn.cursor()
     sql = """
     SELECT flattened_activities
     FROM document as doc
-    WHERE doc.hash = %(hash)s
+    WHERE doc.id = %(id)s
     """
-    data = {"hash": hash}
+    data = {"id": id}
 
     cur.execute(sql, data)
     results = cur.fetchall()
@@ -386,14 +387,13 @@ def getUnsolrizedDatasets(conn):
 def getUnlakifiedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT hash, downloaded, doc.id, url
+    SELECT hash, downloaded, doc.id
     FROM document as doc
     LEFT JOIN validation as val ON doc.validation = val.id
-    WHERE doc.downloaded is not null 
+    WHERE doc.downloaded is not null
+    AND doc.clean_end is not Null
     AND doc.lakify_start is Null
     AND doc.lakify_error is Null
-    AND (val.valid = true OR (doc.alv_end is not null AND doc.alv_revalidate = 'f'))
-    AND val.report ->> 'fileType' = 'iati-activities'
     ORDER BY downloaded
     """
     cur.execute(sql)
@@ -448,46 +448,39 @@ def resetUnfinishedFlattens(conn):
     cur.close()
 
 
-def updateValidationRequestDate(conn, filehash):
-    cur = conn.cursor()
-    sql = "UPDATE document SET validation_request=%(dt)s WHERE hash=%(hash)s"
+def resetUnfinishedCleans(conn):
+    sql = """
+        UPDATE document
+        SET clean_start = null
+        WHERE clean_end is null
+    """
 
-    date = datetime.now()
+    with conn.cursor() as curs:
+        curs.execute(sql)
+    conn.commit()
+
+
+def updateDocumentSchemaValidationStatus(conn, id, valid):
+    sql = "UPDATE document SET file_schema_valid=%(valid)s WHERE id=%(id)s"
 
     data = {
-        "hash": filehash,
-        "dt": date,
+        "id": id,
+        "valid": valid,
     }
 
-    cur.execute(sql, data)
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
     conn.commit()
-    cur.close()
 
 
-def updateActivityLevelValidationStart(conn, filehash):
+def updateValidationRequestDate(conn, id):
     cur = conn.cursor()
-    sql = "UPDATE document SET alv_start=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET validation_request=%(dt)s WHERE id=%(id)s"
 
     date = datetime.now()
 
     data = {
-        "hash": filehash,
-        "dt": date,
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-
-def updateActivityLevelValidationEnd(conn, filehash):
-    cur = conn.cursor()
-    sql = "UPDATE document SET alv_end=%(dt)s, alv_revalidate = 'f' WHERE hash=%(hash)s"
-
-    date = datetime.now()
-
-    data = {
-        "hash": filehash,
+        "id": id,
         "dt": date,
     }
 
@@ -512,11 +505,11 @@ def updateSolrizeStartDate(conn, filehash):
     cur.close()
 
 
-def updateValidationError(conn, filehash, status):
+def updateValidationError(conn, id, status):
     cur = conn.cursor()
-    sql = "UPDATE document SET validation_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET validation_api_error=%s WHERE id=%s"
 
-    data = (status, filehash)
+    data = (status, id)
     cur.execute(sql, data)
     conn.commit()
     cur.close()
@@ -572,6 +565,23 @@ def startLakify(conn, doc_id):
     cur.close()
 
 
+def startClean(conn, doc_id):
+    sql = """
+        UPDATE document
+        SET clean_start = %(now)s, clean_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
+
+
 def updateFlattenError(conn, doc_id, error):
     cur = conn.cursor()
 
@@ -590,6 +600,23 @@ def updateFlattenError(conn, doc_id, error):
 
     conn.commit()
     cur.close()
+
+
+def updateCleanError(conn, doc_id, error):
+    sql = """
+        UPDATE document
+        SET clean_error = %(error)s
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "error": error,
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
 
 
 def completeFlatten(conn, doc_id, flattened_activities):
@@ -611,6 +638,25 @@ def completeFlatten(conn, doc_id, flattened_activities):
 
     conn.commit()
     cur.close()
+
+
+def completeClean(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET clean_end = %(now)s, clean_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+        "now": datetime.now(),
+    }
+
+    with conn.cursor() as curs:
+        curs.execute(sql, data)
+    conn.commit()
 
 
 def lakifyError(conn, doc_id, msg):
@@ -658,7 +704,7 @@ def completeSolrize(conn, doc_hash):
 
     sql = """
         UPDATE document
-        SET solrize_end = %(now)s, 
+        SET solrize_end = %(now)s,
             solr_api_error = null,
             solrize_reindex = 'f'
         WHERE hash = %(doc_hash)s
@@ -680,7 +726,7 @@ def updateFileAsDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = %(dt)s, download_error = null 
+        SET downloaded = %(dt)s, download_error = null
         WHERE id = %(id)s
     """
 
@@ -701,7 +747,10 @@ def updateFileAsNotDownloaded(conn, id):
 
     sql = """
         UPDATE document
-        SET downloaded = null
+        SET downloaded = null,
+        clean_start = null,
+        clean_end = null,
+        clean_error = null
         WHERE id = %(id)s
     """
 
@@ -725,22 +774,6 @@ def updateFileAsDownloadError(conn, id, status):
 
     data = {
         "id": id,
-        "status": status
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-    cur.close()
-
-
-def updateAdhocFileAsUnavailable(conn, hash, status):
-    cur = conn.cursor()
-
-    sql = "UPDATE adhoc_validation SET downloaded = %(dt)s, download_error = %(status)s WHERE id = %(id)s"
-
-    data = {
-        "id": id,
-        "dt": datetime.now(),
         "status": status
     }
 
@@ -803,19 +836,21 @@ def updatePublisherAsSeen(conn, name, last_seen):
     conn.commit()
 
 
-def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
+def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt, name):
     sql1 = """
-        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher)
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s)
-        ON CONFLICT (id) DO 
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s)
+        ON CONFLICT (id) DO
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
+                name = %(name)s,
                 modified = %(dt)s,
                 downloaded = null,
                 download_error = null,
                 validation_request = null,
                 validation_api_error = null,
                 validation = null,
+                file_schema_valid = null,
                 lakify_start = null,
                 lakify_end = null,
                 lakify_error = null,
@@ -825,16 +860,17 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
                 solrize_start = null,
                 solrize_end = null,
                 solr_api_error = null,
-                alv_start = null,
-                alv_end = null,
-                alv_error = null
+                clean_start = null,
+                clean_end = null,
+                clean_error = null
             WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
     sql2 = """
             UPDATE document SET
             last_seen = %(dt)s,
-            publisher = %(publisher_id)s
+            publisher = %(publisher_id)s,
+            name = %(name)s
             WHERE document.id=%(id)s;
     """
 
@@ -843,7 +879,8 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt):
         "hash": hash,
         "url": url,
         "dt": dt,
-        "publisher_id": publisher_id
+        "publisher_id": publisher_id,
+        "name": name
     }
 
     with conn.cursor() as curs:
@@ -937,8 +974,8 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
     cur = conn.cursor()
 
     if state is None:
-        sql = "UPDATE document SET validation=null WHERE hash=%s"
-        data = (doc_hash,)
+        sql = "UPDATE document SET validation=null WHERE id=%s"
+        data = (doc_id,)
         cur.execute(sql, data)
         conn.commit()
         cur.close()
@@ -965,35 +1002,6 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         "report": report,
         "publisher": publisher,
         "publisher_name": publisher_name
-    }
-
-    cur.execute(sql, data)
-    conn.commit()
-
-
-def updateAdhocValidationState(conn, doc_hash, state, report):
-
-    cur = conn.cursor()
-
-    if state is None:
-        sql = "UPDATE adhoc_validation SET validated=null, report=null, validated=null WHERE hash=%s"
-        data = (doc_hash,)
-        cur.execute(sql, data)
-        conn.commit()
-        cur.close()
-        return
-
-    sql = """
-        UPDATE adhoc_validation (hash, valid, report)
-        SET valid=%(state)s, report=%(report)s, validated = %(validated)s
-        WHERE hash=%(doc_hash)s;
-        """
-
-    data = {
-        "doc_hash": doc_hash,
-        "validated": datetime.now(),
-        "valid": state,
-        "report": report
     }
 
     cur.execute(sql, data)

@@ -1,6 +1,6 @@
 FROM python:3.8-slim-bullseye
 RUN apt-get update && apt install -y \
-    gcc \ 
+    gcc \
     libpq-dev
 WORKDIR /code
 COPY requirements.txt .

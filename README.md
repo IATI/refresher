@@ -8,7 +8,7 @@ Its responsibilities include:
 - Store and track changes in the source files
 - Validate the source files using the IATI Validator API
 - Store and index the normalised data in a compressed and performant Postgresql database.
-- Flattens the IATI data into documents which are then added to Solr.
+- Flattens and Lakifies the IATI data into documents which are then added to Solr.
 
 # DB Migrations
 
@@ -31,8 +31,7 @@ Before running any task, the Refresher checks the version of the database agains
 ## Prerequisities
 
 - Python 3
-- PostgreSQL (version 12)
-  - psycopg2 does not work with v13
+- PostgreSQL (version 11)
 
 ## Create Local Database
 
@@ -70,15 +69,11 @@ Setup a `.vscode/launch.json` to run locally with attached debugging like so:
 
 ## Environment Variables
 
-These are required:
+See `src/constants/config.py` for all Environment Variables and Constants with descriptions. Additional information can be found below as well.
 
 ### AZURE_STORAGE_CONNECTION_STRING
 
-- This can be found in the Storage Account > Access Keys or by running `az storage account show-connection-string -g MyResourceGroup -n MyStorageAccount`
-
-### AZURE_STORAGE_CONTAINER_SOURCE
-
-- The string name of your blob container in Azure E.g. fun-blob-1
+- This can be found in the Azure Portal > Storage Account > Access Keys or by running `az storage account show-connection-string -g MyResourceGroup -n MyStorageAccount`
 
 ### DB\_\*
 
@@ -91,31 +86,49 @@ Example for connecting to local db you made above:
 - "DB_PORT": "5432",
 - "DB_SSL_MODE": "disable" - leaving blank with default to "require"
 
-See `src/constants/config.py` for additional required Environment variables per service.
+# Services
 
-# Refresher Logic
+There are 6 services that each are designed to run in a single Docker container:
+
+- refresher
+- validate
+- clean
+- flatten
+- lakify
+- solrize
+
+Some of these services have more than one task that they perform. Those tasks will each have an entrypoint for testing in `src/handler.py`. All the services have a `<service_name>loop` entrypoint that runs the service's tasks continuously in a loop. These service loop entrypoints are used in the deployed containers as start commands.
+
+# Refresh
+
+## Functions
+
+- `refresh()` - Syncs IATI Publishers and Documents from the [IATI registry](https://iatiregistry.org) API to the Database.
+- `reload()` - Downloads source IATI XML from URLs as defined in the registry to blob storage.
+
+## Logic
 
 Service Loop (when container starts)
 
-- refresh()
-  - sync_publishers() - gets publisher metadata from registry and saves to DB (table: publisher)
+- `refresh()`
+  - `sync_publishers()` - gets publisher metadata from registry and saves to DB (table: publisher)
     - removes any publishers where `document.last_seen` is from a previous run (so no longer in registry)
-  - sync_documents() - gets document metadata from registry and saves to DB (table: document)
+  - `sync_documents()` - gets document metadata from registry and saves to DB (table: document)
     - Checks for `changed_datasets` - `document.id` is same, but `document.hash` has changed
     - Updates DB with all documents
-      - If there is a conflict with `document.id`, `hash,url,modified,downloaded,download_error` are updated along with `validation_*`, `lakify_*`, `flatten_*`, and `solrize_*` columns
+      - If there is a conflict with `document.id`, `hash,url,modified,downloaded,download_error` are updated along with `validation_*`, `lakify_*`, `flatten_*`, `clean_*` and `solrize_*` columns being cleared
     - Checks for `stale_datasets` - `document.last_seen` is from a previous run (so no longer in registry)
-    - clean_datasets()
+    - `clean_datasets()`
       - Removes `stale_datasets` from Activity lake, decided it wasn't worth updating `changed_datasets` from activity lake because filenames are hash of `iati_identifier` so less likely to change.
       - Removes `changed_datasets` and `stale_datasets` from source xml blob container and Solr.
     - Removes `stale_datasets` from DB documents table
-- reload(retry_errors)
+- `reload(retry_errors)`
   - `retry_errors` is True after RETRY_ERRORS_AFTER_LOOP refreshes.
   - Gets documents to download from DB (db.getRefreshDataset)
     - If `retry_errors=true` - `"SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"`
     - Else - `"SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"`
   - Downloads docs from publisher's URL, saves to Blob storage, updates DB
-    - download_chunk()
+    - `download_chunk()`
       - If successfully uploaded to Blob - `db.updateFileAsDownloaded`
         `"UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"`
       - If error occurs `db.updateFileAsDownloadError`
@@ -123,178 +136,155 @@ Service Loop (when container starts)
         - Connection Error `document.download_error = 0`
         - SSL Issue `document.download_error = 1`
         - Charset detection issue `document.download_error = 2`
-        - Not HTTP URL (e.g. FTP) `document.download_error = 3` - these are NOT retried
+        - Not HTTP URL (e.g. FTP) `document.download_error = 3` - these are NOT re-tried
       - If `AzureExceptions.ServiceResponseError` or other Exception
         - Warning logged, DB not updated
 
-# Validator Logic
+# Validate
 
-service_loop() calls main(), then sleeps for 60 seconds
+## Functions
 
-- main()
-  - Gets unvalidated documents (db.getUnvalidatedDatasets)
+- `safety_check()` - Handles publisher flagging workflow to prevent wasting resources validating 100's of critically invalid documents.
+- `validate()` - Validates IATI XML by sending them to the [Validator API](https://github.com/iati/js-validator-api) and then saving the resulting reports in the Database
 
-```sql
-FROM document
-WHERE downloaded is not null AND download_error is null AND (validation is Null OR regenerate_validation_report is True)
-```
+## Logic
 
-- process_hash_list()
-  - Takes document, downloads from Azure blobs
-    - If charset undetectable, breaks out of loop for that document
-  - POST's to validator API
-  - Updates Validation Request Time in db (db.updateValidationRequestDate)
-    - `document.validation_request`
-  - If Validator Response status code != 200
-    - `400, 413, 422`
-      - Log status_code in db (db.updateValidationError)
-      - Since "expected" and we move on to save report into db
-    - `400 - 499`
-      - Log status_code in db, break out of loop
-    - `> 500`
-      - Log status_code in db, break out of loop
-    - `else`
-      - warning logged, nothing in db, we continue on
-  - If exception
-    - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
-    - Other Exception, log message, no change to DB
-  - Save report into DB (db.updateValidationState)
-    - If `state` is None (bad report) `"UPDATE document SET validation=null WHERE hash=%s"`
-    - If ok, save report into `validation` table, set `document.validation = hash` and `document.regenerate_validation_report = False`
+- `safety_check()`
 
-# Flattener Logic
+  - Checks Azure storage queue to see if there are any requests to remove black flag from a publisher, then removes if so
+  - Runs database query `db.blackFlagDubiousPublishers()` to see if any publishers have published `SAFETY_CHECK_THRESHOLD` number of critically invalid documents in `SAFETY_CHECK_PERIOD` hours, then marks them with a `publisher.black_flag` timestamp int he database
+  - Sends a notification to the Slack App for newly flagged publishers and updates DB as such
 
-service_loop() calls main(), then sleeps for 60 seconds
-
-- main()
-  - Reset unfinished flattens
-
-```sql
-UPDATE document
-SET flatten_start=null
-WHERE flatten_end is null
-```
-
-  - Get unflattened (db.getUnflattenedDatasets) - downloaded exists, validated where valid = true, flatten_start = Null, fileType = 'iati-activities'
-
-```sql
-FROM document as doc
-LEFT JOIN validation as val ON doc.validation = val.document_hash
-WHERE doc.downloaded is not null
-AND doc.flatten_start is Null
-AND val.valid = true
-AND val.report ->> 'fileType' = 'iati-activities'
-```
-
-  - process_hash_list()
-    - If prior_error = 422, 400, 413, break out of loop for this file
-    - Start flatten in db (db.startFlatten)
-
-```sql
-UPDATE document
-SET flatten_start = %(now)s, flatten_api_error = null
-WHERE id = %(doc_id)s
-```
-
- - Download source XML from Azure blobs
-      - If charset error, breaks out of loop for file
-    - POST's to flattener API
-    - Update Solrize start `"UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"`
-    - If status code != 200
-      - `404` - update DB `document.flatten_api_error`, pause 1min, continue loop
-      - `400 - 499` - update DB `document.flatten_api_error`, break out of loop
-      - `500 +` - update DB `document.flatten_api_error`, break out of loop
-      - else - log warning, continue
+- `validate()`
+  - Gets unvalidated documents `db.getUnvalidatedDatasets`
+  - `process_hash_list()`
+    - Loops over documents
+    - If document was previously Schema validated and it's invalid, we wait `SAFETY_CHECK_PERIOD` hours before Fully validating it for the safety check.
+    - If document was previously Schema validated and it's invalid and if publisher is flagged, we skip Full validation
+    - Downloads doc from Azure blobs
+      - If charset undetectable, breaks out of loop for that document
+    - POST's to Validator API - Schema Check only first
+    - Updates Validation Request Time in db (db.updateValidationRequestDate)
+      - `document.validation_request`
+    - With response updates `document.file_schema_valid` boolean column
+    - If Schema valid, moves on to Full Validation
+    - POST's to Validator API - Full Validation
+    - If Validator Response status code != 200
+      - `400, 413, 422`
+        - Log status_code in db (db.updateValidationError)
+        - Since "expected" and we move on to save report into db
+      - `400 - 499`
+        - Log status_code in db, break out of loop
+      - `> 500`
+        - Log status_code in db, break out of loop
+      - `else`
+        - warning logged, nothing in db, we continue on
     - If exception
       - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
       - Other Exception, log message, no change to DB
+    - Save report into DB (db.updateValidationState)
+      - If `state` is None (bad report) `"UPDATE document SET validation=null WHERE hash=%s"`
+      - If ok, save report into `validation` table, set `document.validation = hash` and `document.regenerate_validation_report = False`
+
+# Clean
+
+## Functions
+
+- `copy_valid()` - Copies fully schema valid activities documents XML from the "source" container storage to the "clean" container storage which is used as the source for the flatten/lakify containers.
+- `clean_invalid()` - Finds schema invalid documents that have valid activities and removes the invalid activities then saves to "clean" container storage
+
+## Logic
+
+- `copy_valid()`
+  - Query DB for schema valid activities documents
+  - Uses Azure Blobs SDK to copy from `SOURCE_CONTAINER_NAME` "source" to `CLEAN_CONTAINER_NAME` "clean" container in the blob storage account
+- `clean_invalid()`
+  - Query DB for schema invalid activities documents that have valid activities inside them
+  - Downloads source XML for the document
+  - Strips out the invalid activities in the document using the validation report metadata `meta=true` on valid/invalid activities
+  - Saves the cleaned XML document in the "clean" container
+
+# Flatten
+
+## Functions
+
+- `main()` - Sends XML to the [iati-flattener](https://github.com/IATI/iati-flattener) which transforms it into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format.
+
+## Logic
+
+- `main()`
+  - Reset unfinished flattens
+  - Get unflattened (`db.getUnflattenedDatasets`)
+  - process_hash_list()
+    - If prior_error = 422, 400, 413, break out of loop for this file
+    - Start flatten in db (db.startFlatten)
+    - Download source XML from Azure blobs - If charset error, breaks out of loop for file
+      - POST's to flattener API
+      - Update solrize_start column
+      - If status code != 200
+        - `404` - update DB `document.flatten_api_error`, pause 1min, continue loop
+        - `400 - 499` - update DB `document.flatten_api_error`, break out of loop
+        - `500 +` - update DB `document.flatten_api_error`, break out of loop
+        - else - log warning, continue
+      - If exception
+        - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
+        - Other Exception, log message, no change to DB
 
 # Lakify
+
+## Functions
+
+- `main()` - Takes XML activities documents from the "clean" container, splits them into single activities XML/JSON and saves the individual activities in the "activity-lake" container
+
+## Logic
 
 service_loop() calls main(), then sleeps for 60 seconds
 
 - main()
   - Reset unfinished lakifies
-
-```sql
-UPDATE document
-SET lakify_start=null
-WHERE lakify_end is null
-AND lakify_error is not null
-```
-
   - Get unlakified documents
-
-```sql
-FROM document as doc
-LEFT JOIN validation as val ON doc.validation = val.document_hash
-WHERE doc.downloaded is not null
-AND doc.lakify_start is Null
-AND val.valid = true
-```
-
   - process_hash_list()
     - If prior_error = 422, 400, 413, break out of loop for this file
     - Start lakify in DB
-
-```sql
-UPDATE document
-SET lakify_start = %(now)s, lakify_error = null
-WHERE id = %(doc_id)s
-```
-
-  - Download source XML from Azure blobs
-  - Breaks into individual activities
-  - If there is an activity, create hash of iati-identifier and set that as filename
-  - Save that file to Azure Blobs activity lake
-  - If Exception
-    - `etree.XMLSyntaxError, etree.SerialisationError`
-      - Log warning, log error to DB
-    - Other Exception
-      - Log error, log error to DB
-  - complete lakify in db (db.completeLakify)
-
-```sql
-UPDATE document
-SET lakify_end = %(now)s, lakify_error = null
-WHERE id = %(doc_id)s
-```
+    - Download "clean" XML from Azure blobs
+    - Breaks into individual activities `<iati-activity>`
+    - If there is an activity, create hash of iati-identifier and set that as filename
+    - Save that file to Azure Blobs activity lake
+    - If Exception
+      - `etree.XMLSyntaxError, etree.SerialisationError`
+        - Log warning, log error to DB
+      - Other Exception
+        - Log error, log error to DB
+    - Also converts the activity XML to JSON and saves in activity lake
+    - complete lakify in db (db.completeLakify)
 
 # Solrize
 
-service_loop() calls main(), then sleeps for 60 seconds
+## Functions
 
-- service_loop() 
+- `main()` - Indexes documents into Solr database in 3 collections: activity, budget, and transactions. Where the budget/transactions are "exploded" so that there is one budget/transaction per document in Solr.
+
+## Logic
+
+- service_loop()
   - Get unsolrized documents
-
-```sql
-FROM document as doc
-    LEFT JOIN validation as val ON doc.hash = val.document_hash
-    WHERE downloaded is not null 
-    AND doc.flatten_end is not null
-    AND doc.lakify_end is not null
-    AND doc.solrize_end is null
-	  AND doc.hash != ''
-    AND val.report ? 'iatiVersion' 
-    AND report->>'iatiVersion' != ''
-    AND report->>'iatiVersion' NOT LIKE '1%'
-```
-
   - process_hash_list()
     - For each document, get Flattened activities (db.getFlattenedActivitiesForDoc)
+    - If flattened activities are present, continue, otherwise break out of loop for that document
+    - Initialise and test connection to the Solr collections
+    - Update solr start (db.updateSolrizeStartDate)
+    - Removes documents from Solr for the `document.id` to start fresh
+    - Download each activity from the lake
+    - Add `iati_xml` field to flattened activity, index to `activity` collection
+    - Remove `iati_xml` field, index to exploded collections (budget, transaction)
+    - Update db that solrizing is complete for that hash (db.completeSolrize)
 
-```sql
-SELECT flattened_activities
-    FROM document as doc
-    WHERE doc.hash = %(hash)s
-```
+# Deployment
 
-  - If flattened activities are present, continue, otherwise break out of loop for that document
-  - Initialise and test connection to the Solr collections
-  - Update solr start (db.updateSolrizeStartDate)
-  - Removes documents from Solr for the `document.id` to start fresh
-  - Download each activity from the lake
-  - Add `iati_xml` field to flattened activity, index to `activity` collection
-  - Remove `iati_xml` field, index to exploded collections
-  - Update db that solrizing is complete for that hash (db.completeSolrize)
-  
+The Docker container is built containing all of the Python code. Then 6 individual containers are run using the different entry point loops.
+
+We've deployed this to Azure Container Instances using GitHub Actions and the Azure/CLI Action.
+
+The `az container create` command is used with a deployment YAML `deployment/deployment.yml`. Specification [here](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-reference-yaml)
+
+We use `sed` in the GitHub Actions workflow to replace the variable #PLACEHOLDERS# in the deployment YAML template. Note that any variables with a `^` might have issues with the `sed` command since we are using `^` as the delimiter in the `sed` command.
