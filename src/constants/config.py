@@ -92,7 +92,7 @@ config = dict(
     ),
     LAKIFY=dict(
         # Number of parallel processes to run the lakify loop with
-        PARALLEL_PROCESSES=15
+        PARALLEL_PROCESSES=10
     ),
     SOLRIZE=dict(
         # Number of parallel processes to run the solrize loop with
