@@ -1,0 +1,282 @@
+name: '#NAME#-#ENVIRONMENT#' # Name of the container group
+apiVersion: '2021-10-01'
+location: 'uksouth'
+tags: { avgCPU: 'true', ACU: 'true', ACUvalue: 210 }
+properties: # Properties of container group
+  imageRegistryCredentials: # Credentials to pull a private image
+    - server: '#REGISTRY_LOGIN_SERVER#'
+      username: '#REGISTRY_USERNAME#'
+      password: '#REGISTRY_PASSWORD#'
+  restartPolicy: 'Always'
+  osType: 'Linux'
+  diagnostics:
+    logAnalytics:
+      workspaceId: '#LOG_WORKSPACE_ID#'
+      workspaceKey: '#LOG_WORKSPACE_KEY#'
+  containers: # Array of container instances in the group
+    - name: 'refresh' # Name of an instance
+      properties: # Properties of an instance
+        resources: # Resource requirements of the instance
+          requests:
+            memoryInGB: 2
+            cpu: 0.5
+        image: '#IMAGE_NAME#' # Container image used to create the instance
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'refreshloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: AZURE_STORAGE_CONTAINER_CLEAN
+            value: 'clean'
+          - name: ACTIVITIES_LAKE_CONTAINER_NAME
+            value: 'activity-lake'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: SOLR_USER
+            secureValue: '#SOLR_USER#'
+          - name: SOLR_PASSWORD
+            secureValue: '#SOLR_PASSWORD#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'
+    - name: 'validate'
+      properties:
+        resources:
+          requests:
+            memoryInGB: 0.5
+            cpu: 0.1
+        image: '#IMAGE_NAME#'
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'validateloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: SOLR_USER
+            secureValue: '#SOLR_USER#'
+          - name: SOLR_PASSWORD
+            secureValue: '#SOLR_PASSWORD#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'
+          - name: VALIDATOR_API_URL
+            secureValue: '#VALIDATOR_API_URL#'
+          - name: VALIDATOR_API_KEY_NAME
+            secureValue: '#VALIDATOR_API_KEY_NAME#'
+          - name: VALIDATOR_API_KEY_VALUE
+            secureValue: '#VALIDATOR_API_KEY_VALUE#'
+          - name: SCHEMA_VALIDATION_API_URL
+            secureValue: '#SCHEMA_VALIDATION_API_URL#'
+          - name: SCHEMA_VALIDATION_KEY_NAME
+            secureValue: '#SCHEMA_VALIDATION_KEY_NAME#'
+          - name: SCHEMA_VALIDATION_KEY_VALUE
+            secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
+    - name: 'clean'
+      properties:
+        resources:
+          requests:
+            memoryInGB: 0.7
+            cpu: 0.1
+        image: '#IMAGE_NAME#'
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'cleanloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: AZURE_STORAGE_CONTAINER_CLEAN
+            value: 'clean'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: SOLR_USER
+            secureValue: '#SOLR_USER#'
+          - name: SOLR_PASSWORD
+            secureValue: '#SOLR_PASSWORD#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'
+          - name: VALIDATOR_API_URL
+            secureValue: '#VALIDATOR_API_URL#'
+          - name: VALIDATOR_API_KEY_NAME
+            secureValue: '#VALIDATOR_API_KEY_NAME#'
+          - name: VALIDATOR_API_KEY_VALUE
+            secureValue: '#VALIDATOR_API_KEY_VALUE#'
+          - name: SCHEMA_VALIDATION_API_URL
+            secureValue: '#SCHEMA_VALIDATION_API_URL#'
+          - name: SCHEMA_VALIDATION_KEY_NAME
+            secureValue: '#SCHEMA_VALIDATION_KEY_NAME#'
+          - name: SCHEMA_VALIDATION_KEY_VALUE
+            secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
+    - name: 'flatten'
+      properties:
+        resources:
+          requests:
+            memoryInGB: 0.8
+            cpu: 0.1
+        image: '#IMAGE_NAME#'
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'flattenloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: AZURE_STORAGE_CONTAINER_CLEAN
+            value: 'clean'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: SOLR_USER
+            secureValue: '#SOLR_USER#'
+          - name: SOLR_PASSWORD
+            secureValue: '#SOLR_PASSWORD#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'
+          - name: FLATTENER_API_URL
+            secureValue: '#FLATTENER_API_URL#'
+          - name: FLATTENER_KEY_NAME
+            secureValue: '#FLATTENER_KEY_NAME#'
+          - name: FLATTENER_KEY_VALUE
+            secureValue: '#FLATTENER_KEY_VALUE#'
+    - name: 'lakify'
+      properties:
+        resources:
+          requests:
+            memoryInGB: 0.8
+            cpu: 0.1
+        image: '#IMAGE_NAME#'
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'lakifyloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: AZURE_STORAGE_CONTAINER_CLEAN
+            value: 'clean'
+          - name: ACTIVITIES_LAKE_CONTAINER_NAME
+            value: 'activity-lake'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'
+    - name: 'solrize'
+      properties:
+        resources:
+          requests:
+            memoryInGB: 3
+            cpu: 0.1
+        image: '#IMAGE_NAME#'
+        command:
+          - '/usr/local/bin/python'
+          - '/code/handler.py'
+          - '-t'
+          - 'solrizeloop'
+        environmentVariables:
+          - name: AZURE_STORAGE_CONTAINER_SOURCE
+            value: 'source'
+          - name: ACTIVITIES_LAKE_CONTAINER_NAME
+            value: 'activity-lake'
+          - name: SOLR_500_SLEEP
+            value: 60
+          - name: SOLR_PARALLEL_PROCESSES
+            value: '#SOLR_PARALLEL_PROCESSES#'
+          - name: AZURE_STORAGE_CONNECTION_STRING
+            secureValue: '#AZURE_STORAGE_CONNECTION_STRING#'
+          - name: DB_HOST
+            secureValue: '#DB_HOST#'
+          - name: DB_PORT
+            secureValue: '#DB_PORT#'
+          - name: DB_USER
+            secureValue: '#DB_USER#'
+          - name: DB_PASS
+            secureValue: '#DB_PASS#'
+          - name: DB_NAME
+            secureValue: '#DB_NAME#'
+          - name: SOLR_API_URL
+            secureValue: '#SOLR_API_URL#'
+          - name: SOLR_USER
+            secureValue: '#SOLR_USER#'
+          - name: SOLR_PASSWORD
+            secureValue: '#SOLR_PASSWORD#'
+          - name: COMMSHUB_URL
+            secureValue: '#COMMSHUB_URL#'
+          - name: COMMSHUB_KEY
+            secureValue: '#COMMSHUB_KEY#'

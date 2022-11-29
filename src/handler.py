@@ -1,14 +1,11 @@
 import argparse
 import library.refresher as refresher
 import library.validate as validate
-import library.validate_activity_level as validate_activity_level
-import library.validate_adhoc as validate_adhoc
+import library.clean as clean
 import library.flatten as flatten
 import library.lakify as lakify
 import library.solrize as solrize
 import library.db as db
-from datetime import datetime, timedelta
-from constants.config import config
 from library.logger import getLogger
 logger = getLogger()
 
@@ -28,12 +25,14 @@ def main(args):
                 refresher.reload(
                     args.errors
                 )
+            elif args.type == "safety_check":
+                validate.safety_check()
             elif args.type == "validate":
-                validate.main()
-            elif args.type == "validate_activity_level":
-                validate_activity_level.main()
-            elif args.type == "adhocvalidate":
-                validate_adhoc.main()
+                validate.validate()
+            elif args.type == "copy_valid":
+                clean.copy_valid()
+            elif args.type == "clean_invalid":
+                clean.clean_invalid()
             elif args.type == "flatten":
                 flatten.main()
             elif args.type == "lakify":
@@ -42,24 +41,25 @@ def main(args):
                 solrize.main()
             elif args.type == "validateloop":
                 validate.service_loop()
-            elif args.type == "adhocvalidateloop":
-                validate_adhoc.service_loop()
             elif args.type == "flattenloop":
                 flatten.service_loop()
             elif args.type == "lakifyloop":
-                lakify.service_loop()           
+                lakify.service_loop()
             elif args.type == "solrizeloop":
                 solrize.service_loop()
-            elif args.type == "validate_activity_level_loop":
-                validate_activity_level.service_loop()
+            elif args.type == "cleanloop":
+                clean.service_loop()
             else:
-                print("Type is required - either refresh, reload, validate, validate_activity_level, flatten, lakify, or solrize - or their related service loop.")
+                print("Type is required - either refresh, reload, safety_check, validate, clean, flatten, lakify, or solrize - or their related service loop.")
     except Exception as e:
         logger.error('{} Failed. {}'.format(args.type, str(e).strip()))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Refresh from IATI Registry')
-    parser.add_argument('-t', '--type', dest='type', default="refresh", help="Trigger 'refresh' or 'validate'")
-    parser.add_argument('-e', '--errors', dest='errors', action='store_true', default=False, help="Attempt to download previous errors")
+    parser.add_argument('-t', '--type', dest='type',
+                        default="refresh", help="Trigger 'refresh' or 'validate'")
+    parser.add_argument('-e', '--errors', dest='errors', action='store_true',
+                        default=False, help="Attempt to download previous errors")
     args = parser.parse_args()
     main(args)

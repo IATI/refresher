@@ -1,7 +1,7 @@
 upgrade = """
 CREATE TABLE public.validation (
     document_hash character varying PRIMARY KEY,
-    document_id character varying NOT NULL,    
+    document_id character varying NOT NULL,
     document_url character varying NOT NULL,
     created timestamp without time zone NOT NULL,
     valid boolean NOT NULL,
