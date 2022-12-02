@@ -28,7 +28,7 @@ env:
   SOLR_API_URL: ${{ secrets.DEV_SOLR_API_URL }}
   SOLR_USER: ${{ secrets.DEV_SOLR_USER }}
   SOLR_PASSWORD: ${{ secrets.DEV_SOLR_PASSWORD }}
-  SOLR_PARALLEL_PROCESSES: 5
+  SOLR_PARALLEL_PROCESSES: 10
   DB_USER: ${{ secrets.DB_USER }}
   DB_PASS: ${{ secrets.DB_PASS }}
   DB_HOST: ${{ secrets.DB_HOST }}
