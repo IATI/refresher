@@ -215,7 +215,7 @@ def process_hash_list(document_datasets):
 
             logger.info('Updating DB with successful Solrize for hash: ' +
                         file_hash + ' and id: ' + file_id)
-            db.completeSolrize(conn, file_hash)
+            db.completeSolrize(conn, file_id)
 
         except (SolrizeSourceError) as e:
             logger.warning(e.message)

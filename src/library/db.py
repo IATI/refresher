@@ -699,7 +699,7 @@ def completeLakify(conn, doc_id):
     cur.close()
 
 
-def completeSolrize(conn, doc_hash):
+def completeSolrize(conn, id):
     cur = conn.cursor()
 
     sql = """
@@ -707,11 +707,11 @@ def completeSolrize(conn, doc_hash):
         SET solrize_end = %(now)s,
             solr_api_error = null,
             solrize_reindex = 'f'
-        WHERE hash = %(doc_hash)s
+        WHERE id = %(id)s
     """
 
     data = {
-        "doc_hash": doc_hash,
+        "id": id,
         "now": datetime.now(),
     }
 
