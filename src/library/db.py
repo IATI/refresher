@@ -489,14 +489,14 @@ def updateValidationRequestDate(conn, id):
     cur.close()
 
 
-def updateSolrizeStartDate(conn, filehash):
+def updateSolrizeStartDate(conn, id):
     cur = conn.cursor()
-    sql = "UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET solrize_start=%(dt)s WHERE id=%(id)s"
 
     date = datetime.now()
 
     data = {
-        "hash": filehash,
+        "id": id,
         "dt": date,
     }
 

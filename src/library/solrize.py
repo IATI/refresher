@@ -121,7 +121,7 @@ def process_hash_list(document_datasets):
                     raise SolrPingError('PINGING hash: ' + file_hash + ' and id: ' + file_id +
                                         ', from collection with name ' + core_name + ': ' + e_message)
 
-            db.updateSolrizeStartDate(conn, file_hash)
+            db.updateSolrizeStartDate(conn, file_id)
 
             logger.info('Removing all docs for doc with hash: ' +
                         file_hash + ' and id: ' + file_id)
@@ -141,7 +141,8 @@ def process_hash_list(document_datasets):
                         file_hash + ' and id: ' + file_id)
 
             for fa in flattened_activities[0]:
-                hashed_identifier = utils.get_hash_for_identifier(fa['iati_identifier'])
+                hashed_identifier = utils.get_hash_for_identifier(
+                    fa['iati_identifier'])
                 blob_name = '{}.xml'.format(hashed_identifier)
 
                 try:

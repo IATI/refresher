@@ -54,7 +54,7 @@ def process_hash_list(document_datasets):
             response = requests.post(
                 config['FLATTEN']['FLATTENER_URL'], data=payload.encode('utf-8'), headers=headers)
             del payload
-            db.updateSolrizeStartDate(conn, file_hash)
+            db.updateSolrizeStartDate(conn, doc_id)
 
             if response.status_code != 200:
                 logger.warning('Flattener reports error status {} for hash {} doc id {}'.format(
