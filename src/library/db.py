@@ -489,14 +489,14 @@ def updateValidationRequestDate(conn, id):
     cur.close()
 
 
-def updateSolrizeStartDate(conn, filehash):
+def updateSolrizeStartDate(conn, id):
     cur = conn.cursor()
-    sql = "UPDATE document SET solrize_start=%(dt)s WHERE hash=%(hash)s"
+    sql = "UPDATE document SET solrize_start=%(dt)s WHERE id=%(id)s"
 
     date = datetime.now()
 
     data = {
-        "hash": filehash,
+        "id": id,
         "dt": date,
     }
 
@@ -515,11 +515,11 @@ def updateValidationError(conn, id, status):
     cur.close()
 
 
-def updateSolrError(conn, filehash, error):
+def updateSolrError(conn, id, error):
     cur = conn.cursor()
-    sql = "UPDATE document SET solr_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET solr_api_error=%s WHERE id=%s"
 
-    data = (error, filehash)
+    data = (error, id)
     cur.execute(sql, data)
     conn.commit()
     cur.close()
@@ -699,7 +699,7 @@ def completeLakify(conn, doc_id):
     cur.close()
 
 
-def completeSolrize(conn, doc_hash):
+def completeSolrize(conn, id):
     cur = conn.cursor()
 
     sql = """
@@ -707,11 +707,11 @@ def completeSolrize(conn, doc_hash):
         SET solrize_end = %(now)s,
             solr_api_error = null,
             solrize_reindex = 'f'
-        WHERE hash = %(doc_hash)s
+        WHERE id = %(id)s
     """
 
     data = {
-        "doc_hash": doc_hash,
+        "id": id,
         "now": datetime.now(),
     }
 
