@@ -99,6 +99,10 @@ There are 6 services that each are designed to run in a single Docker container:
 
 Some of these services have more than one task that they perform. Those tasks will each have an entrypoint for testing in `src/handler.py`. All the services have a `<service_name>loop` entrypoint that runs the service's tasks continuously in a loop. These service loop entrypoints are used in the deployed containers as start commands.
 
+## Data Flow Diagram
+
+![IATI_Data_Flow](IATI_Data_Flow.drawio.svg)
+
 # Refresh
 
 ## Functions
