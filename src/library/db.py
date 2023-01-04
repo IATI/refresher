@@ -515,11 +515,11 @@ def updateValidationError(conn, id, status):
     cur.close()
 
 
-def updateSolrError(conn, filehash, error):
+def updateSolrError(conn, id, error):
     cur = conn.cursor()
-    sql = "UPDATE document SET solr_api_error=%s WHERE hash=%s"
+    sql = "UPDATE document SET solr_api_error=%s WHERE id=%s"
 
-    data = (error, filehash)
+    data = (error, id)
     cur.execute(sql, data)
     conn.commit()
     cur.close()

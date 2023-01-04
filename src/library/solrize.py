@@ -219,15 +219,15 @@ def process_hash_list(document_datasets):
 
         except (SolrizeSourceError) as e:
             logger.warning(e.message)
-            db.updateSolrError(conn, file_hash, e.message)
+            db.updateSolrError(conn, file_id, e.message)
         except (SolrPingError) as e:
             logger.warning(e.message)
-            db.updateSolrError(conn, file_hash, e.message)
+            db.updateSolrError(conn, file_id, e.message)
             if e.type == 'Server' or e.type == 'Timeout' or e.type == 'Connection':
                 sleep_solr(file_hash, file_id, e.type)
         except (SolrError) as e:
             logger.warning(e.message)
-            db.updateSolrError(conn, file_hash, e.message)
+            db.updateSolrError(conn, file_id, e.message)
             if e.type == 'Server' or e.type == 'Timeout' or e.type == 'Connection':
                 sleep_solr(file_hash, file_id, e.type)
             # delete to keep atomic
@@ -244,7 +244,7 @@ def process_hash_list(document_datasets):
             message = 'Unidentified ERROR with Solrizing hash: ' + \
                 file_hash + ' and id: ' + file_id
             logger.error(message)
-            db.updateSolrError(conn, file_hash, message)
+            db.updateSolrError(conn, file_id, message)
             print(traceback.format_exc())
             if hasattr(e, 'args'):
                 logger.error(e.args[0])
