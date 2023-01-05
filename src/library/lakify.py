@@ -4,6 +4,7 @@ from multiprocessing import Process
 from library.logger import getLogger
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceNotFoundError
 import library.db as db
 from lxml import etree
 from io import BytesIO
@@ -105,6 +106,13 @@ def process_hash_list(document_datasets):
 
             db.completeLakify(conn, doc_id)
 
+        except ResourceNotFoundError as e:
+            err_message = "Unknown ResourceNotFoundError reason."
+            if hasattr(e, 'reason'):
+                err_message = e.reason
+            logger.error('ERROR with Lakifiying hash {} and doc id {}. ResourceNotFoundError: {} In storage container: {}'.format(
+                file_hash, doc_id, err_message, config['CLEAN_CONTAINER_NAME']))
+            db.lakifyError(conn, doc_id, err_message)
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
             err_message = "Unknown error"
             if hasattr(e, 'msg'):
