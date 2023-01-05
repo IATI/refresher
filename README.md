@@ -156,8 +156,8 @@ Service Loop (when container starts)
 - `safety_check()`
 
   - Checks Azure storage queue to see if there are any requests to remove black flag from a publisher, then removes if so
-  - Runs database query `db.blackFlagDubiousPublishers()` to see if any publishers have published `SAFETY_CHECK_THRESHOLD` number of critically invalid documents in `SAFETY_CHECK_PERIOD` hours, then marks them with a `publisher.black_flag` timestamp int he database
-  - Sends a notification to the Slack App for newly flagged publishers and updates DB as such
+  - Runs database query `db.blackFlagDubiousPublishers()` to see if any publishers have published `SAFETY_CHECK_THRESHOLD` number of critically invalid documents in `SAFETY_CHECK_PERIOD` hours, then marks them with a `publisher.black_flag` timestamp in the database
+  - Sends a notification to the Slack App using the `[POST] /pvt/notification/slack` endpoint of [IATI/communications-hub](https://github.com/IATI/communications-hub) for newly flagged publishers and updates DB as such.
 
 - `validate()`
   - Gets unvalidated documents `db.getUnvalidatedDatasets`
