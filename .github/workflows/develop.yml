@@ -77,8 +77,8 @@ jobs:
       - name: 'Delete existing container group'
         uses: 'azure/CLI@v1.0.7'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
+            az -v
             az container delete -y \
               --name "${{ env.NAME }}-${{ env.ENVIRONMENT }}" \
               --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}"
@@ -128,8 +128,8 @@ jobs:
       - name: 'Deploy group to Azure Container Instances'
         uses: 'azure/CLI@v1.0.7'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
+            az -v
             az container create \
             --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}" \
             --file ./deployment/deployment.yml

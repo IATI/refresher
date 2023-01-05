@@ -72,7 +72,6 @@ jobs:
       - name: 'Delete existing container group'
         uses: 'azure/CLI@v1.0.7'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
             az container delete -y \
               --name "${{ env.NAME }}-${{ env.ENVIRONMENT }}" \
@@ -121,9 +120,8 @@ jobs:
           sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
 
       - name: 'Deploy group to Azure Container Instances'
-        uses: 'azure/CLI@v1.0.4'
+        uses: 'azure/CLI@v1.0.7'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
             az container create \
             --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}" \
