@@ -112,15 +112,14 @@ def process_hash_list(document_datasets):
                 err_message = e.reason
             logger.error('ERROR with Lakifiying hash {} and doc id {}. ResourceNotFoundError: {} In storage container: {}'.format(
                 file_hash, doc_id, err_message, config['CLEAN_CONTAINER_NAME']))
-            db.lakifyError(conn, doc_id, err_message)
+            db.sendLakifyErrorToClean(conn, doc_id)
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
             err_message = "Unknown error"
             if hasattr(e, 'msg'):
                 err_message = e.msg
             logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}'.format(
                 file_hash, doc_id, err_message))
-            db.lakifyError(
-                conn, doc_id, 'Failed to extract activities. Error: {}'.format(err_message))
+            db.sendLakifyErrorToClean(conn, doc_id)
         except Exception as e:
             err_message = "Unknown error"
             if hasattr(e, 'args') and len(e.args) > 0:

@@ -679,6 +679,30 @@ def lakifyError(conn, doc_id, msg):
     cur.close()
 
 
+def sendLakifyErrorToClean(conn, doc_id):
+    cur = conn.cursor()
+
+    sql = """
+        UPDATE document
+        SET lakify_start=null,
+        lakify_end=null,
+        lakify_error=null,
+        clean_start = null,
+        clean_end = null,
+        clean_error = null
+        WHERE id = %(doc_id)s
+    """
+
+    data = {
+        "doc_id": doc_id,
+    }
+
+    cur.execute(sql, data)
+
+    conn.commit()
+    cur.close()
+
+
 def completeLakify(conn, doc_id):
     cur = conn.cursor()
 
