@@ -70,7 +70,7 @@ jobs:
           docker push $IMAGE_NAME
 
       - name: 'Delete existing container group'
-        uses: 'azure/CLI@v1.0.7'
+        uses: 'azure/CLI@v1'
         with:
           inlineScript: |
             az container delete -y \
@@ -120,7 +120,7 @@ jobs:
           sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
 
       - name: 'Deploy group to Azure Container Instances'
-        uses: 'azure/CLI@v1.0.7'
+        uses: 'azure/CLI@v1'
         with:
           inlineScript: |
             az container create \
