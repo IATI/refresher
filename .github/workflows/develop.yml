@@ -55,7 +55,7 @@ jobs:
           creds: ${{ env.AZURE_CREDENTIALS }}
 
       - name: 'Login to Docker Hub'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2.1.0
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
@@ -75,10 +75,10 @@ jobs:
           docker push $IMAGE_NAME
 
       - name: 'Delete existing container group'
-        uses: 'azure/CLI@1.0.4'
+        uses: 'azure/CLI@v1'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
+            az -v
             az container delete -y \
               --name "${{ env.NAME }}-${{ env.ENVIRONMENT }}" \
               --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}"
@@ -126,10 +126,10 @@ jobs:
           sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
 
       - name: 'Deploy group to Azure Container Instances'
-        uses: 'azure/CLI@1.0.4'
+        uses: 'azure/CLI@v1'
         with:
-          azcliversion: 2.30.0
           inlineScript: |
+            az -v
             az container create \
             --resource-group "${{ env.RESOURCE_GROUP }}-${{ env.ENVIRONMENT }}" \
             --file ./deployment/deployment.yml
