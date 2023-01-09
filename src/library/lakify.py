@@ -4,6 +4,7 @@ from multiprocessing import Process
 from library.logger import getLogger
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceNotFoundError
 import library.db as db
 from lxml import etree
 from io import BytesIO
@@ -105,14 +106,20 @@ def process_hash_list(document_datasets):
 
             db.completeLakify(conn, doc_id)
 
+        except ResourceNotFoundError as e:
+            err_message = "Unknown ResourceNotFoundError reason."
+            if hasattr(e, 'reason'):
+                err_message = e.reason
+            logger.warning('Could not download hash {} and doc id {}. ResourceNotFoundError: {} In storage container: {}. Sending back to clean.'.format(
+                file_hash, doc_id, err_message, config['CLEAN_CONTAINER_NAME']))
+            db.sendLakifyErrorToClean(conn, doc_id)
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
             err_message = "Unknown error"
             if hasattr(e, 'msg'):
                 err_message = e.msg
-            logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}'.format(
+            logger.warning('Failed to extract activities to lake with hash {} and doc id {}. Error: {}. Sending back to clean.'.format(
                 file_hash, doc_id, err_message))
-            db.lakifyError(
-                conn, doc_id, 'Failed to extract activities. Error: {}'.format(err_message))
+            db.sendLakifyErrorToClean(conn, doc_id)
         except Exception as e:
             err_message = "Unknown error"
             if hasattr(e, 'args') and len(e.args) > 0:
