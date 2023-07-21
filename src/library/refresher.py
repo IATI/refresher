@@ -18,7 +18,7 @@ import multiprocessing
 multiprocessing.set_start_method('spawn', True)
 
 
-logger = getLogger()
+logger = getLogger("refresher")
 
 
 def requests_retry_session(
@@ -463,6 +463,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
             headers = {
                 'User-Agent': 'iati-unified-platform-refresher/' + __version__['number']}
+            logger.debug('Trying to download url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             download_response = requests_retry_session(
                 retries=3).get(url=url, headers=headers, timeout=5)
             download_xml = download_response.content
@@ -481,14 +482,18 @@ def download_chunk(chunk, blob_service_client, datasets):
                     download_xml, overwrite=True, encoding=charset)
                 blob_client.set_blob_tags({"document_id": id})
                 db.updateFileAsDownloaded(conn, id)
+                logger.debug('Successfully downloaded url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             else:
                 db.updateFileAsDownloadError(
                     conn, id, download_response.status_code)
                 clean_containers_by_id(blob_service_client, id)
+                logger.debug('HTTP '+str(download_response.status_code)+' when downloading url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
         except (requests.exceptions.SSLError) as e:
+            logger.debug('SSLError while downloading url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             db.updateFileAsDownloadError(conn, id, 1)
             clean_containers_by_id(blob_service_client, id)
         except (requests.exceptions.ConnectionError) as e:
+            logger.debug('ConnectionError while downloading url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             db.updateFileAsDownloadError(conn, id, 0)
             clean_containers_by_id(blob_service_client, id)
         except (requests.exceptions.InvalidSchema) as e:
@@ -497,6 +502,7 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, 3)
             clean_containers_by_id(blob_service_client, id)
         except (AzureExceptions.ResourceNotFoundError) as e:
+            logger.debug('ResourceNotFoundError while downloading url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             db.updateFileAsDownloadError(conn, id, e.status_code)
             clean_containers_by_id(blob_service_client, id)
         except (AzureExceptions.ServiceResponseError) as e:

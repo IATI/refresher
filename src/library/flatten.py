@@ -11,7 +11,7 @@ import json
 from json.decoder import JSONDecodeError
 import library.utils as utils
 
-logger = getLogger()
+logger = getLogger("flatten")
 
 
 def process_hash_list(document_datasets):

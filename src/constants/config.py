@@ -2,6 +2,9 @@
 import os
 
 config = dict(
+    # Logs
+    LOG_LEVEL=os.getenv('LOG_LEVEL') or "info",
+
     # Database Connection
     DB_USER=os.getenv('DB_USER'),
     DB_PASS=os.getenv('DB_PASS'),
@@ -117,3 +120,4 @@ config = dict(
         SOLR_500_SLEEP=os.getenv('SOLR_500_SLEEP')
     )
 )
+
