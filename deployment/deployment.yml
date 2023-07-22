@@ -55,6 +55,8 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_URL#'
           - name: COMMSHUB_KEY
             secureValue: '#COMMSHUB_KEY#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'
     - name: 'validate'
       properties:
         resources:
@@ -104,6 +106,8 @@ properties: # Properties of container group
             secureValue: '#SCHEMA_VALIDATION_KEY_NAME#'
           - name: SCHEMA_VALIDATION_KEY_VALUE
             secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'
     - name: 'clean'
       properties:
         resources:
@@ -155,6 +159,8 @@ properties: # Properties of container group
             secureValue: '#SCHEMA_VALIDATION_KEY_NAME#'
           - name: SCHEMA_VALIDATION_KEY_VALUE
             secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'
     - name: 'flatten'
       properties:
         resources:
@@ -200,6 +206,8 @@ properties: # Properties of container group
             secureValue: '#FLATTENER_KEY_NAME#'
           - name: FLATTENER_KEY_VALUE
             secureValue: '#FLATTENER_KEY_VALUE#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'
     - name: 'lakify'
       properties:
         resources:
@@ -237,6 +245,8 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_URL#'
           - name: COMMSHUB_KEY
             secureValue: '#COMMSHUB_KEY#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'
     - name: 'solrize'
       properties:
         resources:
@@ -280,3 +290,5 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_URL#'
           - name: COMMSHUB_KEY
             secureValue: '#COMMSHUB_KEY#'
+          - name: LOG_LEVEL
+            secureValue: '#LOG_LEVEL#'

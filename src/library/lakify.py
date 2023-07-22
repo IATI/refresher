@@ -10,7 +10,7 @@ from lxml import etree
 from io import BytesIO
 import library.utils as utils
 
-logger = getLogger()
+logger = getLogger("lakify")
 
 
 def clean_identifier(identifier):

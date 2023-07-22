@@ -7,7 +7,7 @@ import library.lakify as lakify
 import library.solrize as solrize
 import library.db as db
 from library.logger import getLogger
-logger = getLogger()
+logger = getLogger('handler')
 
 
 def main(args):

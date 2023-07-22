@@ -11,7 +11,7 @@ import pysolr
 import library.utils as utils
 import re
 
-logger = getLogger()
+logger = getLogger("solrize")
 solr_cores = {}
 explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 

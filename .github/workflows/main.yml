@@ -36,6 +36,7 @@ env:
   REGISTRY_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
   REGISTRY_USERNAME: ${{ secrets.ACR_USERNAME }}
   REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+  LOG_LEVEL: ${{ secrets.PROD_LOG_LEVEL }}
 
 jobs:
   build-and-deploy:
@@ -118,6 +119,8 @@ jobs:
           sed -i ''s^#FLATTENER_API_URL#^$FLATTENER_API_URL^g'' ./deployment/deployment.yml
           sed -i ''s^#FLATTENER_KEY_NAME#^$FLATTENER_KEY_NAME^g'' ./deployment/deployment.yml
           sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
+
+          sed -i ''s^#LOG_LEVEL#^$LOG_LEVEL^g'' ./deployment/deployment.yml
 
       - name: 'Deploy group to Azure Container Instances'
         uses: 'azure/CLI@v1'
