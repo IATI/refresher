@@ -10,7 +10,7 @@ from io import BytesIO
 import library.db as db
 import library.utils as utils
 
-logger = getLogger()
+logger = getLogger("clean")
 
 
 def copy_valid_documents(documents):

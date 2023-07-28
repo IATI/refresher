@@ -12,7 +12,7 @@ import library.db as db
 import json
 import library.utils as utils
 
-logger = getLogger()
+logger = getLogger("validate")
 
 
 def process_hash_list(document_datasets):
