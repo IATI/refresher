@@ -50,7 +50,7 @@ def process_hash_list(document_datasets):
 
             db.startLakify(conn, doc_id)
 
-            logger.info('Lakifying file with hash ' + file_hash +
+            logger.info('Lakifying file with hash ' + file_hash + ', doc id ' + doc_id +
                         ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
