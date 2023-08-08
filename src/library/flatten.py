@@ -27,6 +27,8 @@ def process_hash_list(document_datasets):
 
             # Explicit error codes returned from Flattener
             if prior_error == 422 or prior_error == 400 or prior_error == 413:
+                logger.debug('Skipping file with hash {} doc id {}, downloaded at {}, due to prior {}'.format(
+                    file_hash, doc_id, downloaded.isoformat(), prior_error))
                 continue
 
             db.startFlatten(conn, doc_id)
