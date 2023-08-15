@@ -415,15 +415,8 @@ def reload(retry_errors):
         process.start()
         processes.append(process)
 
-    finished = False
-
-    while finished == False:
-        time.sleep(2)
-        finished = True
-        for process in processes:
-            process.join(timeout=0)
-            if process.is_alive():
-                finished = False
+    for process in processes:
+        process.join()
 
     logger.info("Reload complete.")
 
@@ -463,7 +456,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 container=config['SOURCE_CONTAINER_NAME'], blob=hash + '.xml')
             headers = {
                 'User-Agent': 'iati-unified-platform-refresher/' + __version__['number']}
-            logger.debug('Trying to download url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
+            logger.info('Trying to download url: ' + url + ' and hash: ' + hash + ' and id: ' + id)
             download_response = requests_retry_session(
                 retries=3).get(url=url, headers=headers, timeout=5)
             download_xml = download_response.content

@@ -1,0 +1,10 @@
+# Locking to older versions of azure code as never versions sometimes return blank files when getting storage blobs
+# (assume there has been a API change)
+azure-core==1.15.0
+azure-storage-blob==12.6.0
+azure-storage-queue==12.2.0
+lxml
+psycopg2
+requests
+pysolr
+chardet

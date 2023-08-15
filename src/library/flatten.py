@@ -27,6 +27,8 @@ def process_hash_list(document_datasets):
 
             # Explicit error codes returned from Flattener
             if prior_error == 422 or prior_error == 400 or prior_error == 413:
+                logger.debug('Skipping file with hash {} doc id {}, downloaded at {}, due to prior {}'.format(
+                    file_hash, doc_id, downloaded.isoformat(), prior_error))
                 continue
 
             db.startFlatten(conn, doc_id)
@@ -54,7 +56,6 @@ def process_hash_list(document_datasets):
             response = requests.post(
                 config['FLATTEN']['FLATTENER_URL'], data=payload.encode('utf-8'), headers=headers)
             del payload
-            db.updateSolrizeStartDate(conn, doc_id)
 
             if response.status_code != 200:
                 logger.warning('Flattener reports error status {} for hash {} doc id {}'.format(
@@ -135,14 +136,8 @@ def main():
             process.start()
             processes.append(process)
 
-        finished = False
-        while finished == False:
-            time.sleep(2)
-            finished = True
-            for process in processes:
-                process.join(timeout=0)
-                if process.is_alive():
-                    finished = False
+        for process in processes:
+            process.join()
 
     conn.close()
     logger.info("Finished.")

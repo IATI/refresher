@@ -98,14 +98,8 @@ def copy_valid():
             process.start()
             processes.append(process)
 
-        finished = False
-        while finished == False:
-            time.sleep(2)
-            finished = True
-            for process in processes:
-                process.join(timeout=0)
-                if process.is_alive():
-                    finished = False
+        for process in processes:
+            process.join()
 
     conn.close()
     logger.info("copy_valid Finished.")
@@ -249,14 +243,8 @@ def clean_invalid():
             process.start()
             processes.append(process)
 
-        finished = False
-        while finished == False:
-            time.sleep(2)
-            finished = True
-            for process in processes:
-                process.join(timeout=0)
-                if process.is_alive():
-                    finished = False
+        for process in processes:
+            process.join()
 
     conn.close()
     logger.info("clean_invalid Finished.")
