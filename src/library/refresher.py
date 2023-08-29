@@ -168,8 +168,7 @@ def clean_datasets(stale_datasets, changed_datasets):
                            file_id + ' and hash: ' + file_hash)
 
     # clean up source xml and solr for both stale and changed datasets
-    combined_datasets_toclean = stale_datasets + changed_datasets
-    if len(combined_datasets_toclean) > 0:
+    if len(stale_datasets) > 0 or len(changed_datasets) > 0:
         logger.info('Removing ' + str(len(stale_datasets)) + ' stale and ' +
                     str(len(changed_datasets)) + ' changed documents')
 
@@ -232,6 +231,9 @@ def clean_datasets(stale_datasets, changed_datasets):
                     except:
                         logger.error('Failed to remove stale docs from solr with hash: ' +
                                      file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)
+                # Maybe we should clean up the last_solrize_end field here, as they are now gone?
+                # However, we don't have to as if you look at how clean_datasets is called,
+                #   in each case right afterwards the rows are removed from the DB anyway.
             except Exception as e:
                 logger.error(
                     'Unknown error occurred while attempting to remove stale document ID {} from Source and SOLR'.format(file_id))
@@ -253,14 +255,10 @@ def clean_datasets(stale_datasets, changed_datasets):
                     clean_containers_by_id(blob_service_client, file_id, containers=[
                                            config['CLEAN_CONTAINER_NAME']])
 
-                # remove from all solr collections
-                for core_name in solr_cores:
-                    try:
-                        solr_cores[core_name].delete(
-                            q='iati_activities_document_id:' + file_id)
-                    except:
-                        logger.warn('Failed to remove changed docs from solr with hash: ' +
-                                    file_hash + ' and id: ' + file_id + ' from core with name ' + core_name)
+                # Don't remove from any solr collections!
+                # We want old data to stay in the system until new data is ready to be put in Solr.
+                # The Solrize stage will delete the old data from Solr.
+
             except Exception as e:
                 logger.error(
                     'Unknown error occurred while attempting to remove changed document ID {} from Source and SOLR'.format(file_id))
