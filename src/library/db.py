@@ -35,23 +35,6 @@ def getDirectConnection(retry_counter=0):
             str(e).strip(), retry_counter))
         raise e
 
-
-def isUpgrade(fromVersion, toVersion):
-    fromSplit = fromVersion.split('.')
-    toSplit = toVersion.split('.')
-
-    if int(fromSplit[0]) < int(toSplit[0]):
-        return True
-
-    if int(fromSplit[1]) < int(toSplit[1]):
-        return True
-
-    if int(fromSplit[2]) < int(toSplit[2]):
-        return True
-
-    return False
-
-
 def get_current_db_version(conn):
     sql = 'SELECT number, migration FROM version LIMIT 1'
 
@@ -75,7 +58,7 @@ def checkVersionMatch():
     conn.set_session(autocommit=True)
     current_db_version = get_current_db_version(conn)
 
-    while current_db_version['number'] != __version__['number']:
+    while current_db_version['migration'] != __version__['migration']:
         logger.info('DB version incorrect. Sleeping...')
         time.sleep(60)
         current_db_version = get_current_db_version(conn)
@@ -100,17 +83,17 @@ def migrateIfRequired():
             'migration': -1
         }
 
-    if current_db_version['number'] == __version__['number']:
+    if current_db_version['migration'] == __version__['migration']:
         logger.info('DB at correct version')
         return
 
-    upgrade = isUpgrade(current_db_version['number'], __version__['number'])
+    upgrade = __version__['migration'] > current_db_version['migration']
 
     if upgrade:
-        logger.info('DB upgrading to version ' + __version__['number'])
+        logger.info('DB upgrading to version ' + str(__version__['migration']))
         step = 1
     else:
-        logger.info('DB downgrading to version ' + __version__['number'])
+        logger.info('DB downgrading to version ' + str(__version__['migration']))
         step = -1
 
     try:
@@ -729,6 +712,7 @@ def completeSolrize(conn, id):
     sql = """
         UPDATE document
         SET solrize_end = %(now)s,
+            last_solrize_end = %(now)s,
             solr_api_error = null,
             solrize_reindex = 'f'
         WHERE id = %(id)s
