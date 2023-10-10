@@ -50,7 +50,7 @@ def process_hash_list(document_datasets):
 
             db.startLakify(conn, doc_id)
 
-            logger.info('Lakifying file with hash ' + file_hash +
+            logger.info('Lakifying file with hash ' + file_hash + ', doc id ' + doc_id +
                         ', downloaded at ' + downloaded.isoformat())
             blob_name = file_hash + '.xml'
 
@@ -176,14 +176,8 @@ def main():
             process.start()
             processes.append(process)
 
-        finished = False
-        while finished == False:
-            time.sleep(2)
-            finished = True
-            for process in processes:
-                process.join(timeout=0)
-                if process.is_alive():
-                    finished = False
+        for process in processes:
+            process.join()
 
     conn.close()
     logger.info("Finished.")
