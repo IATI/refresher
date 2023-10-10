@@ -3,7 +3,7 @@ from constants.config import config
 
 loggers = {}
 
-def getLogger(name="refresh"):
+def getLogger(name="unknown"):
     global loggers
 
     if loggers.get(name):
