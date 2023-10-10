@@ -165,7 +165,7 @@ properties: # Properties of container group
       properties:
         resources:
           requests:
-            memoryInGB: 4
+            memoryInGB: 3.5
             cpu: 0.1
         image: '#IMAGE_NAME#'
         command:
