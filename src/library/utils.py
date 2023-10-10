@@ -2,7 +2,7 @@ import chardet
 from library.logger import getLogger
 import hashlib
 
-logger = getLogger()
+logger = getLogger("utils")
 
 
 def get_text_from_blob(downloader, file_hash, with_encoding=False):
