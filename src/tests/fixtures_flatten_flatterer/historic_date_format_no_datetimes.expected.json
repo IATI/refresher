@@ -32,6 +32,17 @@
         "fss_forecast": "10000",
         "fss_forecast_year": "2014",
         "fss_forecast_value_date": "2013-07-03T00:00:00.000Z",
-        "fss_forecast_currency": "GBP"
+        "fss_forecast_currency": "GBP",
+        "@budget": [
+          {
+            "budget_type": "1",
+            "budget_status": "1",
+            "budget_period_start_iso_date": "2014-01-01T00:00:00.000Z",
+            "budget_period_end_iso_date": "2014-12-31T00:00:00.000Z",
+            "budget_value_currency": "EUR",
+            "budget_value_value_date": "2014-01-01T00:00:00.000Z",
+            "budget_value": "3000"
+          }
+        ]
     }
 ]

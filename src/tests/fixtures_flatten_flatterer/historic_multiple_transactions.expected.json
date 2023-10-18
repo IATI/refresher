@@ -22,6 +22,19 @@
         "transaction_transaction_date_iso_date": [
             "2012-01-01T00:00:00.000Z",
             "2013-01-01T00:00:00.000Z"
+        ],
+        "@transaction": [
+          {
+            "transaction_ref": "1234",
+            "transaction_humanitarian": "1",
+            "transaction_transaction_type_code": "1",
+            "transaction_transaction_date_iso_date": "2012-01-01T00:00:00.000Z"
+          },
+          {
+            "transaction_ref": "5678",
+            "transaction_transaction_type_code": "2",
+            "transaction_transaction_date_iso_date": "2013-01-01T00:00:00.000Z"
+          }
         ]
     }
 ]

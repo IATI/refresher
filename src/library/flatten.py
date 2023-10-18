@@ -14,12 +14,13 @@ from lxml import etree
 import re
 
 logger = getLogger("flatten")
+config_explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 
 
 class Flattener:
 
-    def __init__(self):
-        pass
+    def __init__(self, sub_list_elements=config_explode_elements):
+        self.sub_list_elements = sub_list_elements
 
     def process(self, input_filename):
         # Check right type of XML file, get attributes from root
@@ -46,8 +47,23 @@ class Flattener:
         # Process
         context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True)
         for _, activity in context:
+            # Start
             activity_output = root_attributes.copy()
+            # Activity Data
             self._process_tag(activity, activity_output)
+            # Sub lists?
+            for child_tag_name in self.sub_list_elements:
+                child_tags = activity.findall(child_tag_name)
+                if child_tags:
+                    activity_output["@"+child_tag_name] = []
+                    for child_tag in child_tags:
+                        child_tag_data = {}
+                        # TODO this isn't the most efficient as we are parsing the same tag twice
+                        # (here & above for activity)
+                        # But for now, we'll do this to prove functionality then look at speed.
+                        self._process_tag(child_tag, child_tag_data, child_tag_name)
+                        activity_output["@"+child_tag_name].append(child_tag_data)
+            # We have output
             output.append(activity_output)
 
         # Return
