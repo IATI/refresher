@@ -9,18 +9,12 @@
             "Organisation name",
             "Nom de l'organisme"
         ],
-        "reporting_org_narrative_xml_lang": [
-            "",
-            "fr"
-        ],
+        "reporting_org_narrative_xml_lang": "fr",
         "transaction_ref": [
             "1234",
             "5678"
         ],
-        "transaction_humanitarian": [
-            "1",
-            ""
-        ],
+        "transaction_humanitarian": "1",
         "transaction_transaction_type_code": [
             "1",
             "2"

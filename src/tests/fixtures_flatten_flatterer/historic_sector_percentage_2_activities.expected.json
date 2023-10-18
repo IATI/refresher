@@ -8,14 +8,8 @@
             "52010",
             "P13"
         ],
-        "sector_vocabulary": [
-            "",
-            "99"
-        ],
-        "sector_percentage": [
-            "NaN",
-            "100"
-        ]
+        "sector_vocabulary": "99",
+        "sector_percentage": "100"
     },
     {
         "dataset_version": "2.03",

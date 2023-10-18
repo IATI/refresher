@@ -11,17 +11,13 @@
             "Organisation name",
             "Nom de l'organisme"
         ],
-        "reporting_org_narrative_xml_lang": [
-            "",
-            "fr"
-        ],
+        "reporting_org_narrative_xml_lang": "fr",
         "title_narrative": [
             "Activity title",
             "Titre de l'activité",
             "Título de la actividad"
         ],
         "title_narrative_xml_lang": [
-            "",
             "fr",
             "es"
         ],
