@@ -1,7 +1,6 @@
 <iati-activities version="2.03">
     <iati-activity >
         <iati-identifier>ACT-1</iati-identifier>
-        <result type="1">
       <title>
         <narrative xml:lang="en">3.3. Countries access knowledge resources, capacity building support initiatives, and cross-country learning related to NDC implementation through the Partnership Knowledge Portal, peer to peer exchanges, and outreach materials.</narrative>
       </title>
@@ -47,5 +46,6 @@
           </actual>
         </period>
       </indicator>
+      <result type="1">
     </iati-activity>
 </iati-activities>
