@@ -47,10 +47,11 @@ class Flattener:
         # Process
         context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True)
         for _, activity in context:
+            nsmap = activity.nsmap
             # Start
             activity_output = root_attributes.copy()
             # Activity Data
-            self._process_tag(activity, activity_output)
+            self._process_tag(activity, activity_output, nsmap=nsmap)
             # Sub lists?
             for child_tag_name in self.sub_list_elements:
                 child_tags = activity.findall(child_tag_name)
@@ -61,7 +62,7 @@ class Flattener:
                         # TODO this isn't the most efficient as we are parsing the same tag twice
                         # (here & above for activity)
                         # But for now, we'll do this to prove functionality then look at speed.
-                        self._process_tag(child_tag, child_tag_data, child_tag_name)
+                        self._process_tag(child_tag, child_tag_data, prefix=child_tag_name, nsmap=nsmap)
                         activity_output["@"+child_tag_name].append(child_tag_data)
             # We have output
             output.append(activity_output)
@@ -69,13 +70,13 @@ class Flattener:
         # Return
         return output
 
-    def _process_tag(self, xml_tag, output, prefix=""):
+    def _process_tag(self, xml_tag, output, prefix="", nsmap={}):
 
         # Attributes
         for attrib_k, attrib_v in xml_tag.attrib.items():
 
             self._add_to_output(
-                self._convert_name_to_canonical(attrib_k, prefix),
+                self._convert_name_to_canonical(attrib_k, prefix=prefix, nsmap=nsmap),
                 attrib_v,
                 output
             )
@@ -90,7 +91,12 @@ class Flattener:
 
         # Child tags
         for child_xml_tag in xml_tag.getchildren():
-            self._process_tag(child_xml_tag, output, prefix=self._convert_name_to_canonical(child_xml_tag.tag, prefix))
+            self._process_tag(
+                child_xml_tag,
+                output,
+                prefix=self._convert_name_to_canonical(child_xml_tag.tag, prefix=prefix, nsmap=nsmap),
+                nsmap=nsmap
+            )
 
     CANONICAL_NAMES_WITH_DATE_TIMES = ['iso_date', 'value_date', 'extraction_date', '_datetime']
 
@@ -125,8 +131,11 @@ class Flattener:
         "xml": "http://www.w3.org/XML/1998/namespace"
     }
 
-    def _convert_name_to_canonical(self, name, prefix=""):
+    def _convert_name_to_canonical(self, name, prefix="", nsmap={}):
         for ns, url in self.DEFAULT_NAMESPACES.items():
+            if name.startswith("{"+url+"}"):
+                name = ns + "_" + name[len(url)+2:]
+        for ns, url in nsmap.items():
             if name.startswith("{"+url+"}"):
                 name = ns + "_" + name[len(url)+2:]
         name = name.replace("-", "_")

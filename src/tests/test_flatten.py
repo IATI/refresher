@@ -18,6 +18,8 @@ FLATTENER_FILES = [
     ('historic_multivalued_attribute_blank_string'),
     ('historic_nan_for_numeric_multivalued_blanks'),
     ('historic_sector_percentage_2_activities'),
+    ('extension_on_activity'),
+    ('extension_no_xmlns'),
 ]
 
 @pytest.mark.parametrize("filename", FLATTENER_FILES)
