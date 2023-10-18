@@ -1,4 +1,4 @@
-from library.flatten import Flattener
+from library.flatten import Flattener, FlattenerException
 import os.path
 from lxml import etree
 import json
@@ -38,6 +38,18 @@ def test_flattener(filename):
     # Compare
     assert expected == output
 
+FLATTENER_EXCEPTION_FILES = [
+    ('not-iati', 'Non-IATI XML')
+]
 
+@pytest.mark.parametrize("filename,expected_message", FLATTENER_EXCEPTION_FILES)
+def test_flattener_exception(filename, expected_message):
+    xml_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures_flatten_flatterer", filename + ".input.xml")
 
+    # Get input, Process
+    worker = Flattener()
+    with pytest.raises(FlattenerException) as excinfo:
+        worker.process(xml_filename)
 
+    # Compare
+    assert expected_message in str(excinfo)

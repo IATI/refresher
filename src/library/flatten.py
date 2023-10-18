@@ -28,7 +28,7 @@ class Flattener:
         root = etree.parse(input_filename, parser=large_parser).getroot()
 
         if root.tag != 'iati-activities':
-            raise Exception('Non-IATI XML')
+            raise FlattenerException('Non-IATI XML')
 
         root_attributes = {}
 
@@ -133,6 +133,8 @@ class Flattener:
         name = name.replace(":", "_")
         return prefix+"_"+name if prefix else name
 
+class FlattenerException(Exception):
+    pass
 
 def process_hash_list(document_datasets):
 
