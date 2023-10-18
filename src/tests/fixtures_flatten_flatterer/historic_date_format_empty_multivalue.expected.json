@@ -1,0 +1,64 @@
+[
+    {
+        "dataset_version": "2.03",
+        "iati_identifier": "ACT-1",
+        "result_type": "1",
+        "title_narrative": "3.3. Countries access knowledge resources, capacity building support initiatives, and cross-country learning related to NDC implementation through the Partnership Knowledge Portal, peer to peer exchanges, and outreach materials.",
+        "title_narrative_xml_lang": "en",
+        "indicator_measure": [
+            "5",
+            "1",
+            "1"
+        ],
+        "indicator_title_narrative": [
+            "3.3.1.a Knowledge Portal (Toolbox Navigator, Funding initiatives Navigator, Case Study Database) redesigned and launched in 2018",
+            "3.3.1.b Number of members refreshing the Knowledge Portal with new knowledge resources/tools annually",
+            "3.3.1.c Number of unique users accessing the Knowledge Portal"
+        ],
+        "indicator_title_narrative_xml_lang": [
+            "en",
+            "en",
+            "en"
+        ],
+        "indicator_baseline_year": [
+            "2017",
+            "2017",
+            "2017"
+        ],
+        "indicator_baseline_iso_date": [
+            "2020-10-29T00:00:00.000Z",
+            "1970-01-01T00:00:00.000Z",
+            "2019-01-01T00:00:00.000Z"
+        ],
+        "indicator_baseline_value": [
+            "",
+            "",
+            "1000"
+        ],
+        "indicator_period_period_start_iso_date": [
+            "2019-01-01T00:00:00.000Z",
+            "2019-01-01T00:00:00.000Z",
+            "2019-01-01T00:00:00.000Z"
+        ],
+        "indicator_period_period_end_iso_date": [
+            "2020-12-31T00:00:00.000Z",
+            "2020-12-31T00:00:00.000Z",
+            "2020-12-31T00:00:00.000Z"
+        ],
+        "indicator_period_target_value": [
+            "Yes",
+            "20",
+            "3000"
+        ],
+        "indicator_period_actual_value": [
+            "Yes",
+            "36",
+            "3374"
+        ],
+        "indicator_period_actual_location_ref": [
+            "2020",
+            "2020",
+            "2020"
+        ]
+    }
+]

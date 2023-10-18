@@ -10,8 +10,112 @@ import library.db as db
 import json
 from json.decoder import JSONDecodeError
 import library.utils as utils
+from lxml import etree
+import re
 
 logger = getLogger("flatten")
+
+
+class Flattener:
+
+    def __init__(self):
+        pass
+
+    def process(self, input_filename):
+        # Check right type of XML file, get attributes from root
+        large_parser = etree.XMLParser(huge_tree=True, recover=True)
+        root = etree.parse(input_filename, parser=large_parser).getroot()
+
+        if root.tag != 'iati-activities':
+            raise Exception('Non-IATI XML')
+
+        root_attributes = {}
+
+        # Previous tool always added version, even if it was blank
+        self._add_to_output('dataset_version', root.attrib.get("version", ""), root_attributes)
+        if root.attrib.get("generated-datetime"):
+            self._add_to_output('dataset_generated_datetime', root.attrib.get("generated-datetime"), root_attributes)
+        if root.attrib.get("linked-data-default"):
+            self._add_to_output('dataset_linked_data_default', root.attrib.get("linked-data-default"), root_attributes)
+
+        del root
+
+        # Start Output
+        output = []
+
+        # Process
+        context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True)
+        for _, activity in context:
+            activity_output = root_attributes.copy()
+            self._process_tag(activity, activity_output)
+            output.append(activity_output)
+
+        # Return
+        return output
+
+    def _process_tag(self, xml_tag, output, prefix=""):
+
+        # Attributes
+        for attrib_k, attrib_v in xml_tag.attrib.items():
+
+            self._add_to_output(
+                self._convert_name_to_canonical(attrib_k, prefix),
+                attrib_v,
+                output
+            )
+
+        # Immediate text
+        if xml_tag.text and xml_tag.text.strip() and prefix:
+            self._add_to_output(
+                prefix,
+                xml_tag.text.strip(),
+                output
+            )
+
+        # Child tags
+        for child_xml_tag in xml_tag.getchildren():
+            self._process_tag(child_xml_tag, output, prefix=self._convert_name_to_canonical(child_xml_tag.tag, prefix))
+
+    CANONICAL_NAMES_WITH_DATE_TIMES = ['iso_date', 'value_date', 'extraction_date', '_datetime']
+
+    def _add_to_output(self, canonical_name, value, output):
+        # Basic processing
+        value = value.strip()
+
+        # clean iati_identifier so hash matches lakifier
+        if canonical_name == 'iati_identifier':
+            value = value.replace("\n", '').replace("\r", '')
+
+        # Date time?
+        if [x for x in self.CANONICAL_NAMES_WITH_DATE_TIMES if x in canonical_name]:
+
+            # Previous tool rendered with microseconds. Check if we need to add microseconds
+            if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', value):
+                value = value[:-1] + ".000Z"
+            # If only date specified, add time
+            if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+                value = value + "T00:00:00.000Z"
+
+        # Add to output
+        if canonical_name in output:
+            if isinstance(output[canonical_name], list):
+                output[canonical_name].append(value)
+            else:
+                output[canonical_name] = [output[canonical_name], value]
+        else:
+            output[canonical_name] = value
+
+    DEFAULT_NAMESPACES = {
+        "xml": "http://www.w3.org/XML/1998/namespace"
+    }
+
+    def _convert_name_to_canonical(self, name, prefix=""):
+        for ns, url in self.DEFAULT_NAMESPACES.items():
+            if name.startswith("{"+url+"}"):
+                name = ns + "_" + name[len(url)+2:]
+        name = name.replace("-", "_")
+        name = name.replace(":", "_")
+        return prefix+"_"+name if prefix else name
 
 
 def process_hash_list(document_datasets):

@@ -1,0 +1,43 @@
+[
+    {
+        "dataset_version": "2.03",
+        "dataset_generated_datetime": "2014-09-10T07:15:37.000Z",
+        "last_updated_datetime": "2014-09-10T07:20:37.000Z",
+        "iati_identifier": "ACT-1",
+        "reporting_org_ref": "AA-AAA-123456789",
+        "reporting_org_type": "40",
+        "reporting_org_secondary_reporter": "0",
+        "reporting_org_narrative": [
+            "Organisation name",
+            "Nom de l'organisme"
+        ],
+        "reporting_org_narrative_xml_lang": [
+            "",
+            "fr"
+        ],
+        "title_narrative": [
+            "Activity title",
+            "Titre de l'activité",
+            "Título de la actividad"
+        ],
+        "title_narrative_xml_lang": [
+            "",
+            "fr",
+            "es"
+        ],
+        "budget_type": "1",
+        "budget_status": "1",
+        "budget_period_start_iso_date": "2014-01-01T00:00:00.000Z",
+        "budget_period_end_iso_date": "2014-12-31T00:00:00.000Z",
+        "budget_value": "3000",
+        "budget_value_currency": "EUR",
+        "budget_value_value_date": "2014-01-01T00:00:00.000Z",
+        "fss_extraction_date": "2014-05-06T00:00:00.000Z",
+        "fss_priority": "1",
+        "fss_phaseout_year": "2016",
+        "fss_forecast": "10000",
+        "fss_forecast_year": "2014",
+        "fss_forecast_value_date": "2013-07-03T00:00:00.000Z",
+        "fss_forecast_currency": "GBP"
+    }
+]

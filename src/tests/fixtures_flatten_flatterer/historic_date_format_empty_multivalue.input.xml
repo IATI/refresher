@@ -1,0 +1,51 @@
+<iati-activities version="2.03">
+    <iati-activity >
+        <iati-identifier>ACT-1</iati-identifier>
+        <result type="1">
+      <title>
+        <narrative xml:lang="en">3.3. Countries access knowledge resources, capacity building support initiatives, and cross-country learning related to NDC implementation through the Partnership Knowledge Portal, peer to peer exchanges, and outreach materials.</narrative>
+      </title>
+      <indicator measure="5">
+        <title>
+          <narrative xml:lang="en">3.3.1.a Knowledge Portal (Toolbox Navigator, Funding initiatives Navigator, Case Study Database) redesigned and launched in 2018</narrative>
+        </title>
+        <baseline year="2017" iso-date="2020-10-29"/>
+        <period>
+          <period-start iso-date="2019-01-01"/>
+          <period-end iso-date="2020-12-31"/>
+          <target value="Yes"/>
+          <actual value="Yes">
+            <location ref="2020"/>
+          </actual>
+        </period>
+      </indicator>
+      <indicator measure="1">
+        <title>
+          <narrative xml:lang="en">3.3.1.b Number of members refreshing the Knowledge Portal with new knowledge resources/tools annually</narrative>
+        </title>
+        <baseline year="2017"/>
+        <period>
+          <period-start iso-date="2019-01-01"/>
+          <period-end iso-date="2020-12-31"/>
+          <target value="20"/>
+          <actual value="36">
+            <location ref="2020"/>
+          </actual>
+        </period>
+      </indicator>
+      <indicator measure="1">
+        <title>
+          <narrative xml:lang="en">3.3.1.c Number of unique users accessing the Knowledge Portal</narrative>
+        </title>
+        <baseline year="2017" iso-date="2019-01-01" value="1000"/>
+        <period>
+          <period-start iso-date="2019-01-01"/>
+          <period-end iso-date="2020-12-31"/>
+          <target value="3000"/>
+          <actual value="3374">
+            <location ref="2020"/>
+          </actual>
+        </period>
+      </indicator>
+    </iati-activity>
+</iati-activities>
