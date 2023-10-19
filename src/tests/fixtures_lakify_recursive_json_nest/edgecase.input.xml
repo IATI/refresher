@@ -4,6 +4,10 @@
         Floating text
         <!--Test blank attribute-->
         <iati-identifier attribute=''>ACT-1</iati-identifier>
+        <!--Text blank narrative-->
+        <title>
+            <narrative></narrative>
+        </title>
         <!--Test comment-->
         <!--Comment-->
         <!--Test processing instruction-->

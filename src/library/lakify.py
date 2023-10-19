@@ -21,26 +21,32 @@ def recursive_json_nest(element, output):
     element_dict = {'@{}'.format(e_key): element.get(e_key)
                     for e_key in element.keys()}
     element_tag = element.tag
-    inner_text = None
-    if element_tag is not etree.Comment and element_tag is not etree.PI:
-        inner_text = ''.join([inner_string.strip()
-                              for inner_string in element.itertext(tag=element_tag)])
-    elif element_tag is etree.Comment:
+    if element_tag is etree.Comment:
         element_tag = 'comment()'
     elif element_tag is etree.PI:
         element_tag = 'PI()'
+
     if element.text is not None and element.text.strip() != '':
         element_dict['text()'] = element.text
-    elif inner_text is not None and inner_text != '':
-        element_dict['text()'] = inner_text
-    elif element_tag == 'narrative':
+    else:
+        inner_text = None
+        if element_tag is not etree.Comment and element_tag is not etree.PI:
+            inner_text = ''.join([inner_string.strip()
+                                  for inner_string in element.itertext(tag=element_tag)])
+        if inner_text is not None and inner_text != '':
+            element_dict['text()'] = inner_text
+
+    if element_tag == 'narrative' and 'text()' not in element_dict:
         element_dict['text()'] = ''
+
     for e_child in element.getchildren():
         element_dict = recursive_json_nest(e_child, element_dict)
+
     if element_tag in output.keys():
         output[element_tag].append(element_dict)
     else:
         output[element_tag] = [element_dict]
+
     return output
 
 
