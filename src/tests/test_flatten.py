@@ -20,6 +20,7 @@ FLATTENER_FILES = [
     ('historic_sector_percentage_2_activities'),
     ('extension_on_activity'),
     ('extension_no_xmlns'),
+    ('date_format_timezones'),
 ]
 
 @pytest.mark.parametrize("filename", FLATTENER_FILES)

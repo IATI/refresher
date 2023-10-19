@@ -12,6 +12,7 @@ from json.decoder import JSONDecodeError
 import library.utils as utils
 from lxml import etree
 import re
+import dateutil.parser
 
 logger = getLogger("flatten")
 config_explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
@@ -110,13 +111,13 @@ class Flattener:
 
         # Date time?
         if [x for x in self.CANONICAL_NAMES_WITH_DATE_TIMES if x in canonical_name]:
-
-            # Previous tool rendered with microseconds. Check if we need to add microseconds
-            if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', value):
-                value = value[:-1] + ".000Z"
-            # If only date specified, add time
-            if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
-                value = value + "T00:00:00.000Z"
+            dt_object = dateutil.parser.parse(value)
+            if dt_object:
+                # This mirrors output of old flaterrer system
+                value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            else:
+                # If can't parse, don't add as solr will error
+                return
 
         # Add to output
         if canonical_name in output:
