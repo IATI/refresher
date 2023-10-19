@@ -14,6 +14,9 @@
           "text()": "Test blank attribute"
         },
         {
+          "text()": "Text blank narrative"
+        },
+        {
           "text()": "Test comment"
         },
         {
@@ -41,6 +44,16 @@
       "sida:title": [
         {
           "text()": "Tanzania 2020-2024"
+        }
+      ],
+      "text()": "Floating text",
+      "title": [
+        {
+          "narrative": [
+            {
+              "text()": ""
+            }
+          ]
         }
       ],
       "transaction": [
