@@ -63,6 +63,8 @@ pysolr==3.9.0
     # via -r requirements.in
 pytest==7.4.2
     # via -r requirements_dev.in
+python-dateutil==2.8.2
+    # via -r requirements.in
 requests==2.31.0
     # via
     #   -r requirements.in
@@ -76,6 +78,7 @@ six==1.16.0
     # via
     #   azure-core
     #   isodate
+    #   python-dateutil
 urllib3==2.0.6
     # via requests
 wheel==0.41.2

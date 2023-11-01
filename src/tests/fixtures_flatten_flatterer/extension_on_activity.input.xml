@@ -1,0 +1,10 @@
+<iati-activities generated-datetime="2014-09-10T07:15:37Z" version="2.03">
+    <iati-activity last-updated-datetime="2014-09-10T07:15:37Z" xmlns:bigorg="http://bigorg.org/">
+        <iati-identifier>ACT-1 </iati-identifier>
+        <budget status="2" type="2">
+          <bigorg:bigorg-finance>
+            <bigorg:applicant>TEST1</bigorg:applicant>
+          </bigorg:bigorg-finance>
+        </budget>
+    </iati-activity>
+</iati-activities>

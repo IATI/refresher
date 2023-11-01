@@ -1,0 +1,55 @@
+[
+    {
+        "dataset_version": "2.03",
+        "dataset_generated_datetime": "2014-09-10T07:15:37.000Z",
+        "last_updated_datetime": "2014-09-10T07:15:37.000Z",
+        "iati_identifier": "ACT-1",
+        "sector_code": [
+            "52010",
+            "P13"
+        ],
+        "sector_vocabulary": "99",
+        "sector_percentage": "5",
+        "recipient_country_code": [
+            "AF",
+            "AG"
+        ],
+        "recipient_country_percentage": "25",
+        "recipient_region_code": [
+            "489",
+            "A1"
+        ],
+        "recipient_region_vocabulary": [
+            "1",
+            "99"
+        ],
+        "recipient_region_percentage": "50",
+        "recipient_region_vocabulary_uri": "http://example.com/vocab.html",
+        "country_budget_items_vocabulary": "4",
+        "country_budget_items_budget_item_code": [
+            "1844",
+            "1900"
+        ],
+        "country_budget_items_budget_item_percentage": "50",
+        "country_budget_items_budget_item_description_narrative": [
+            "Description text",
+            "Description text"
+        ],
+        "fss_extraction_date": "2014-05-06T00:00:00.000Z",
+        "fss_priority": "1",
+        "fss_phaseout_year": "2016",
+        "fss_forecast": [
+            "10000",
+            "10000"
+        ],
+        "fss_forecast_year": "2014",
+        "fss_forecast_value_date": [
+            "2013-07-03T00:00:00.000Z",
+            "2013-07-03T00:00:00.000Z"
+        ],
+        "fss_forecast_currency": [
+            "GBP",
+            "GBP"
+        ]
+    }
+]

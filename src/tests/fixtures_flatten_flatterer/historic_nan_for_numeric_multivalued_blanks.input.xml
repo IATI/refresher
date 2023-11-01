@@ -1,0 +1,27 @@
+<iati-activities generated-datetime="2014-09-10T07:15:37Z" version="2.03">
+    <iati-activity last-updated-datetime="2014-09-10T07:15:37Z">
+        <iati-identifier>ACT-1</iati-identifier>
+        <sector code="52010"/>
+        <sector code="P13" vocabulary="99" percentage="5"/>
+        <recipient-country code="AF"/>
+        <recipient-country code="AG" percentage="25" />
+        <recipient-region code="489" vocabulary="1" percentage="50" />
+        <recipient-region code="A1" vocabulary="99" vocabulary-uri="http://example.com/vocab.html" />
+        <country-budget-items vocabulary="4">
+   <budget-item code="1844" percentage="50">
+    <description>
+     <narrative>Description text</narrative>
+    </description>
+   </budget-item>
+   <budget-item code="1900" >
+    <description>
+     <narrative>Description text</narrative>
+    </description>
+   </budget-item>
+  </country-budget-items>
+  <fss extraction-date="2014-05-06" priority="1" phaseout-year="2016">
+   <forecast year="2014" value-date="2013-07-03" currency="GBP">10000</forecast>
+   <forecast value-date="2013-07-03" currency="GBP">10000</forecast>
+  </fss>
+    </iati-activity>
+</iati-activities>

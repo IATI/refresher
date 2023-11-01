@@ -10,9 +10,141 @@ import library.db as db
 import json
 from json.decoder import JSONDecodeError
 import library.utils as utils
+from lxml import etree
+import re
+import dateutil.parser
 
 logger = getLogger("flatten")
+config_explode_elements = json.loads(config['SOLRIZE']['EXPLODE_ELEMENTS'])
 
+
+class Flattener:
+
+    def __init__(self, sub_list_elements=config_explode_elements):
+        self.sub_list_elements = sub_list_elements
+
+    def process(self, input_filename):
+        # Check right type of XML file, get attributes from root
+        large_parser = etree.XMLParser(huge_tree=True, recover=True)
+        root = etree.parse(input_filename, parser=large_parser).getroot()
+
+        if root.tag != 'iati-activities':
+            raise FlattenerException('Non-IATI XML')
+
+        root_attributes = {}
+
+        # Previous tool always added version, even if it was blank
+        self._add_to_output('dataset_version', root.attrib.get("version", ""), root_attributes)
+        if root.attrib.get("generated-datetime"):
+            self._add_to_output('dataset_generated_datetime', root.attrib.get("generated-datetime"), root_attributes)
+        if root.attrib.get("linked-data-default"):
+            self._add_to_output('dataset_linked_data_default', root.attrib.get("linked-data-default"), root_attributes)
+
+        del root
+
+        # Start Output
+        output = []
+
+        # Process
+        context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True)
+        for _, activity in context:
+            nsmap = activity.nsmap
+            # Start
+            activity_output = root_attributes.copy()
+            # Activity Data
+            self._process_tag(activity, activity_output, nsmap=nsmap)
+            # Sub lists?
+            for child_tag_name in self.sub_list_elements:
+                child_tags = activity.findall(child_tag_name)
+                if child_tags:
+                    activity_output["@"+child_tag_name] = []
+                    for child_tag in child_tags:
+                        child_tag_data = {}
+                        # TODO this isn't the most efficient as we are parsing the same tag twice
+                        # (here & above for activity)
+                        # But for now, we'll do this to prove functionality then look at speed.
+                        self._process_tag(child_tag, child_tag_data, prefix=child_tag_name, nsmap=nsmap)
+                        activity_output["@"+child_tag_name].append(child_tag_data)
+            # We have output
+            output.append(activity_output)
+
+        # Return
+        return output
+
+    def _process_tag(self, xml_tag, output, prefix="", nsmap={}):
+
+        # Attributes
+        for attrib_k, attrib_v in xml_tag.attrib.items():
+
+            self._add_to_output(
+                self._convert_name_to_canonical(attrib_k, prefix=prefix, nsmap=nsmap),
+                attrib_v,
+                output
+            )
+
+        # Immediate text
+        if xml_tag.text and xml_tag.text.strip() and prefix:
+            self._add_to_output(
+                prefix,
+                xml_tag.text.strip(),
+                output
+            )
+
+        # Child tags
+        for child_xml_tag in xml_tag.getchildren():
+            self._process_tag(
+                child_xml_tag,
+                output,
+                prefix=self._convert_name_to_canonical(child_xml_tag.tag, prefix=prefix, nsmap=nsmap),
+                nsmap=nsmap
+            )
+
+    CANONICAL_NAMES_WITH_DATE_TIMES = ['iso_date', 'value_date', 'extraction_date', '_datetime']
+
+    def _add_to_output(self, canonical_name, value, output):
+        # Basic processing
+        value = value.strip()
+
+        # clean iati_identifier so hash matches lakifier
+        if canonical_name == 'iati_identifier':
+            value = value.replace("\n", '').replace("\r", '')
+
+        # Date time?
+        if [x for x in self.CANONICAL_NAMES_WITH_DATE_TIMES if x in canonical_name]:
+            dt_object = dateutil.parser.parse(value)
+            if dt_object:
+                # This mirrors output of old flaterrer system
+                value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            else:
+                # If can't parse, don't add as solr will error
+                return
+
+        # Add to output
+        if canonical_name in output:
+            if isinstance(output[canonical_name], list):
+                output[canonical_name].append(value)
+            else:
+                output[canonical_name] = [output[canonical_name], value]
+        else:
+            output[canonical_name] = value
+
+    DEFAULT_NAMESPACES = {
+        "xml": "http://www.w3.org/XML/1998/namespace"
+    }
+
+    def _convert_name_to_canonical(self, name, prefix="", nsmap={}):
+        for ns, url in self.DEFAULT_NAMESPACES.items():
+            if name.startswith("{"+url+"}"):
+                name = ns + "_" + name[len(url)+2:]
+        for ns, url in nsmap.items():
+            if name.startswith("{"+url+"}"):
+                name = ns + "_" + name[len(url)+2:]
+        name = name.replace("-", "_")
+        name = name.replace(":", "_")
+        return prefix+"_"+name if prefix else name
+
+class FlattenerException(Exception):
+    pass
 
 def process_hash_list(document_datasets):
 

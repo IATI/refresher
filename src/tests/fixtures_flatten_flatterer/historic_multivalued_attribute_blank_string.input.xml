@@ -1,0 +1,12 @@
+<iati-activities generated-datetime="2014-09-10T07:15:37Z" version="2.03">
+    <iati-activity last-updated-datetime="2014-09-10T07:15:37Z">
+        <participating-org ref="TEST-GOV-1" role="1" type="10">
+        </participating-org>
+        <participating-org ref="TEST-GOV-1" role="2" type="10">
+        </participating-org>
+        <participating-org ref="TEST-GOV-1" role="3" type="10">
+        </participating-org>
+        <participating-org ref="" role="4" type="22">
+        </participating-org>
+    </iati-activity>
+</iati-activities>
