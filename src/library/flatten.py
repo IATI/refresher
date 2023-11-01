@@ -12,6 +12,8 @@ from json.decoder import JSONDecodeError
 import library.utils as utils
 from lxml import etree
 import re
+import tempfile
+import os
 import dateutil.parser
 
 logger = getLogger("flatten")
@@ -149,13 +151,16 @@ class FlattenerException(Exception):
 def process_hash_list(document_datasets):
 
     conn = db.getDirectConnection()
+    flattener = Flattener()
 
     for file_data in document_datasets:
+        tempfile_name = None
         try:
             file_hash = file_data[0]
             downloaded = file_data[1]
             doc_id = file_data[2]
             prior_error = file_data[3]
+            tempfile_handle, tempfile_name = tempfile.mkstemp(prefix='flatten'+file_hash)
 
             # Explicit error codes returned from Flattener
             if prior_error == 422 or prior_error == 400 or prior_error == 413:
@@ -183,38 +188,23 @@ def process_hash_list(document_datasets):
                     'Can not identify charset for hash {} doc id {}'.format(file_hash, doc_id))
                 continue
 
-            headers = {config['FLATTEN']['FLATTENER_KEY_NAME']
-                : config['FLATTEN']['FLATTENER_KEY_VALUE']}
-            response = requests.post(
-                config['FLATTEN']['FLATTENER_URL'], data=payload.encode('utf-8'), headers=headers)
+            os.write(tempfile_handle, payload.encode('utf-8'))
+            os.close(tempfile_handle)
+
             del payload
 
-            if response.status_code != 200:
-                logger.warning('Flattener reports error status {} for hash {} doc id {}'.format(
-                    str(response.status_code), file_hash, doc_id))
-                if response.status_code == 404:
-                    logger.warning('Giving it a chance to come back up...')
-                    time.sleep(360)  # Give the thing time to come back up
-                    logger.warning('...and off we go again.')
-                db.updateFlattenError(conn, doc_id, response.status_code)
-                continue
-
-            flattenedObject = response.json()
+            flattenedObject = flattener.process(tempfile_name)
 
             db.completeFlatten(conn, doc_id, json.dumps(flattenedObject))
+
+            os.remove(tempfile_name)
 
         except (AzureExceptions.ResourceNotFoundError) as e:
             logger.warning('Blob not found for hash ' + file_hash +
                            ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, doc_id)
-        except JSONDecodeError:
-            logger.warning('Unable to decode JSON output from Flattener for hash {} doc id {}'.format(
-                file_hash, doc_id))
-            logger.warning('Assuming soft 404/500, waiting, and retrying...')
-            time.sleep(360)
-            logger.warning('...and off we go again.')
-            db.updateFlattenError(conn, doc_id, 404)
-        except Exception as e:
+        except (Exception, FlattenerException) as e:
+            # Log to logs
             logger.error('ERROR with flattening ' + file_hash)
             print(traceback.format_exc())
             if hasattr(e, 'message'):
@@ -225,6 +215,14 @@ def process_hash_list(document_datasets):
                 logger.warning(e.args[0])
             except:
                 pass
+            # Log to DB
+            db.updateFlattenError(conn, doc_id, 1)
+            # Delete temp file
+            if tempfile_name:
+                try:
+                    os.remove(tempfile_name)
+                except:
+                    pass
 
     conn.close()
 
