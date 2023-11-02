@@ -10,6 +10,7 @@ def test_validateLatLon_fail_1():
 
 
 GET_EXPLODE_ELEMENT_DATA = [
+    # General test
     (
         'transaction',
         [
@@ -34,10 +35,40 @@ GET_EXPLODE_ELEMENT_DATA = [
                 'transaction_value': 100,
                 "transaction_sector_code": 1,
                 "iati_identifier": "ID",
+                'id': '8c9c0d8144b6a0a68b85d0d672c10f52afe290fc',
             },
             {
                 'transaction_value': 200,
                 "iati_identifier": "ID",
+                'id': '721c2cd56dedbf5b8e11e21464bc381084ef70fb',
+            }
+        ]
+    ),
+    # Test where 2 transactions are exactly the same - they should get different id's
+    (
+        'transaction',
+        [
+            {
+                'transaction_value': 100,
+            },
+            {
+                'transaction_value': 100,
+            }
+        ],
+        {
+            "transaction_value": [ 100, 100],
+            "iati_identifier": "ID",
+        },
+        [
+            {
+                'transaction_value': 100,
+                "iati_identifier": "ID",
+                'id': '8deb2daf9d100142370b844168e08e312fe400aa',
+            },
+            {
+                'transaction_value': 100,
+                "iati_identifier": "ID",
+                'id': '71f347cd714d5fc249367dfbe5979fa33f9c0e14',
             }
         ]
     ),
