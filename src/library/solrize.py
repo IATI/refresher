@@ -210,6 +210,8 @@ def process_hash_list(document_datasets):
                         sub_list_data[element_name] = fa['@'+element_name]
                         del fa['@'+element_name]
 
+                fa['id'] = utils.get_hash_for_identifier(json.dumps(fa))
+
                 addToSolr('activity', [fa], file_hash, file_id)
 
                 # don't index iati_xml or iati_json into exploded elements
@@ -279,9 +281,11 @@ def get_explode_element_data(element_name, element_data, activity_data):
 
     # now process
     out = []
-    for e_d in element_data:
+    for idx, e_d in enumerate(element_data):
         this_data = starting_data.copy()
         this_data.update(e_d)
+        # The id should include the idx so that 2 items that are exactly the same don't become 1 in the solr results https://github.com/IATI/refresher/issues/266
+        this_data['id'] = utils.get_hash_for_identifier(json.dumps(this_data) + str(idx))
         out.append(this_data)
 
     # return
@@ -289,13 +293,12 @@ def get_explode_element_data(element_name, element_data, activity_data):
 
 
 def addToSolr(core_name, batch, file_hash, file_id):
+    """Code calling this should make sure an id element is already set in each doc."""
 
     clean_batch = []
 
     for doc in batch:
         cleanDoc = {}
-
-        doc['id'] = utils.get_hash_for_identifier(json.dumps(doc))
 
         for key in doc:
             if doc[key] != '':
