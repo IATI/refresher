@@ -116,7 +116,7 @@ class Flattener:
             dt_object = dateutil.parser.parse(value)
             if dt_object:
                 # This mirrors output of old flaterrer system
-                value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+                value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z"
             else:
                 # If can't parse, don't add as solr will error
                 return
