@@ -27,7 +27,7 @@ class Flattener:
 
     def process(self, input_filename):
         # Check right type of XML file, get attributes from root
-        large_parser = etree.XMLParser(huge_tree=True, recover=True)
+        large_parser = etree.XMLParser(huge_tree=True, recover=True, remove_comments=True)
         root = etree.parse(input_filename, parser=large_parser).getroot()
 
         if root.tag != 'iati-activities':
@@ -48,7 +48,7 @@ class Flattener:
         output = []
 
         # Process
-        context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True)
+        context = etree.iterparse(input_filename, tag='iati-activity', huge_tree=True, recover=True, remove_comments=True)
         for _, activity in context:
             nsmap = activity.nsmap
             # Start

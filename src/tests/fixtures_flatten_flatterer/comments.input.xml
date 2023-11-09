@@ -1,0 +1,13 @@
+<!-- my data is so good -->
+<iati-activities version="2.03">
+    <!--<iati-activity></iati-activity>-->
+    <iati-activity last-updated-datetime="2023-07-17T08:05:08.160000+00:00">
+        <iati-identifier>ACT-1</iati-identifier>
+        <!--<budget type="2" status="1"><period-start iso-date="2012-01-01" /><period-end iso-date="2012-09-05" /><value currency="EUR" value-date="2012-09-05">7856</value></budget>-->
+        <budget type="1" status="2">
+            <period-start iso-date="2021-02-21"/>
+            <period-end iso-date="2021-09-24"/>
+            <value currency="EUR" value-date="2021-09-24">347896</value>
+        </budget>
+    </iati-activity>
+</iati-activities>
