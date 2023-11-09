@@ -21,6 +21,7 @@ FLATTENER_FILES = [
     ('extension_on_activity'),
     ('extension_no_xmlns'),
     ('date_format_timezones'),
+    ('comments'),
 ]
 
 @pytest.mark.parametrize("filename", FLATTENER_FILES)
