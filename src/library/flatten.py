@@ -208,11 +208,11 @@ def process_hash_list(document_datasets):
             logger.error('ERROR with flattening ' + file_hash)
             print(traceback.format_exc())
             if hasattr(e, 'message'):
-                logger.error(e.message)
+                logger.error("ERROR message: " + str(e.message))
             if hasattr(e, 'msg'):
-                logger.error(e.msg)
+                logger.error("ERROR msg: " + str(e.msg))
             try:
-                logger.warning(e.args[0])
+                logger.warning("ERROR args: " + str(e.args[0]))
             except:
                 pass
             # Log to DB
