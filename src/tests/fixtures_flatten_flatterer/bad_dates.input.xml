@@ -1,0 +1,11 @@
+<iati-activities>
+    <iati-activity last-updated-datetime="12021-11-05">
+        <iati-identifier>ACT-1</iati-identifier>
+    </iati-activity>
+    <iati-activity last-updated-datetime="2006-04-23+09:00">
+        <iati-identifier>ACT-2</iati-identifier>
+    </iati-activity>
+    <iati-activity last-updated-datetime="2010-01-01Z">
+        <iati-identifier>ACT-3</iati-identifier>
+    </iati-activity>
+</iati-activities>

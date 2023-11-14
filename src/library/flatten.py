@@ -113,11 +113,15 @@ class Flattener:
 
         # Date time?
         if [x for x in self.CANONICAL_NAMES_WITH_DATE_TIMES if x in canonical_name]:
-            dt_object = dateutil.parser.parse(value)
-            if dt_object:
-                # This mirrors output of old flaterrer system
-                value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z"
-            else:
+            try:
+                dt_object = dateutil.parser.parse(value)
+                if dt_object:
+                    # This mirrors output of old flaterrer system
+                    value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z"
+                else:
+                    # If can't parse, don't add as solr will error
+                    return
+            except (dateutil.parser.ParserError, dateutil.parser.UnknownTimezoneWarning):
                 # If can't parse, don't add as solr will error
                 return
 
