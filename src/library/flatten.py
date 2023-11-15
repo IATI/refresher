@@ -114,7 +114,7 @@ class Flattener:
         # Date time?
         if [x for x in self.CANONICAL_NAMES_WITH_DATE_TIMES if x in canonical_name]:
             try:
-                dt_object = dateutil.parser.parse(value)
+                dt_object = utils.parse_xsd_date_value(value) or dateutil.parser.parse(value)
                 if dt_object:
                     # This mirrors output of old flaterrer system
                     value = dt_object.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z"
