@@ -1,0 +1,69 @@
+{
+  "iati-activity": [
+    {
+      "PI()": [
+        {
+          "text()": "version=\"1.0\""
+        }
+      ],
+      "comment()": [
+        {
+          "text()": "Test floating text"
+        },
+        {
+          "text()": "Test blank attribute"
+        },
+        {
+          "text()": "Text blank narrative"
+        },
+        {
+          "text()": "Test comment"
+        },
+        {
+          "text()": "Comment"
+        },
+        {
+          "text()": "Test processing instruction"
+        },
+        {
+          "text()": "Test self-closing tag"
+        },
+        {
+          "text()": "Test namespace with xmlns url"
+        },
+        {
+          "text()": "Test namespace without xmlns url"
+        }
+      ],
+      "iati-identifier": [
+        {
+          "@attribute": "",
+          "text()": "ACT-1"
+        }
+      ],
+      "sida:title": [
+        {
+          "text()": "Tanzania 2020-2024"
+        }
+      ],
+      "text()": "Floating text",
+      "title": [
+        {
+          "narrative": [
+            {
+              "text()": ""
+            }
+          ]
+        }
+      ],
+      "transaction": [
+        {}
+      ],
+      "{http://foreignassistance.gov/iati#}treasury-main-account": [
+        {
+          "@code": "95"
+        }
+      ]
+    }
+  ]
+}

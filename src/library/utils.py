@@ -1,6 +1,8 @@
 import chardet
 from library.logger import getLogger
 import hashlib
+import re
+import datetime
 
 logger = getLogger("utils")
 
@@ -45,3 +47,64 @@ def get_hash_for_identifier(id):
 def chunk_list(l, n):
     for i in range(0, n):
         yield l[i::n]
+
+
+class TimeZoneFixedOffset(datetime.tzinfo):
+    def __init__(self, hours, mins):
+        self.hours = hours
+        self.mins = mins
+
+    def utcoffset(self, dt):
+        if self.hours > 0:
+            return datetime.timedelta(hours=self.hours, minutes=self.mins)
+        else:
+            return datetime.timedelta(hours=self.hours, minutes=(0-self.mins))
+
+    def tzname(self, dt):
+        return "UTC{hours:+02d}:{mins:02d}".format(hours=self.hours, mins=self.mins)
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
+
+
+def parse_xsd_date_value(in_str):
+    """
+    Takes in a string that may be a valid xsd:date value
+
+    Returns a datetime object if it is (None is if it is not)
+
+    Years larger than 9999 should work but Python won't let us.
+    See https://www.w3.org/TR/xmlschema-2/#date section 3.2.9.1 leading to section 3.2.7.1
+    """
+    # Date only
+    try:
+        v = datetime.datetime.strptime(in_str, "%Y-%m-%d")
+        if v:
+            return v
+    except ValueError:
+        pass
+    # Date and Z time zone
+    try:
+        v = datetime.datetime.strptime(in_str, "%Y-%m-%dZ")
+        if v:
+            return v
+    except ValueError:
+        pass
+    # Date and plus minus time zone
+    # We can't use %z as that works with -/+0000
+    # and https://www.w3.org/TR/xmlschema-2/#dateTime section 3.2.7.3 defines -/+00:00
+    try:
+        match = re.search(r'^(\d\d\d\d)-(\d\d)-(\d\d)(\-|\+)(\d\d):(\d\d)$', in_str)
+        if match:
+            tzinfo = TimeZoneFixedOffset(
+                int(match.group(5)) if match.group(4) == '+' else 0 - int(match.group(5)),
+                int(match.group(6))
+            )
+            dt = datetime.datetime(int(match.group(1)), int(match.group(2)), int(match.group(3)), tzinfo=tzinfo)
+            # We ignore the time zone part for now
+            return dt
+    except ValueError:
+        pass
+    # We fail
+    return None
+

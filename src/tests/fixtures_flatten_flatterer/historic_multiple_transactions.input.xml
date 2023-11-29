@@ -1,0 +1,17 @@
+<iati-activities>
+    <iati-activity>
+        <iati-identifier>ACT-1</iati-identifier>
+        <reporting-org ref="AA-AAA-123456789" type="40" secondary-reporter="0">
+            <narrative>Organisation name</narrative>
+            <narrative xml:lang="fr">Nom de l'organisme</narrative>
+        </reporting-org>
+        <transaction ref="1234" humanitarian="1">
+            <transaction-type code="1" />
+            <transaction-date iso-date="2012-01-01" />
+        </transaction>
+        <transaction ref="5678">
+            <transaction-type code="2" />
+            <transaction-date iso-date="2013-01-01" />
+        </transaction>
+    </iati-activity>
+</iati-activities>

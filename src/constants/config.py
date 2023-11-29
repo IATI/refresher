@@ -86,12 +86,7 @@ config = dict(
     ),
     FLATTEN=dict(
         # Number of parallel processes to run the flatten loop with
-        PARALLEL_PROCESSES=1,
-
-        # Flattener API URL/key
-        FLATTENER_URL=os.getenv('FLATTENER_API_URL'),
-        FLATTENER_KEY_NAME=os.getenv('FLATTENER_KEY_NAME'),
-        FLATTENER_KEY_VALUE=os.getenv('FLATTENER_KEY_VALUE')
+        PARALLEL_PROCESSES=1
     ),
     LAKIFY=dict(
         # Number of parallel processes to run the lakify loop with

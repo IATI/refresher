@@ -1,0 +1,22 @@
+<iati-activities xmlns:usg="http://foreignassistance.gov/iati#">
+    <iati-activity>
+        <!--Test floating text-->
+        Floating text
+        <!--Test blank attribute-->
+        <iati-identifier attribute=''>ACT-1</iati-identifier>
+        <!--Text blank narrative-->
+        <title>
+            <narrative></narrative>
+        </title>
+        <!--Test comment-->
+        <!--Comment-->
+        <!--Test processing instruction-->
+        <?xml-processing-instruction version="1.0"?>
+        <!--Test self-closing tag-->
+        <transaction/>
+        <!--Test namespace with xmlns url-->
+        <usg:treasury-main-account code="95"/>
+        <!--Test namespace without xmlns url-->
+        <sida:title>Tanzania 2020-2024</sida:title>
+    </iati-activity>
+</iati-activities>

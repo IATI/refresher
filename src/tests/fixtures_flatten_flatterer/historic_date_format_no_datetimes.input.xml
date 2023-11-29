@@ -1,0 +1,25 @@
+<iati-activities version="2.03">
+    <iati-activity >
+        <iati-identifier>ACT-1</iati-identifier>
+        <reporting-org ref="AA-AAA-123456789" type="40" secondary-reporter="0">
+            <narrative>Organisation name</narrative>
+            <narrative xml:lang="fr">Nom de l'organisme</narrative>
+        </reporting-org>
+
+        <title>
+            <narrative>Activity title</narrative>
+            <narrative xml:lang="fr">Titre de l'activité</narrative>
+            <narrative xml:lang="es">Título de la actividad</narrative>
+        </title>
+
+        <budget type="1" status="1">
+            <period-start iso-date="2014-01-01" />
+            <period-end iso-date="2014-12-31" />
+            <value currency="EUR" value-date="2014-01-01">3000</value>
+        </budget>
+
+        <fss extraction-date="2014-05-06" priority="1" phaseout-year="2016">
+            <forecast year="2014" value-date="2013-07-03" currency="GBP">10000</forecast>
+        </fss>
+    </iati-activity>
+</iati-activities>

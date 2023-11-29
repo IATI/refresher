@@ -203,14 +203,24 @@ def process_hash_list(document_datasets):
                 except KeyError:
                     pass
 
+                # Remove sub lists
+                sub_list_data = {}
+                for element_name in explode_elements:
+                    if isinstance(fa.get('@'+element_name), list):
+                        sub_list_data[element_name] = fa['@'+element_name]
+                        del fa['@'+element_name]
+
+                fa['id'] = utils.get_hash_for_identifier(json.dumps(fa))
+
                 addToSolr('activity', [fa], file_hash, file_id)
 
                 # don't index iati_xml or iati_json into exploded elements
                 del fa['iati_xml']
                 del fa['iati_json']
 
-                for element_name in explode_elements:
-                    res = explode_element(element_name, fa)
+                # Now index explode_elements
+                for element_name, element_data in sub_list_data.items():
+                    res = get_explode_element_data(element_name, element_data, fa)
                     addToSolr(element_name, res, file_hash, file_id)
 
             logger.info('Updating DB with successful Solrize for hash: ' +
@@ -260,55 +270,35 @@ def process_hash_list(document_datasets):
     conn.close()
 
 
-def explode_element(element_name, passed_fa):
-    fa = copy.deepcopy(passed_fa)
+def get_explode_element_data(element_name, element_data, activity_data):
+    # copy
+    starting_data = activity_data.copy()
 
-    exploded_docs = []
-    exploded_elements = {}
-    single_value_elements = {}
+    # remove any keys from main data
+    for k in list(starting_data.keys()):
+        if k.startswith(element_name + "_"):
+            del starting_data[k]
 
-    for key in fa:
-        if key.startswith(element_name + '_'):
-            if isinstance(fa[key], list):
-                exploded_elements[key] = fa[key]
-            else:
-                single_value_elements[key] = fa[key]
+    # now process
+    out = []
+    for idx, e_d in enumerate(element_data):
+        this_data = starting_data.copy()
+        this_data.update(e_d)
+        # The id should include the idx so that 2 items that are exactly the same don't become 1 in the solr results https://github.com/IATI/refresher/issues/266
+        this_data['id'] = utils.get_hash_for_identifier(json.dumps(this_data) + str(idx))
+        out.append(this_data)
 
-    if not exploded_elements and not single_value_elements:
-        return []
-
-    if not exploded_elements:
-        return [fa]
-
-    for key in exploded_elements:
-        del fa[key]
-
-    i = 0
-
-    for value in exploded_elements[list(exploded_elements)[0]]:
-        exploded_doc = {}
-
-        for key in exploded_elements:
-            try:
-                exploded_doc[key] = exploded_elements[key][i]
-            except:
-                pass
-
-        exploded_docs.append({**exploded_doc, **single_value_elements, **fa})
-
-        i = i + 1
-
-    return exploded_docs
+    # return
+    return out
 
 
 def addToSolr(core_name, batch, file_hash, file_id):
+    """Code calling this should make sure an id element is already set in each doc."""
 
     clean_batch = []
 
     for doc in batch:
         cleanDoc = {}
-
-        doc['id'] = utils.get_hash_for_identifier(json.dumps(doc))
 
         for key in doc:
             if doc[key] != '':

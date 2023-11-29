@@ -1,0 +1,17 @@
+[
+  {
+    "dataset_version": "2.03",
+    "iati_identifier": "big-year",
+    "activity_date_type": "1"
+  },
+  {
+    "dataset_version": "2.03",
+    "iati_identifier": "rubbish-1",
+    "activity_date_type": "1"
+  },
+  {
+    "dataset_version": "2.03",
+    "iati_identifier": "rubbish-2",
+    "activity_date_type": "1"
+  }
+]

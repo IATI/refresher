@@ -1,0 +1,17 @@
+<iati-activities version="2.03">
+    <!-- last-updated-datetime is xsd:dateTime. activity-date iso-date is xsd:date - test separately in case parsing is different! -->
+    <!-- test case - actually years bigger than 10000 should be allowed but Python won't let us. Don't crash. -->
+    <iati-activity last-updated-datetime="12021-11-05">
+        <iati-identifier>big-year</iati-identifier>
+        <activity-date iso-date="12021-11-05" type="1" />
+    </iati-activity>
+    <!-- test case - various rubbish won't crash -->
+    <iati-activity last-updated-datetime="cat">
+        <iati-identifier>rubbish-1</iati-identifier>
+        <activity-date iso-date="cat" type="1" />
+    </iati-activity>
+    <iati-activity last-updated-datetime="2023-15-40">
+        <iati-identifier>rubbish-2</iati-identifier>
+        <activity-date iso-date="2023-15-40" type="1" />
+    </iati-activity>
+</iati-activities>
