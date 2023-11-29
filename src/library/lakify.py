@@ -30,7 +30,7 @@ def recursive_json_nest(element, output):
         element_dict['text()'] = element.text
     else:
         inner_text = None
-        if element_tag is not etree.Comment and element_tag is not etree.PI:
+        if element.tag is not etree.Comment and element.tag is not etree.PI:
             inner_text = ''.join([inner_string.strip()
                                   for inner_string in element.itertext(tag=element_tag)])
         if inner_text is not None and inner_text != '':

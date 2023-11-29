@@ -1,0 +1,54 @@
+{
+  "iati-activity": [
+    {
+      "@last-updated-datetime": "2014-09-10T07:15:37Z",
+      "comment()": [
+        {}
+      ],
+      "iati-identifier": [
+        {
+          "text()": "ACT-1"
+        }
+      ],
+      "reporting-org": [
+        {
+          "@ref": "AA-AAA-123456789",
+          "@secondary-reporter": "0",
+          "@type": "40",
+          "comment()": [
+            {
+              "text()": " No spanish translation was available "
+            }
+          ],
+          "narrative": [
+            {
+              "text()": "Organisation name"
+            },
+            {
+              "@{http://www.w3.org/XML/1998/namespace}lang": "fr",
+              "text()": "Nom de l'organisme"
+            }
+          ]
+        }
+      ],
+      "title": [
+        {
+          "comment()": [
+            {
+              "text()": " <narrative xml:lang=\"es\">T\u00edtulo de la actividad</narrative> "
+            }
+          ],
+          "narrative": [
+            {
+              "text()": "Activity title"
+            },
+            {
+              "@{http://www.w3.org/XML/1998/namespace}lang": "fr",
+              "text()": "Titre de l'activit\u00e9"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
