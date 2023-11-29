@@ -8,6 +8,7 @@ import pytest
 RECURSIVE_JSON_NEST_FILES = [
     ('basic'),
     ('edgecase'),
+    ('comment'),
 ]
 
 @pytest.mark.parametrize("filename", RECURSIVE_JSON_NEST_FILES)
