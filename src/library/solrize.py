@@ -143,7 +143,7 @@ def process_hash_list(document_datasets):
             for fa in flattened_activities[0]:
                 hashed_identifier = utils.get_hash_for_identifier(
                     fa['iati_identifier'])
-                blob_name = '{}.xml'.format(hashed_identifier)
+                blob_name = '{}/{}.xml'.format(file_id, hashed_identifier)
 
                 try:
                     blob_client = blob_service_client.get_blob_client(
@@ -165,7 +165,7 @@ def process_hash_list(document_datasets):
                     raise SolrizeSourceError('Could not identify charset for blob: ' + blob_name +
                                              ', file hash: ' + file_hash + ', iati-identifier: ' + fa['iati_identifier'])
 
-                json_blob_name = '{}.json'.format(hashed_identifier)
+                json_blob_name = '{}/{}.json'.format(file_id, hashed_identifier)
 
                 try:
                     json_blob_client = blob_service_client.get_blob_client(
