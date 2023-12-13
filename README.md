@@ -1,6 +1,16 @@
 # IATI Refresher
 
-A Python application which has the responsibility of tracking IATI data from around the Web and refreshing the core IATI software's data stores.
+# Summary
+
+ Product  |  IATI Refresher
+--- | --- 
+Description | A Python application which has the responsibility of tracking IATI data from around the Web and refreshing the core IATI software's data stores.
+Website |  None
+Related | [datastore-search](https://github.com/IATI/datastore-search), [validator-web](https://github.com/IATI/validator-web)
+Documentation | Rest of readme
+Technical Issues | See https://github.com/IATI/refresher/issues
+Support | https://iatistandard.org/en/guidance/get-support/
+
 
 Its responsibilities include:
 
