@@ -91,14 +91,18 @@ def process_hash_list(document_datasets):
                 if identifiers:
                     id_hash = utils.get_hash_for_identifier(
                         clean_identifier(identifiers[0]))
+
+                    # XML
                     activity_xml = etree.tostring(activity, encoding='utf-8')
-                    activity_json = recursive_json_nest(activity, {})
                     act_blob_client = blob_service_client.get_blob_client(
-                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.xml'.format(id_hash))
+                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}/{}.xml'.format(doc_id, id_hash))
                     act_blob_client.upload_blob(activity_xml, overwrite=True)
                     act_blob_client.set_blob_tags({"dataset_hash": file_hash})
+
+                    # JSON
+                    activity_json = recursive_json_nest(activity, {})
                     act_blob_json_client = blob_service_client.get_blob_client(
-                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}.json'.format(id_hash))
+                        container=config['ACTIVITIES_LAKE_CONTAINER_NAME'], blob='{}/{}.json'.format(doc_id, id_hash))
                     act_blob_json_client.upload_blob(
                         json.dumps(activity_json, ensure_ascii=False).replace(
                             '{http://www.w3.org/XML/1998/namespace}', 'xml:').encode('utf-8'),
