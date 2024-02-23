@@ -6,6 +6,7 @@ from multiprocessing import Process
 from library.logger import getLogger
 from constants.config import config
 from azure.storage.blob import BlobServiceClient
+from xml.sax.saxutils import escape
 import library.db as db
 import pysolr
 import library.utils as utils
@@ -130,6 +131,12 @@ def get_blob_data(blob_client: object, conn: object, file_id: str, file_hash: st
         ).format(blob_type, blob_name, file_hash, fa['iati_identifier']))
 
 
+def escape_param_for_pysolr_delete(query_param: str):
+    # escape is used to do XML escaping, since PySolr doesn't do it for delete
+    # queries, and the \ and " escaping is to escape for a param for a Solr query
+    # where the param will be in double quotes
+    return escape(query_param).replace("\\", "\\\\").replace("\"", "\\\"")
+
 def process_hash_list(document_datasets):
     """
 
@@ -197,7 +204,7 @@ def process_hash_list(document_datasets):
                     delete_from_solr(solr_cores, file_id, file_hash, {
                                 'q': ('iati_activities_document_id:"{}" AND '
                                       'iati_identifier_exact:"{}"').format(file_id,
-                                                                           fa['iati_identifier'])})
+                                                                           escape_param_for_pysolr_delete(fa['iati_identifier']))})
 
                     identifiers_seen.append(fa['iati_identifier'])
 
@@ -250,7 +257,7 @@ def process_hash_list(document_datasets):
                         delete_from_solr({element_name: solr_cores[element_name]}, file_id, file_hash, {
                                 'q': ('iati_activities_document_id:"{}" AND '
                                       'iati_identifier_exact:"{}"').format(file_id,
-                                                                           fa['iati_identifier'])})
+                                                                           escape_param_for_pysolr_delete(fa['iati_identifier']))})
                     results = get_explode_element_data(element_name, element_data, fa)
                     addToSolr(element_name, results, file_hash, file_id)
 
