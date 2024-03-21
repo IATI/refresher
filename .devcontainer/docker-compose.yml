@@ -1,0 +1,85 @@
+services:
+
+  iati-refresher-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/work
+    environment:
+      - DB_USER=refresh
+      - DB_PASS=pass
+      - DB_HOST=iati-refresher-postgres-dev
+      - DB_NAME=refresher
+      - DB_PORT=5432
+      - DB_SSL_MODE=disable
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://iati-refresher-azurite:10000/devstoreaccount1;QueueEndpoint=http://iati-refresher-azurite:10001/devstoreaccount1;TableEndpoint=http://iati-refresher-azurite:10002/devstoreaccount1;
+      - AZURE_STORAGE_CONTAINER_SOURCE=source
+      - AZURE_STORAGE_CONTAINER_CLEAN=clean
+      - ACTIVITIES_LAKE_CONTAINER_NAME=lake
+      - SCHEMA_VALIDATION_API_URL=http://192.168.0.1:8080/api/pvt/schema-validate-file
+      - SCHEMA_VALIDATION_KEY_NAME=x
+      - SCHEMA_VALIDATION_KEY_VALUE=y
+      - VALIDATOR_API_URL=http://192.168.0.1:8080/api/pub/validate
+      - VALIDATOR_API_KEY_NAME=x
+      - VALIDATOR_API_KEY_VALUE=y
+      - FLATTENER_API_URL=http://192.168.0.1:7071/api/pvt/flatten/activities
+      - FLATTENER_KEY_NAME=x
+      - FLATTENER_KEY_VALUE=y
+      - SOLR_API_URL=http://iati-refresher-solr:8983/solr/
+      - SOLR_USER=x
+      - SOLR_PASSWORD=y
+      - LOG_LEVEL=debug
+
+  iati-refresher-postgres-dev:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+    environment:
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_USER=refresh
+      - POSTGRES_DB=refresher
+      - PGPORT=5432
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - iati-refresher-dev-db:/var/lib/postgresql/data
+
+  iati-refresher-azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    ports:
+      - 10000:10000
+      - 10001:10001
+      - 10002:10002
+    command: azurite --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --tableHost 0.0.0.0 --tablePort 10002 --location /data --loose
+    volumes:
+      - iati-refresher-azurite:/data
+
+#  iati-refresher-solr:
+#    image: solr
+#    ports:
+#      - 8983:8983
+#    volumes:
+#      - iati-refresher-solr:/var/solr
+#      - ./datastore-solr-configs:/datastore-solr-configs
+#    command:
+#      - solr-precreate
+
+networks:
+  default:
+    name: iati-refresher-dev
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.0.0/24"
+          gateway: "192.168.0.1"
+
+volumes:
+  iati-refresher-dev-db:
+    driver: local
+  iati-refresher-azurite:
+    driver: local
+  iati-refresher-solr:
+    driver: local
+

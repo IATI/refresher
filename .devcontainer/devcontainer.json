@@ -1,0 +1,8 @@
+{
+    "name": "IATI Refresher Dev Container",
+    "dockerComposeFile": "docker-compose.yml",
+    "workspaceFolder": "/work",
+    "workspaceMount": "/work",
+    "service": "iati-refresher-app"
+
+}
