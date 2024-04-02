@@ -62,7 +62,9 @@ def process_hash_list(document_datasets):
                     f"Schema Validating file hash: {file_hash} and id: {file_id}")
                 schema_headers = {config['VALIDATION']['SCHEMA_VALIDATION_KEY_NAME']: config['VALIDATION']['SCHEMA_VALIDATION_KEY_VALUE']}
                 schema_response = requests.post(
-                    config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers)
+                    config['VALIDATION']['SCHEMA_VALIDATION_URL'], data=payload.encode('utf-8'), headers=schema_headers,
+                    timeout=config['VALIDATION']['SCHEMA_VALIDATION_TIMEOUT']
+                )
                 db.updateValidationRequestDate(conn, file_id)
 
                 if schema_response.status_code != 200:
@@ -117,7 +119,8 @@ def process_hash_list(document_datasets):
             if file_schema_valid == False:
                 full_url += '?meta=true'
             full_response = requests.post(
-                full_url, data=payload.encode('utf-8'), headers=full_headers)
+                full_url, data=payload.encode('utf-8'), headers=full_headers,
+                    timeout=config['VALIDATION']['FULL_VALIDATION_TIMEOUT'])
             db.updateValidationRequestDate(conn, file_id)
 
             if full_response.status_code != 200:

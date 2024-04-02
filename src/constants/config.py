@@ -67,12 +67,14 @@ config = dict(
             'SCHEMA_VALIDATION_KEY_NAME'),
         SCHEMA_VALIDATION_KEY_VALUE=os.getenv(
             'SCHEMA_VALIDATION_KEY_VALUE'),
+        SCHEMA_VALIDATION_TIMEOUT=int(os.getenv('SCHEMA_VALIDATOR_API_TIMEOUT', default=3600)),
 
         # Full Validation API URL/key
         FULL_VALIDATION_URL=os.getenv('VALIDATOR_API_URL'),
         FULL_VALIDATION_KEY_NAME=os.getenv('VALIDATOR_API_KEY_NAME'),
         FULL_VALIDATION_KEY_VALUE=os.getenv(
             'VALIDATOR_API_KEY_VALUE'),
+        FULL_VALIDATION_TIMEOUT=int(os.getenv('VALIDATOR_API_TIMEOUT', default=3600)),
 
         # Publisher Black Flagging Period and Threshold
         # Number of Critically Invalid Documents
