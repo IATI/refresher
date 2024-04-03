@@ -6,6 +6,6 @@ azure-storage-queue==12.2.0
 lxml
 psycopg2
 requests
-pysolr
+pysolr==3.9.0  # If this is upgraded, the Solrize needs revisiting, because 3.9 doesn't escape delete calls, so we've done it manually.
 chardet
 python-dateutil
