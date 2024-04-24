@@ -134,7 +134,8 @@ Service Loop (when container starts)
     - Checks for `stale_datasets` - `document.last_seen` is from a previous run (so no longer in registry)
     - `clean_datasets()`
       - Removes `stale_datasets` from Activity lake, decided it wasn't worth updating `changed_datasets` from activity lake because filenames are hash of `iati_identifier` so less likely to change.
-      - Removes `changed_datasets` and `stale_datasets` from source xml blob container and Solr.
+      - Removes `stale_datasets` from source and clean xml blob container and Solr.
+      - Removes `changed_datasets`from source and clean xml blob container. Not Solr as this will be removed later, and we want the older data to be available to data store users during processing.
     - Removes `stale_datasets` from DB documents table
 - `reload(retry_errors)`
   - `retry_errors` is True after RETRY_ERRORS_AFTER_LOOP refreshes.
@@ -222,27 +223,23 @@ Service Loop (when container starts)
 
 ## Functions
 
-- `main()` - Sends XML to the [iati-flattener](https://github.com/IATI/iati-flattener) which transforms it into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format.
+- `main()` - Flattens XML into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format. 
+
+Used to use the [iati-flattener service](https://github.com/IATI/iati-flattener),  but now it does it using a Python class it the same process.
 
 ## Logic
 
 - `main()`
-  - Reset unfinished flattens
+  - Reset unfinished and errored flattens
   - Get unflattened (`db.getUnflattenedDatasets`)
   - process_hash_list()
-    - If prior_error = 422, 400, 413, break out of loop for this file
     - Start flatten in db (db.startFlatten)
     - Download source XML from Azure blobs - If charset error, breaks out of loop for file
-      - POST's to flattener API
-      - Update solrize_start column
-      - If status code != 200
-        - `404` - update DB `document.flatten_api_error`, pause 1min, continue loop
-        - `400 - 499` - update DB `document.flatten_api_error`, break out of loop
-        - `500 +` - update DB `document.flatten_api_error`, break out of loop
-        - else - log warning, continue
+      - Uses Python class `Flattener` to flatten.
+      - Mark done and store results in DB (db.completeFlatten)
       - If exception
         - Can't download BLOB, then `"UPDATE document SET downloaded = null WHERE id = %(id)s"`, to force re-download
-        - Other Exception, log message, no change to DB
+        - Other Exception, log message, `UPDATE document SET flatten_api_error = %(error)s WHERE id = %(doc_id)s`
 
 # Lakify
 
