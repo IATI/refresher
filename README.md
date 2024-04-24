@@ -134,7 +134,8 @@ Service Loop (when container starts)
     - Checks for `stale_datasets` - `document.last_seen` is from a previous run (so no longer in registry)
     - `clean_datasets()`
       - Removes `stale_datasets` from Activity lake, decided it wasn't worth updating `changed_datasets` from activity lake because filenames are hash of `iati_identifier` so less likely to change.
-      - Removes `changed_datasets` and `stale_datasets` from source xml blob container and Solr.
+      - Removes `stale_datasets` from source and clean xml blob container and Solr.
+      - Removes `changed_datasets`from source and clean xml blob container. Not Solr as this will be removed later, and we want the older data to be available to data store users during processing.
     - Removes `stale_datasets` from DB documents table
 - `reload(retry_errors)`
   - `retry_errors` is True after RETRY_ERRORS_AFTER_LOOP refreshes.
