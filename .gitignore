@@ -139,6 +139,7 @@ cython_debug/
 
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch-example.json
 pyenv
 
 scratch
