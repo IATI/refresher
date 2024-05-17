@@ -1,0 +1,137 @@
+{
+
+
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {  // Pipeline - 01 - Refresh
+            "name": "Pipeline - 01 - Refresh",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "refresh"],
+            "envFile": "${workspaceFolder}/.env"
+
+            // "env": {
+            //     "DB_USER": "",
+            //     "DB_PASS": "",
+            //     "DB_HOST": "",
+            //     "DB_NAME": "",
+            //     "DB_PORT": "",
+            //     "DB_SSL_MODE": "disable",
+
+            //     "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;QueueEndpoint=http://localhost:10001/devstoreaccount1;TableEndpoint=http://localhost:10002/devstoreaccount1;",
+            //     "AZURE_STORAGE_CONTAINER_SOURCE": "source",
+            //     "AZURE_STORAGE_CONTAINER_CLEAN": "clean",
+            //     "ACTIVITIES_LAKE_CONTAINER_NAME": "lake",
+
+            //     "SCHEMA_VALIDATION_API_URL": "VALIDATOR_HOSTNAME_HERE/api/pvt/schema-validate-file",
+            //     "SCHEMA_VALIDATION_KEY_NAME": "x-functions-key",
+            //     "SCHEMA_VALIDATION_KEY_VALUE": "",
+
+            //     "VALIDATOR_API_URL": "VALIDATOR_HOSTNAME_HERE/api/pub/validate",
+            //     "VALIDATOR_API_KEY_NAME": "x-functions-key",
+            //     "VALIDATOR_API_KEY_VALUE": "",
+
+            //     "SOLR_API_URL": "http://localhost:8983/solr/",
+            //     "SOLR_USER": "x",
+            //     "SOLR_PASSWORD": "y",
+            //     "LOG_LEVEL": "debug",
+            //     "SOLR_PARALLEL_PROCESSES": "5",
+            //     "SOLR_500_SLEEP": "60"
+            // }
+        },
+
+        {  // Pipeline - 02 - Reload
+            "name": "Pipeline - 02 - Reload",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "reload"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 04 - Validate
+            "name": "Pipeline - 04 - Validate (against local)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "validate"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 04 - Validate (using Azure dev)
+            "name": "Pipeline - 04 - Validate (against dev)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "validate"],
+            "envFile": "${workspaceFolder}/.env-dev-validator"
+        },
+
+
+        {  // Pipeline - 05 - Copy valid
+            "name": "Pipeline - 05 - Copy valid",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "copy_valid"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 06 - Clean invalid
+            "name": "Pipeline - 06 - Clean invalid",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "clean_invalid"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 07 - Flatten
+            "name": "Pipeline - 07 - Flatten",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "flatten"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 08 - Lakify
+            "name": "Pipeline - 08 - Lakify",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "args": ["-t", "lakify"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+
+        {  // Pipeline - 09 - Solrize
+            "name": "Pipeline - 09 - Solrize",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/handler.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["-t", "solrize"],
+            "envFile": "${workspaceFolder}/.env"         
+        },
+    ],
+    "compounds": [
+        {
+            "name": "Compound",
+            "configurations": []
+        }
+    ]
+}
