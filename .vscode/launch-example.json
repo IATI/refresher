@@ -16,6 +16,7 @@
             "args": ["-t", "refresh"],
             "envFile": "${workspaceFolder}/.env"
 
+            // You can also specify an environment inline, as follows:
             // "env": {
             //     "DB_USER": "",
             //     "DB_PASS": "",
@@ -125,7 +126,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": ["-t", "solrize"],
-            "envFile": "${workspaceFolder}/.env"         
+            "envFile": "${workspaceFolder}/.env"
         },
     ],
     "compounds": [
