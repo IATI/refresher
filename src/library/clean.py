@@ -45,7 +45,7 @@ def copy_valid_documents(documents):
                     container=config['CLEAN_CONTAINER_NAME'], blob=blob_name)
                 clean_blob.start_copy_from_url(source_blob_client.url)
                 clean_blob.set_blob_tags({"document_id": id})
-            except (AzureExceptions.ResourceNotFoundError) as e:
+            except AzureExceptions.ResourceNotFoundError:
                 err_msg = f"Blob not found for hash: {hash} and id: {id} updating as Not Downloaded for the refresher to pick up."
                 logger.warning(
                     err_msg)
@@ -54,7 +54,7 @@ def copy_valid_documents(documents):
 
             db.completeClean(conn, id)
     except Exception as e:
-        logger.error(f"ERROR with copying valid documents to clean storage")
+        logger.error("ERROR with copying valid documents to clean storage")
         print(traceback.format_exc())
         if hasattr(e, 'message'):
             logger.error(e.message)
@@ -70,7 +70,7 @@ def copy_valid():
     """gets list of valid documents to copy and sets up up multiprocessing
     """
     logger.info(
-        f"Starting copy of valid activities documents to clean container...")
+        "Starting copy of valid activities documents to clean container...")
 
     conn = db.getDirectConnection()
 
@@ -121,7 +121,7 @@ def clean_invalid_documents(documents):
             id = document[1]
             index = document[2]
             valid_dict = {act['index']: act['valid']
-                          for act in index if act['valid'] == True}
+                          for act in index if act['valid'] is True}
 
             logger.info(
                 f"Copying {len(valid_dict)} valid of {len(index)} total activities xml to clean container for invalid activity document id: {id} and hash: {hash}")
@@ -143,11 +143,11 @@ def clean_invalid_documents(documents):
                     BytesIO(downloader.content_as_bytes()), parser=large_parser)
                 iati_activities_el = root.getroot()
                 file_encoding = 'utf-8'
-            except (AzureExceptions.ResourceNotFoundError) as e:
+            except AzureExceptions.ResourceNotFoundError:
                 logger.warning(
                     f"Blob not found for hash: {hash} and id: {id} - updating as Not Downloaded for the refresher to pick up.")
                 db.updateFileAsNotDownloaded(conn, id)
-            except etree.XMLSyntaxError as e:
+            except etree.XMLSyntaxError:
                 logger.warning(
                     f"Cannot parse entire XML for hash: {hash} id: {id}. ")
                 try:
@@ -198,7 +198,7 @@ def clean_invalid_documents(documents):
 
     except Exception as e:
         logger.error(
-            f"ERROR with cleaning invalid documents and saving to clean storage")
+            "ERROR with cleaning invalid documents and saving to clean storage")
         print(traceback.format_exc())
         if hasattr(e, 'message'):
             logger.error(e.message)

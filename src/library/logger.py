@@ -5,6 +5,7 @@ from constants.config import config
 
 loggers = {}
 
+
 def getLogger(name="unknown"):
     global loggers
 

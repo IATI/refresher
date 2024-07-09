@@ -1,14 +1,11 @@
 import json
 import os
-import re
 import tempfile
 import time
 import traceback
-from json.decoder import JSONDecodeError
 from multiprocessing import Process
 
 import dateutil.parser
-import requests
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from lxml import etree
@@ -26,6 +23,7 @@ class Flattener:
 
     def __init__(self, sub_list_elements=config_explode_elements):
         self.sub_list_elements = sub_list_elements
+
 
     def process(self, input_filename):
         # Check right type of XML file, get attributes from root
@@ -151,8 +149,10 @@ class Flattener:
         name = name.replace(":", "_")
         return prefix+"_"+name if prefix else name
 
+
 class FlattenerException(Exception):
     pass
+
 
 def process_hash_list(document_datasets):
 
@@ -205,7 +205,7 @@ def process_hash_list(document_datasets):
 
             os.remove(tempfile_name)
 
-        except (AzureExceptions.ResourceNotFoundError) as e:
+        except (AzureExceptions.ResourceNotFoundError):
             logger.warning('Blob not found for hash ' + file_hash +
                            ' - updating as Not Downloaded for the refresher to pick up.')
             db.updateFileAsNotDownloaded(conn, doc_id)

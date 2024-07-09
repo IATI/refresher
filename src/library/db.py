@@ -37,6 +37,7 @@ def getDirectConnection(retry_counter=0):
             str(e).strip(), retry_counter))
         raise e
 
+
 def get_current_db_version(conn):
     sql = 'SELECT number, migration FROM version LIMIT 1'
 
@@ -301,19 +302,6 @@ def getInvalidActivitiesDocsToClean(conn):
         return curs.fetchall()
 
 
-def updateCleanError(conn, id, message):
-    sql = "UPDATE document SET clean_error=%(message)s WHERE id=%(id)s"
-
-    data = {
-        "id": id,
-        "message": message
-    }
-
-    with conn.cursor() as curs:
-        curs.execute(sql, data)
-    conn.commit()
-
-
 def getUnflattenedDatasets(conn):
     sql = """
     SELECT hash, downloaded, doc.id, flatten_api_error
@@ -343,7 +331,7 @@ def getFlattenedActivitiesForDoc(conn, id):
 
     try:
         return results[0]
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -626,8 +614,6 @@ def completeFlatten(conn, doc_id, flattened_activities):
 
 
 def completeClean(conn, doc_id):
-    cur = conn.cursor()
-
     sql = """
         UPDATE document
         SET clean_end = %(now)s, clean_error = null

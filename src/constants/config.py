@@ -117,4 +117,3 @@ config = dict(
         SOLR_500_SLEEP=os.getenv('SOLR_500_SLEEP')
     )
 )
-

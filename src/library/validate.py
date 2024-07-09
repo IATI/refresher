@@ -33,12 +33,12 @@ def process_hash_list(document_datasets):
             file_schema_valid = file_data[6]
             publisher_black_flag = file_data[7] is not None
 
-            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
+            if not file_schema_valid and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
                 continue
 
-            if file_schema_valid == False and publisher_black_flag == True:
+            if not file_schema_valid and publisher_black_flag:
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}")
                 continue
@@ -89,7 +89,7 @@ def process_hash_list(document_datasets):
                             f"Schema Validator reports HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}")
                 try:
                     body = schema_response.json()
-                    if body['valid'] == True or body['valid'] == False:
+                    if body['valid'] or not body['valid']:
                         db.updateDocumentSchemaValidationStatus(
                             conn, file_id, body['valid'])
                         file_schema_valid = body['valid']
@@ -100,12 +100,12 @@ def process_hash_list(document_datasets):
                         f"Unexpected response body from Schema validator for hash: {file_hash} and id: {file_id}")
                     continue
 
-            if file_schema_valid == False and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
+            if not file_schema_valid and downloaded > (now - timedelta(hours=config['VALIDATION']['SAFETY_CHECK_PERIOD'])):
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}")
                 continue
 
-            if file_schema_valid == False and publisher_black_flag == True:
+            if not file_schema_valid and publisher_black_flag:
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}")
                 continue
@@ -118,7 +118,7 @@ def process_hash_list(document_datasets):
             full_url = config['VALIDATION']['FULL_VALIDATION_URL']
 
             # only need meta=true for invalid files to "clean" them later
-            if file_schema_valid == False:
+            if not file_schema_valid:
                 full_url += '?meta=true'
             full_response = requests.post(
                 full_url, data=payload.encode('utf-8'), headers=full_headers,
@@ -156,7 +156,7 @@ def process_hash_list(document_datasets):
             db.updateValidationState(
                 conn, file_id, file_hash, file_url, publisher, state, json.dumps(report), publisher_name)
 
-        except (AzureExceptions.ResourceNotFoundError) as e:
+        except AzureExceptions.ResourceNotFoundError:
             logger.warning(
                 f"Blob not found for hash: {file_hash} and id: {file_id} updating as Not Downloaded for the refresher to pick up.")
             db.updateFileAsNotDownloaded(conn, file_id)
@@ -229,12 +229,12 @@ def safety_check():
                 db.removeBlackFlag(conn, message.content)
                 logger.info(f"Dequeueing message: {message.content}")
                 queue_client.delete_message(message.id, message.pop_receipt)
-            except Exception as e:
+            except Exception:
                 logger.warning(
                     f"Could not process message with id: {message.id} for publisher id: {message.content}")
                 continue
-    except Exception as e:
-        logger.warning(f"Failed to process removal of publisher black flags")
+    except Exception:
+        logger.warning("Failed to process removal of publisher black flags")
 
     db.blackFlagDubiousPublishers(
         conn, config['VALIDATION']['SAFETY_CHECK_THRESHOLD'], config['VALIDATION']['SAFETY_CHECK_PERIOD'])
@@ -259,7 +259,7 @@ def safety_check():
         try:
             response = requests.post(
                 config['NOTIFICATION_URL'], data=json.dumps(notification), headers=headers)
-        except Exception as e:
+        except Exception:
             logger.warning(
                 f"Could not notify Black Flag for publisher id: {org_id}")
             continue
