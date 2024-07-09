@@ -3,3 +3,5 @@
 pip-tools
 pytest
 isort
+flake8
+Flake8-pyproject

@@ -33,6 +33,12 @@ cryptography==42.0.8
     #   azure-storage-queue
 exceptiongroup==1.2.1
     # via pytest
+flake8==7.0.0
+    # via
+    #   -r requirements_dev.in
+    #   flake8-pyproject
+flake8-pyproject==1.2.3
+    # via -r requirements_dev.in
 idna==3.7
     # via requests
 iniconfig==2.0.0
@@ -43,6 +49,8 @@ isort==5.13.2
     # via -r requirements_dev.in
 lxml==5.2.2
     # via -r requirements.in
+mccabe==0.7.0
+    # via flake8
 msrest==0.6.21
     # via
     #   azure-storage-blob
@@ -59,8 +67,12 @@ pluggy==1.5.0
     # via pytest
 psycopg2==2.9.9
     # via -r requirements.in
+pycodestyle==2.11.1
+    # via flake8
 pycparser==2.22
     # via cffi
+pyflakes==3.2.0
+    # via flake8
 pyproject-hooks==1.1.0
     # via
     #   build
@@ -88,6 +100,7 @@ six==1.16.0
 tomli==2.0.1
     # via
     #   build
+    #   flake8-pyproject
     #   pip-tools
     #   pytest
 urllib3==2.2.2

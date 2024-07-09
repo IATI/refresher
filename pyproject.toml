@@ -10,3 +10,10 @@ extend_skip = ['__pycache__', '.mypy_cache', '.ve', '.venv']
 skip_gitignore = true
 src_paths = ['src']
 line_length = 120
+
+
+[tool.flake8]
+max-line-length = 120
+extend_ignore = ['E203', 'W503', 'E275']
+exclude = ['__pycache__', '.mypy_cache', '.ve', '.venv']
+max_complexity = 7
