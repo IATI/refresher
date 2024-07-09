@@ -1,0 +1,12 @@
+[project]
+name = "unified-pipeline-refresher"
+requires-python = ">= 3.10"
+readme = "README.md"
+
+
+[tool.isort]
+py_version=310
+extend_skip = ['__pycache__', '.mypy_cache', '.ve', '.venv']
+skip_gitignore = true
+src_paths = ['src']
+line_length = 120
