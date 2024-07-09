@@ -1,12 +1,14 @@
 import argparse
-import library.refresher as refresher
-import library.validate as validate
+
 import library.clean as clean
+import library.db as db
 import library.flatten as flatten
 import library.lakify as lakify
+import library.refresher as refresher
 import library.solrize as solrize
-import library.db as db
+import library.validate as validate
 from library.logger import getLogger
+
 logger = getLogger('handler')
 
 

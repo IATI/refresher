@@ -1,9 +1,10 @@
-from library.lakify import recursive_json_nest
-import os.path
-from lxml import etree
 import json
-import pytest
+import os.path
 
+import pytest
+from lxml import etree
+
+from library.lakify import recursive_json_nest
 
 RECURSIVE_JSON_NEST_FILES = [
     ('basic'),

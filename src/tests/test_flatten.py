@@ -1,9 +1,10 @@
-from library.flatten import Flattener, FlattenerException
-import os.path
-from lxml import etree
 import json
-import pytest
+import os.path
 
+import pytest
+from lxml import etree
+
+from library.flatten import Flattener, FlattenerException
 
 FLATTENER_FILES = [
     ('historic_activity_checks'),

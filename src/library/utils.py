@@ -1,8 +1,10 @@
-import chardet
-from library.logger import getLogger
+import datetime
 import hashlib
 import re
-import datetime
+
+import chardet
+
+from library.logger import getLogger
 
 logger = getLogger("utils")
 

@@ -1,14 +1,16 @@
 import time
 import traceback
-from multiprocessing import Process
-from library.logger import getLogger
-from constants.config import config
-from azure.storage.blob import BlobServiceClient
-from azure.core import exceptions as AzureExceptions
-from lxml import etree
 from io import BytesIO
+from multiprocessing import Process
+
+from azure.core import exceptions as AzureExceptions
+from azure.storage.blob import BlobServiceClient
+from lxml import etree
+
 import library.db as db
 import library.utils as utils
+from constants.config import config
+from library.logger import getLogger
 
 logger = getLogger("clean")
 

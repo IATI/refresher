@@ -1,5 +1,7 @@
-from library.solrize import validateLatLon, get_explode_element_data
 import pytest
+
+from library.solrize import get_explode_element_data, validateLatLon
+
 
 def test_validateLatLon_pass_1():
     assert "1.0,1.0" == validateLatLon("1 1")

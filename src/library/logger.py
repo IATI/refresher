@@ -1,4 +1,6 @@
-import logging, sys
+import logging
+import sys
+
 from constants.config import config
 
 loggers = {}

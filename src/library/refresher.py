@@ -1,20 +1,23 @@
-import traceback
-from constants.version import __version__
-from psycopg2 import Error as DbError
-from library.solrize import addCore
-import chardet
-from datetime import datetime
-from constants.config import config
-from library.logger import getLogger
-import library.db as db
-import time
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
-import requests
-from azure.storage.blob import BlobServiceClient
-from azure.core import exceptions as AzureExceptions
 import json
 import multiprocessing
+import time
+import traceback
+from datetime import datetime
+
+import chardet
+import requests
+from azure.core import exceptions as AzureExceptions
+from azure.storage.blob import BlobServiceClient
+from psycopg2 import Error as DbError
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+import library.db as db
+from constants.config import config
+from constants.version import __version__
+from library.logger import getLogger
+from library.solrize import addCore
+
 multiprocessing.set_start_method('spawn', True)
 
 

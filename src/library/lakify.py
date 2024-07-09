@@ -1,14 +1,16 @@
-import time
 import json
-from multiprocessing import Process
-from library.logger import getLogger
-from constants.config import config
-from azure.storage.blob import BlobServiceClient
-from azure.core.exceptions import ResourceNotFoundError
-import library.db as db
-from lxml import etree
+import time
 from io import BytesIO
+from multiprocessing import Process
+
+from azure.core.exceptions import ResourceNotFoundError
+from azure.storage.blob import BlobServiceClient
+from lxml import etree
+
+import library.db as db
 import library.utils as utils
+from constants.config import config
+from library.logger import getLogger
 
 logger = getLogger("lakify")
 

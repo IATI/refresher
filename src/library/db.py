@@ -1,11 +1,13 @@
 import importlib
 import pathlib
-from constants.version import __version__
-from constants.config import config
-import psycopg2
-from library.logger import getLogger
-from datetime import datetime
 import time
+from datetime import datetime
+
+import psycopg2
+
+from constants.config import config
+from constants.version import __version__
+from library.logger import getLogger
 
 logger = getLogger()
 

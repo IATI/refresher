@@ -1,15 +1,17 @@
-import time
-import traceback
 import copy
 import json
-from multiprocessing import Process
-from library.logger import getLogger
-from constants.config import config
-from azure.storage.blob import BlobServiceClient
-import library.db as db
-import pysolr
-import library.utils as utils
 import re
+import time
+import traceback
+from multiprocessing import Process
+
+import pysolr
+from azure.storage.blob import BlobServiceClient
+
+import library.db as db
+import library.utils as utils
+from constants.config import config
+from library.logger import getLogger
 
 logger = getLogger("solrize")
 solr_cores = {}

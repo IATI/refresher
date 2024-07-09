@@ -1,16 +1,18 @@
+import json
 import time
 import traceback
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from multiprocessing import Process
-from library.logger import getLogger
+
 import requests
-from constants.config import config
+from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from azure.storage.queue import QueueServiceClient
-from azure.core import exceptions as AzureExceptions
+
 import library.db as db
-import json
 import library.utils as utils
+from constants.config import config
+from library.logger import getLogger
 
 logger = getLogger("validate")
 
