@@ -51,7 +51,8 @@ def main(args):
                 clean.service_loop()
             else:
                 print(
-                    "Type is required - either refresh, reload, safety_check, validate, clean, flatten, lakify, or solrize - or their related service loop."
+                    "Type is required - either refresh, reload, safety_check, validate, "
+                    "clean, flatten, lakify, or solrize - or their related service loop."
                 )
     except Exception as e:
         logger.error("{} Failed. {}".format(args.type, str(e).strip()))

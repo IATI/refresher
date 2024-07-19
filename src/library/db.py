@@ -148,7 +148,10 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"
+        sql = (
+            "SELECT id, hash, url FROM document WHERE downloaded is null "
+            "AND (download_error != 3 OR download_error is null)"
+        )
     else:
         sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
 
@@ -170,7 +173,8 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
+    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher,
+           publisher.name, document.file_schema_valid, publisher.black_flag
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
@@ -343,7 +347,7 @@ def getUnsolrizedDatasets(conn):
     WHERE downloaded is not null
     AND doc.flatten_end is not null
     AND doc.lakify_end is not null
-	AND doc.hash != ''
+    AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
     AND (doc.solrize_end is null OR doc.solrize_reindex is True)
@@ -769,8 +773,10 @@ def updateFileAsDownloadError(conn, id, status):
 
 def insertOrUpdatePublisher(conn, organization, last_seen):
     sql = """
-        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)
-        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
+        INSERT INTO publisher (org_id, description, title, name, image_url, state,
+            country_code, created, last_seen, package_count, iati_id)
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s,
+            %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
         ON CONFLICT (org_id) DO
             UPDATE SET title = %(title)s,
                 state = %(state)s,
@@ -955,8 +961,10 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
 
     sql = """
         WITH new_id AS (
-            INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
-            VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s)
+            INSERT INTO validation (document_id, document_hash, document_url, created,
+                valid, report, publisher, publisher_name)
+            VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s,
+                %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s)
             RETURNING id
         )
         UPDATE document

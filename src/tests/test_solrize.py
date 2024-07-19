@@ -18,7 +18,8 @@ GET_EXPLODE_ELEMENT_DATA = [
         [
             {
                 "transaction_value": 100,
-                # Sector Code value is only on some transactions. In the output, we can check it has not been copied to all transactions.
+                # Sector Code value is only on some transactions. In the output,
+                # we can check it has not been copied to all transactions.
                 "transaction_sector_code": 1,
             },
             {
@@ -26,10 +27,13 @@ GET_EXPLODE_ELEMENT_DATA = [
             },
         ],
         {
-            # These fields are a collection of all the transaction data flattened to an activity. These should be replaced in the output items.
+            # These fields are a collection of all the transaction data
+            # flattened to an activity. These should be replaced in the output
+            # items.
             "transaction_sector_code": 1,
             "transaction_value": [100, 200],
-            # These fields of the activity are nothing to do with transactions and should be copied to all output items.
+            # These fields of the activity are nothing to do with transactions
+            # and should be copied to all output items.
             "iati_identifier": "ID",
         },
         [

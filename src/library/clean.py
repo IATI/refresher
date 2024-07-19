@@ -46,7 +46,10 @@ def copy_valid_documents(documents):
                 clean_blob.start_copy_from_url(source_blob_client.url)
                 clean_blob.set_blob_tags({"document_id": id})
             except AzureExceptions.ResourceNotFoundError:
-                err_msg = f"Blob not found for hash: {hash} and id: {id} updating as Not Downloaded for the refresher to pick up."
+                err_msg = (
+                    f"Blob not found for hash: {hash} and id: {id} updating as "
+                    "Not Downloaded for the refresher to pick up."
+                )
                 logger.warning(err_msg)
                 db.updateCleanError(conn, id, err_msg)
                 db.updateFileAsNotDownloaded(conn, id)
@@ -86,7 +89,8 @@ def copy_valid():
         processes = []
 
         logger.info(
-            f"Copying {len(documents)} valid IATI files in a maximum of {config['CLEAN']['PARALLEL_PROCESSES']} parallel processes."
+            f"Copying {len(documents)} valid IATI files in a maximum of "
+            f"{config['CLEAN']['PARALLEL_PROCESSES']} parallel processes."
         )
 
         for chunk in chunked_doc_lists:
@@ -119,7 +123,8 @@ def clean_invalid_documents(documents):
             valid_dict = {act["index"]: act["valid"] for act in index if act["valid"] is True}
 
             logger.info(
-                f"Copying {len(valid_dict)} valid of {len(index)} total activities xml to clean container for invalid activity document id: {id} and hash: {hash}"
+                f"Copying {len(valid_dict)} valid of {len(index)} total activities xml to "
+                f"clean container for invalid activity document id: {id} and hash: {hash}"
             )
 
             db.startClean(conn, id)
@@ -140,7 +145,8 @@ def clean_invalid_documents(documents):
                 file_encoding = "utf-8"
             except AzureExceptions.ResourceNotFoundError:
                 logger.warning(
-                    f"Blob not found for hash: {hash} and id: {id} - updating as Not Downloaded for the refresher to pick up."
+                    f"Blob not found for hash: {hash} and id: {id} - updating as "
+                    "Not Downloaded for the refresher to pick up."
                 )
                 db.updateFileAsNotDownloaded(conn, id)
             except etree.XMLSyntaxError:
@@ -219,7 +225,8 @@ def clean_invalid():
         processes = []
 
         logger.info(
-            f"Cleaning and storing {len(documents)} IATI files in a maximum of {config['CLEAN']['PARALLEL_PROCESSES']} parallel processes."
+            f"Cleaning and storing {len(documents)} IATI files in a maximum of "
+            f"{config['CLEAN']['PARALLEL_PROCESSES']} parallel processes."
         )
 
         for chunk in chunked_doc_lists:

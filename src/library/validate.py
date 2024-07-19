@@ -37,13 +37,16 @@ def process_hash_list(document_datasets):
                 now - timedelta(hours=config["VALIDATION"]["SAFETY_CHECK_PERIOD"])
             ):
                 logger.info(
-                    f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}"
+                    "Skipping Schema Invalid file for Full Validation until "
+                    f"{config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: "
+                    f"{downloaded.isoformat()} for hash: {file_hash} and id: {file_id}"
                 )
                 continue
 
             if not file_schema_valid and publisher_black_flag:
                 logger.info(
-                    f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}"
+                    "Skipping Schema Invalid file for Full Validation since publisher: "
+                    f"{publisher} is black flagged for hash: {file_hash} and id: {file_id}"
                 )
                 continue
 
@@ -82,19 +85,22 @@ def process_hash_list(document_datasets):
                         # log in db and 'continue' to break out of for loop for this file
                         db.updateValidationError(conn, file_id, schema_response.status_code)
                         logger.warning(
-                            f"Schema Validator reports Client Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}"
+                            f"Schema Validator reports Client Error HTTP {schema_response.status_code} "
+                            f"for hash: {file_hash} and id: {file_id}"
                         )
                         continue
                     elif schema_response.status_code >= 500:  # server errors
                         # log in db and 'continue' to break out of for loop for this file
                         db.updateValidationError(conn, file_id, schema_response.status_code)
                         logger.warning(
-                            f"Schema Validator reports Server Error HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}"
+                            f"Schema Validator reports Server Error HTTP {schema_response.status_code} "
+                            f"for hash: {file_hash} and id: {file_id}"
                         )
                         continue
                     else:
                         logger.error(
-                            f"Schema Validator reports HTTP {schema_response.status_code} for hash: {file_hash} and id: {file_id}"
+                            f"Schema Validator reports HTTP {schema_response.status_code} "
+                            f"for hash: {file_hash} and id: {file_id}"
                         )
                 try:
                     body = schema_response.json()
@@ -113,13 +119,16 @@ def process_hash_list(document_datasets):
                 now - timedelta(hours=config["VALIDATION"]["SAFETY_CHECK_PERIOD"])
             ):
                 logger.info(
-                    f"Skipping Schema Invalid file for Full Validation until {config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}"
+                    "Skipping Schema Invalid file for Full Validation until "
+                    f"{config['VALIDATION']['SAFETY_CHECK_PERIOD']}hrs after "
+                    f"download: {downloaded.isoformat()} for hash: {file_hash} and id: {file_id}"
                 )
                 continue
 
             if not file_schema_valid and publisher_black_flag:
                 logger.info(
-                    f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} is black flagged for hash: {file_hash} and id: {file_id}"
+                    f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} "
+                    f"is flagged for hash: {file_hash} and id: {file_id}"
                 )
                 continue
 
@@ -155,19 +164,22 @@ def process_hash_list(document_datasets):
                     # log in db and 'continue' to break out of for loop for this file
                     db.updateValidationError(conn, file_id, full_response.status_code)
                     logger.warning(
-                        f"Full Validator reports Client Error HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}"
+                        f"Full Validator reports Client Error HTTP {full_response.status_code} "
+                        "for hash: {file_hash} and id: {file_id}"
                     )
                     continue
                 elif full_response.status_code >= 500:  # server errors
                     # log in db and 'continue' to break out of for loop for this file
                     db.updateValidationError(conn, file_id, full_response.status_code)
                     logger.warning(
-                        f"Full Validator reports Server Error HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}"
+                        f"Full Validator reports Server Error HTTP {full_response.status_code} "
+                        "for hash: {file_hash} and id: {file_id}"
                     )
                     continue
                 else:
                     logger.error(
-                        f"Full Validator reports HTTP {full_response.status_code} for hash: {file_hash} and id: {file_id}"
+                        f"Full Validator reports HTTP {full_response.status_code} "
+                        "for hash: {file_hash} and id: {file_id}"
                     )
 
             report = full_response.json()
@@ -180,7 +192,8 @@ def process_hash_list(document_datasets):
 
         except AzureExceptions.ResourceNotFoundError:
             logger.warning(
-                f"Blob not found for hash: {file_hash} and id: {file_id} updating as Not Downloaded for the refresher to pick up."
+                f"Blob not found for hash: {file_hash} and id: {file_id} updating "
+                "as Not Downloaded for the refresher to pick up."
             )
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
@@ -214,7 +227,8 @@ def validate():
         processes = []
 
         logger.info(
-            f"Processing {len(file_hashes)} IATI files in a maximum of {config['VALIDATION']['PARALLEL_PROCESSES']} parallel processes for validation"
+            f"Processing {len(file_hashes)} IATI files in a maximum of "
+            "{config['VALIDATION']['PARALLEL_PROCESSES']} parallel processes for validation"
         )
 
         for chunk in chunked_hash_lists:
@@ -234,7 +248,7 @@ def validate():
 def safety_check():
     conn = db.getDirectConnection()
 
-    logger.info(f"Starting validation safety check / publisher black flag check")
+    logger.info("Starting validation safety check / publisher black flag check")
 
     try:
         queue_service_client = QueueServiceClient.from_connection_string(config["STORAGE_CONNECTION_STR"])
@@ -267,7 +281,10 @@ def safety_check():
             "type": "NEW_BLACK_FLAG",
             "data": {
                 "publisherId": org_id,
-                "reason": f"Over {config['VALIDATION']['SAFETY_CHECK_THRESHOLD']} critical documents in the last {config['VALIDATION']['SAFETY_CHECK_PERIOD']}) hours.",
+                "reason": (
+                    f"Over {config['VALIDATION']['SAFETY_CHECK_THRESHOLD']} critical documents "
+                    "in the last {config['VALIDATION']['SAFETY_CHECK_PERIOD']}) hours."
+                ),
             },
         }
         headers = {
@@ -283,7 +300,8 @@ def safety_check():
 
         if response.status_code != 200:
             logger.warning(
-                f"Could not notify Black Flag for publisher id: {org_id}, Comms Hub Responded HTTP {response.status_code}"
+                f"Could not notify Black Flag for publisher id: {org_id}, "
+                "Comms Hub Responded HTTP {response.status_code}"
             )
             continue
 

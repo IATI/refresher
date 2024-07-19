@@ -51,9 +51,9 @@ def get_hash_for_identifier(id):
     return identifier_hash.hexdigest()
 
 
-def chunk_list(l, n):
+def chunk_list(a_list, n):
     for i in range(0, n):
-        yield l[i::n]
+        yield a_list[i::n]
 
 
 class TimeZoneFixedOffset(datetime.tzinfo):

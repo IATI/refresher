@@ -134,9 +134,8 @@ def process_hash_list(document_datasets):
             if hasattr(e, "reason"):
                 err_message = e.reason
             logger.warning(
-                "Could not download hash {} and doc id {}. ResourceNotFoundError: {} In storage container: {}. Sending back to clean.".format(
-                    file_hash, doc_id, err_message, config["CLEAN_CONTAINER_NAME"]
-                )
+                "Could not download hash {} and doc id {}. ResourceNotFoundError: {} In storage container: {}. "
+                "Sending back to clean.".format(file_hash, doc_id, err_message, config["CLEAN_CONTAINER_NAME"])
             )
             db.sendLakifyErrorToClean(conn, doc_id)
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
@@ -144,9 +143,8 @@ def process_hash_list(document_datasets):
             if hasattr(e, "msg"):
                 err_message = e.msg
             logger.warning(
-                "Failed to extract activities to lake with hash {} and doc id {}. Error: {}. Sending back to clean.".format(
-                    file_hash, doc_id, err_message
-                )
+                "Failed to extract activities to lake with hash {} and doc id {}. Error: {}. "
+                "Sending back to clean.".format(file_hash, doc_id, err_message)
             )
             db.sendLakifyErrorToClean(conn, doc_id)
         except Exception as e:

@@ -2,7 +2,6 @@ import json
 import os.path
 
 import pytest
-from lxml import etree
 
 from library.flatten import Flattener, FlattenerException
 

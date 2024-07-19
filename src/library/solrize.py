@@ -1,4 +1,3 @@
-import copy
 import json
 import re
 import time
@@ -75,11 +74,6 @@ def sleep_solr(file_hash, file_id, err_type=""):
     )
 
 
-def chunk_list(l, n):
-    for i in range(0, n):
-        yield l[i::n]
-
-
 def addCore(core_name):
     return pysolr.Solr(
         config["SOLRIZE"]["SOLR_API_URL"] + core_name + "_solrize/",
@@ -96,7 +90,7 @@ def validateLatLon(point_pos):
         lon = float(lon_str)
         if abs(lat) <= 90 and abs(lon) <= 180:
             return "{},{}".format(lat, lon)
-    except (AttributeError, ValueError) as e:
+    except (AttributeError, ValueError):
         pass
     return None
 
@@ -345,7 +339,9 @@ def get_explode_element_data(element_name, element_data, activity_data):
     for idx, e_d in enumerate(element_data):
         this_data = starting_data.copy()
         this_data.update(e_d)
-        # The id should include the idx so that 2 items that are exactly the same don't become 1 in the solr results https://github.com/IATI/refresher/issues/266
+        # The id should include the idx so that 2 items that are exactly the
+        # same don't become 1 in the solr results
+        # https://github.com/IATI/refresher/issues/266
         this_data["id"] = utils.get_hash_for_identifier(json.dumps(this_data) + str(idx))
         out.append(this_data)
 
@@ -430,7 +426,7 @@ def main():
         logger.info("Solrizing " + str(len(file_hashes)) + " IATI docs in a a single process")
         process_hash_list(file_hashes)
     else:
-        chunked_hash_lists = list(chunk_list(file_hashes, config["SOLRIZE"]["PARALLEL_PROCESSES"]))
+        chunked_hash_lists = list(utils.chunk_list(file_hashes, config["SOLRIZE"]["PARALLEL_PROCESSES"]))
 
         processes = []
 

@@ -101,7 +101,8 @@ def fetch_datasets():
 
             if numbers_not_changing_count > 4:
                 logger.warning(
-                    "Numbers appear to have been the same for five iterations, indicating a problem - raising exception to end run."
+                    "Numbers appear to have been the same for five iterations, "
+                    "indicating a problem - raising an exception to end run."
                 )
                 raise Exception()
 
@@ -143,7 +144,7 @@ def get_paginated_response(url, offset, limit, retval=[]):
             return get_paginated_response(url, offset, limit, retval)
         else:
             return retval
-    except Exception as e:
+    except Exception:
         logger.error("IATI Registry returned other than 200 when getting the list of orgs")
 
 
@@ -165,7 +166,8 @@ def clean_containers_by_id(
 def clean_datasets(stale_datasets, changed_datasets):
     blob_service_client = BlobServiceClient.from_connection_string(config["STORAGE_CONNECTION_STR"])
 
-    # clean up activity lake for stale_datasets, doesn't need to be done for changed_datasets as iati-identifiers hash probably didn't change
+    # clean up activity lake for stale_datasets, doesn't need to be done for
+    # changed_datasets as iati-identifiers hash probably didn't change
     if len(stale_datasets) > 0:
         try:
             logger.info("Removing " + str(len(stale_datasets)) + " stale documents from lake")
@@ -190,7 +192,7 @@ def clean_datasets(stale_datasets, changed_datasets):
                         lake_container_client.delete_blobs(*list_chunk)
                 else:
                     lake_container_client.delete_blobs(*name_list)
-        except Exception as e:
+        except Exception:
             logger.warning("Failed to clean up lake for id: " + file_id + " and hash: " + file_hash)
 
     # clean up source xml and solr for both stale and changed datasets
@@ -233,16 +235,18 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + ".xml")
-                except AzureExceptions.ResourceNotFoundError as e:
+                except AzureExceptions.ResourceNotFoundError:
                     logger.error(
-                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID."
+                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not exist: "
+                        f"{file_hash}.xml and id: {file_id}. Attempting to delete by ID."
                     )
                     clean_containers_by_id(blob_service_client, file_id, containers=[config["SOURCE_CONTAINER_NAME"]])
                 try:
                     clean_container_client.delete_blob(file_hash + ".xml")
-                except AzureExceptions.ResourceNotFoundError as e:
+                except AzureExceptions.ResourceNotFoundError:
                     logger.warning(
-                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID."
+                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: "
+                        f"{file_hash}.xml and id: {file_id}. Attempting to delete by ID."
                     )
                     clean_containers_by_id(blob_service_client, file_id, containers=[config["CLEAN_CONTAINER_NAME"]])
 
@@ -262,27 +266,28 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # Maybe we should clean up the last_solrize_end field here, as they are now gone?
                 # However, we don't have to as if you look at how clean_datasets is called,
                 #   in each case right afterwards the rows are removed from the DB anyway.
-            except Exception as e:
+            except Exception:
                 logger.error(
-                    "Unknown error occurred while attempting to remove stale document ID {} from Source and SOLR".format(
-                        file_id
-                    )
+                    "Unknown error occurred while attempting to remove stale document ID {} "
+                    "from Source and SOLR".format(file_id)
                 )
         for file_id, file_hash in changed_datasets:
             try:
                 # remove from source and clean containers
                 try:
                     source_container_client.delete_blob(file_hash + ".xml")
-                except AzureExceptions.ResourceNotFoundError as e:
+                except AzureExceptions.ResourceNotFoundError:
                     logger.warning(
-                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID."
+                        f"Can not delete blob from {config['SOURCE_CONTAINER_NAME']} as does not "
+                        f"exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID."
                     )
                     clean_containers_by_id(blob_service_client, file_id, containers=[config["SOURCE_CONTAINER_NAME"]])
                 try:
                     clean_container_client.delete_blob(file_hash + ".xml")
-                except AzureExceptions.ResourceNotFoundError as e:
+                except AzureExceptions.ResourceNotFoundError:
                     logger.info(
-                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: {file_hash}.xml and id: {file_id}. Attempting to delete by ID."
+                        f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: "
+                        "{file_hash}.xml and id: {file_id}. Attempting to delete by ID."
                     )
                     clean_containers_by_id(blob_service_client, file_id, containers=[config["CLEAN_CONTAINER_NAME"]])
 
@@ -290,11 +295,10 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # We want old data to stay in the system until new data is ready to be put in Solr.
                 # The Solrize stage will delete the old data from Solr.
 
-            except Exception as e:
+            except Exception:
                 logger.error(
-                    "Unknown error occurred while attempting to remove changed document ID {} from Source and SOLR".format(
-                        file_id
-                    )
+                    "Unknown error occurred while attempting to remove changed "
+                    "document ID {} from Source and SOLR".format(file_id)
                 )
 
 
@@ -371,7 +375,7 @@ def sync_documents():
     try:
         all_datasets = fetch_datasets()
         logger.info("...Registry result got. Updating DB...")
-    except Exception as e:
+    except Exception:
         logger.error("Failed to fetch datasets from Registry")
         conn.close()
         raise
@@ -413,7 +417,7 @@ def sync_documents():
                 + e_message
             )
             conn.rollback()
-        except Exception as e:
+        except Exception:
             logger.error(
                 "Failed to sync document with hash: "
                 + dataset["hash"]
@@ -439,14 +443,14 @@ def refresh():
     try:
         sync_publishers()
         logger.info("Publishers synced.")
-    except Exception as e:
+    except Exception:
         logger.error("Publishers failed to sync.")
 
     logger.info("Syncing documents from the Registry...")
     try:
         sync_documents()
         logger.info("Documents synced.")
-    except Exception as e:
+    except Exception:
         logger.error("Documents failed to sync.")
 
     logger.info("End refresh.")
@@ -549,11 +553,11 @@ def download_chunk(chunk, blob_service_client, datasets):
                     + " and id: "
                     + id
                 )
-        except requests.exceptions.SSLError as e:
+        except requests.exceptions.SSLError:
             logger.debug("SSLError while downloading url: " + url + " and hash: " + hash + " and id: " + id)
             db.updateFileAsDownloadError(conn, id, 1)
             clean_containers_by_id(blob_service_client, id)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             logger.debug("ConnectionError while downloading url: " + url + " and hash: " + hash + " and id: " + id)
             db.updateFileAsDownloadError(conn, id, 0)
             clean_containers_by_id(blob_service_client, id)
