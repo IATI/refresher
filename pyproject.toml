@@ -23,3 +23,8 @@ max_complexity = 7
 line-length = 119
 include='''src/.*/*.py$'''
 
+
+[tool.mypy]
+files=["src/"]
+mypy_path=["src/"]
+ignore_missing_imports = true

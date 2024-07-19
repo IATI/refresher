@@ -53,14 +53,20 @@ isort==5.13.2
     # via -r requirements_dev.in
 lxml==5.2.2
     # via -r requirements.in
+lxml-stubs==0.5.1
+    # via -r requirements_dev.in
 mccabe==0.7.0
     # via flake8
 msrest==0.6.21
     # via
     #   azure-storage-blob
     #   azure-storage-queue
+mypy==1.10.1
+    # via -r requirements_dev.in
 mypy-extensions==1.0.0
-    # via black
+    # via
+    #   black
+    #   mypy
 oauthlib==3.2.2
     # via requests-oauthlib
 packaging==24.1
@@ -113,12 +119,23 @@ tomli==2.0.1
     #   black
     #   build
     #   flake8-pyproject
+    #   mypy
     #   pip-tools
     #   pytest
+types-psycopg2==2.9.21.20240417
+    # via -r requirements_dev.in
+types-python-dateutil==2.9.0.20240316
+    # via -r requirements_dev.in
+types-requests==2.32.0.20240712
+    # via -r requirements_dev.in
 typing-extensions==4.12.2
-    # via black
+    # via
+    #   black
+    #   mypy
 urllib3==2.2.2
-    # via requests
+    # via
+    #   requests
+    #   types-requests
 wheel==0.43.0
     # via pip-tools
 

@@ -6,3 +6,8 @@ isort
 flake8
 Flake8-pyproject
 black
+mypy
+types-requests
+types-psycopg2
+types-python-dateutil
+lxml-stubs
