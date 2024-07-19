@@ -9,7 +9,7 @@ import library.solrize as solrize
 import library.validate as validate
 from library.logger import getLogger
 
-logger = getLogger('handler')
+logger = getLogger("handler")
 
 
 def main(args):
@@ -24,9 +24,7 @@ def main(args):
             db.checkVersionMatch()
 
             if args.type == "reload":
-                refresher.reload(
-                    args.errors
-                )
+                refresher.reload(args.errors)
             elif args.type == "safety_check":
                 validate.safety_check()
             elif args.type == "validate":
@@ -52,16 +50,18 @@ def main(args):
             elif args.type == "cleanloop":
                 clean.service_loop()
             else:
-                print("Type is required - either refresh, reload, safety_check, validate, clean, flatten, lakify, or solrize - or their related service loop.")
+                print(
+                    "Type is required - either refresh, reload, safety_check, validate, clean, flatten, lakify, or solrize - or their related service loop."
+                )
     except Exception as e:
-        logger.error('{} Failed. {}'.format(args.type, str(e).strip()))
+        logger.error("{} Failed. {}".format(args.type, str(e).strip()))
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Refresh from IATI Registry')
-    parser.add_argument('-t', '--type', dest='type',
-                        default="refresh", help="Trigger 'refresh' or 'validate'")
-    parser.add_argument('-e', '--errors', dest='errors', action='store_true',
-                        default=False, help="Attempt to download previous errors")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Refresh from IATI Registry")
+    parser.add_argument("-t", "--type", dest="type", default="refresh", help="Trigger 'refresh' or 'validate'")
+    parser.add_argument(
+        "-e", "--errors", dest="errors", action="store_true", default=False, help="Attempt to download previous errors"
+    )
     args = parser.parse_args()
     main(args)
