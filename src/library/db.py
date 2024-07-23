@@ -1,42 +1,53 @@
 import importlib
 import pathlib
-from constants.version import __version__
-from constants.config import config
-import psycopg2
-from library.logger import getLogger
-from datetime import datetime
 import time
+from datetime import datetime
+
+import psycopg2
+
+from constants.config import config
+from constants.version import __version__
+from library.logger import getLogger
 
 logger = getLogger()
 
 
 def getDirectConnection(retry_counter=0):
     try:
-        connection = psycopg2.connect(dbname=config['DB_NAME'], user=config['DB_USER'], password=config['DB_PASS'],
-                                      host=config['DB_HOST'], port=config['DB_PORT'], sslmode=config['DB_SSL_MODE'],  connect_timeout=config['DB_CONN_TIMEOUT'])
+        connection = psycopg2.connect(
+            dbname=config["DB_NAME"],
+            user=config["DB_USER"],
+            password=config["DB_PASS"],
+            host=config["DB_HOST"],
+            port=config["DB_PORT"],
+            sslmode=config["DB_SSL_MODE"],
+            connect_timeout=config["DB_CONN_TIMEOUT"],
+        )
         retry_counter = 0
         return connection
     except psycopg2.OperationalError as e:
-        if retry_counter >= config['DB_CONN_RETRY_LIMIT']:
+        if retry_counter >= config["DB_CONN_RETRY_LIMIT"]:
             raise e
         else:
             retry_counter += 1
-            logger.warning("Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
-                str(e).strip(), retry_counter))
-            sleep_time = config['DB_CONN_SLEEP_START'] * \
-                retry_counter * retry_counter
-            if sleep_time > config['DB_CONN_SLEEP_MAX']:
-                sleep_time = config['DB_CONN_SLEEP_MAX']
+            logger.warning(
+                "Error connecting: psycopg2.OperationalError: {}. reconnecting {}".format(
+                    str(e).strip(), retry_counter
+                )
+            )
+            sleep_time = config["DB_CONN_SLEEP_START"] * retry_counter * retry_counter
+            if sleep_time > config["DB_CONN_SLEEP_MAX"]:
+                sleep_time = config["DB_CONN_SLEEP_MAX"]
             logger.info("Sleeping {}s".format(sleep_time))
             time.sleep(sleep_time)
             return getDirectConnection(retry_counter)
     except (Exception, psycopg2.Error) as e:
-        logger.error("Error connecting: {}. reconnecting {}".format(
-            str(e).strip(), retry_counter))
+        logger.error("Error connecting: {}. reconnecting {}".format(str(e).strip(), retry_counter))
         raise e
 
+
 def get_current_db_version(conn):
-    sql = 'SELECT number, migration FROM version LIMIT 1'
+    sql = "SELECT number, migration FROM version LIMIT 1"
 
     cursor = conn.cursor()
 
@@ -50,7 +61,7 @@ def get_current_db_version(conn):
     if len(result) != 1:
         return None
     else:
-        return {'number': result[0][0], 'migration': result[0][1]}
+        return {"number": result[0][0], "migration": result[0][1]}
 
 
 def checkVersionMatch():
@@ -58,8 +69,8 @@ def checkVersionMatch():
     conn.set_session(autocommit=True)
     current_db_version = get_current_db_version(conn)
 
-    while current_db_version['migration'] != __version__['migration']:
-        logger.info('DB version incorrect. Sleeping...')
+    while current_db_version["migration"] != __version__["migration"]:
+        logger.info("DB version incorrect. Sleeping...")
         time.sleep(60)
         current_db_version = get_current_db_version(conn)
 
@@ -78,36 +89,32 @@ def migrateIfRequired():
     cursor = conn.cursor()
 
     if current_db_version is None:
-        current_db_version = {
-            'number': '0.0.0',
-            'migration': -1
-        }
+        current_db_version = {"number": "0.0.0", "migration": -1}
 
-    if current_db_version['migration'] == __version__['migration']:
-        logger.info('DB at correct version')
+    if current_db_version["migration"] == __version__["migration"]:
+        logger.info("DB at correct version")
         return
 
-    upgrade = __version__['migration'] > current_db_version['migration']
+    upgrade = __version__["migration"] > current_db_version["migration"]
 
     if upgrade:
-        logger.info('DB upgrading to version ' + str(__version__['migration']))
+        logger.info("DB upgrading to version " + str(__version__["migration"]))
         step = 1
     else:
-        logger.info('DB downgrading to version ' + str(__version__['migration']))
+        logger.info("DB downgrading to version " + str(__version__["migration"]))
         step = -1
 
     try:
-        for i in range(current_db_version['migration'] + step, __version__['migration'] + step, step):
+        for i in range(current_db_version["migration"] + step, __version__["migration"] + step, step):
             if upgrade:
                 mig_num = i
             else:
                 mig_num = i + 1
 
-            migration = 'mig_' + str(mig_num)
+            migration = "mig_" + str(mig_num)
 
             parent = str(pathlib.Path(__file__).parent.absolute())
-            spec = importlib.util.spec_from_file_location(
-                "migration", parent + "/../migrations/" + migration + ".py")
+            spec = importlib.util.spec_from_file_location("migration", parent + "/../migrations/" + migration + ".py")
             mig = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mig)
 
@@ -119,21 +126,19 @@ def migrateIfRequired():
                 sql = mig.downgrade
                 logmessage = "downgrade"
 
-            sql = sql.replace('\n', ' ')
-            sql = sql.replace('\t', ' ')
+            sql = sql.replace("\n", " ")
+            sql = sql.replace("\t", " ")
 
-            logger.info('Making schema ' + logmessage +
-                        ' in migration ' + str(mig_num))
+            logger.info("Making schema " + logmessage + " in migration " + str(mig_num))
 
             cursor.execute(sql)
 
-        sql = 'UPDATE public.version SET number = %s, migration = %s'
-        cursor.execute(sql, (__version__['number'], __version__['migration']))
+        sql = "UPDATE public.version SET number = %s, migration = %s"
+        cursor.execute(sql, (__version__["number"], __version__["migration"]))
         conn.commit()
         conn.close()
     except Exception as e:
-        logger.warning(
-            'Encountered unexpected exemption during migration... Rolling back...')
+        logger.warning("Encountered unexpected exemption during migration... Rolling back...")
         conn.rollback()
         conn.close()
         raise e
@@ -143,7 +148,10 @@ def getRefreshDataset(conn, retry_errors=False):
     cursor = conn.cursor()
 
     if retry_errors:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"
+        sql = (
+            "SELECT id, hash, url FROM document WHERE downloaded is null "
+            "AND (download_error != 3 OR download_error is null)"
+        )
     else:
         sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
 
@@ -165,7 +173,8 @@ def getCursor(conn, itersize, sql):
 def getUnvalidatedDatasets(conn):
     cur = conn.cursor()
     sql = """
-    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher, publisher.name, document.file_schema_valid, publisher.black_flag
+    SELECT document.hash, document.downloaded, document.id, document.url, document.publisher,
+           publisher.name, document.file_schema_valid, publisher.black_flag
     FROM document
     LEFT JOIN publisher
         ON document.publisher = publisher.org_id
@@ -248,10 +257,7 @@ def updateBlackFlagNotified(conn, org_id, notified=True):
     WHERE org_id=%(org_id)s
     """
 
-    data = {
-        "org_id": org_id,
-        "notified": notified
-    }
+    data = {"org_id": org_id, "notified": notified}
 
     cur.execute(sql, data)
     conn.commit()
@@ -299,19 +305,6 @@ def getInvalidActivitiesDocsToClean(conn):
         return curs.fetchall()
 
 
-def updateCleanError(conn, id, message):
-    sql = "UPDATE document SET clean_error=%(message)s WHERE id=%(id)s"
-
-    data = {
-        "id": id,
-        "message": message
-    }
-
-    with conn.cursor() as curs:
-        curs.execute(sql, data)
-    conn.commit()
-
-
 def getUnflattenedDatasets(conn):
     sql = """
     SELECT hash, downloaded, doc.id, flatten_api_error
@@ -341,7 +334,7 @@ def getFlattenedActivitiesForDoc(conn, id):
 
     try:
         return results[0]
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -354,7 +347,7 @@ def getUnsolrizedDatasets(conn):
     WHERE downloaded is not null
     AND doc.flatten_end is not null
     AND doc.lakify_end is not null
-	AND doc.hash != ''
+    AND doc.hash != ''
     AND val.report ? 'iatiVersion' AND report->>'iatiVersion' != ''
     AND report->>'iatiVersion' NOT LIKE '1%'
     AND (doc.solrize_end is null OR doc.solrize_reindex is True)
@@ -611,11 +604,7 @@ def completeFlatten(conn, doc_id, flattened_activities):
         WHERE id = %(doc_id)s
     """
 
-    data = {
-        "doc_id": doc_id,
-        "now": datetime.now(),
-        "flat_act": flattened_activities
-    }
+    data = {"doc_id": doc_id, "now": datetime.now(), "flat_act": flattened_activities}
 
     cur.execute(sql, data)
 
@@ -624,8 +613,6 @@ def completeFlatten(conn, doc_id, flattened_activities):
 
 
 def completeClean(conn, doc_id):
-    cur = conn.cursor()
-
     sql = """
         UPDATE document
         SET clean_end = %(now)s, clean_error = null
@@ -651,10 +638,7 @@ def lakifyError(conn, doc_id, msg):
         WHERE id = %(doc_id)s
     """
 
-    data = {
-        "doc_id": doc_id,
-        "msg": msg
-    }
+    data = {"doc_id": doc_id, "msg": msg}
 
     cur.execute(sql, data)
 
@@ -780,10 +764,7 @@ def updateFileAsDownloadError(conn, id, status):
         WHERE id = %(id)s
     """
 
-    data = {
-        "id": id,
-        "status": status
-    }
+    data = {"id": id, "status": status}
 
     cur.execute(sql, data)
     conn.commit()
@@ -792,8 +773,10 @@ def updateFileAsDownloadError(conn, id, status):
 
 def insertOrUpdatePublisher(conn, organization, last_seen):
     sql = """
-        INSERT INTO publisher (org_id, description, title, name, image_url, state, country_code, created, last_seen, package_count, iati_id)
-        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s, %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
+        INSERT INTO publisher (org_id, description, title, name, image_url, state,
+            country_code, created, last_seen, package_count, iati_id)
+        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s,
+            %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
         ON CONFLICT (org_id) DO
             UPDATE SET title = %(title)s,
                 state = %(state)s,
@@ -806,19 +789,19 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
     """
 
     data = {
-        "org_id": organization['id'],
-        "description": organization['publisher_description'],
-        "title": organization['title'],
-        "name": organization['name'],
-        "state": organization['state'],
-        "country_code": organization['publisher_country'],
+        "org_id": organization["id"],
+        "description": organization["publisher_description"],
+        "title": organization["title"],
+        "name": organization["name"],
+        "state": organization["state"],
+        "country_code": organization["publisher_country"],
         "last_seen": last_seen,
-        "package_count": organization['package_count'],
-        "iati_id": organization['publisher_iati_id']
+        "package_count": organization["package_count"],
+        "iati_id": organization["publisher_iati_id"],
     }
 
     try:
-        data["image_url"] = organization['image_url']
+        data["image_url"] = organization["image_url"]
     except:
         data["image_url"] = None
 
@@ -834,10 +817,7 @@ def updatePublisherAsSeen(conn, name, last_seen):
         WHERE publisher.name = %(name)s
     """
 
-    data = {
-        "last_seen": last_seen,
-        "name": name
-    }
+    data = {"last_seen": last_seen, "name": name}
 
     with conn.cursor() as curs:
         curs.execute(sql, data)
@@ -882,14 +862,7 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt, name):
             WHERE document.id=%(id)s;
     """
 
-    data = {
-        "id": id,
-        "hash": hash,
-        "url": url,
-        "dt": dt,
-        "publisher_id": publisher_id,
-        "name": name
-    }
+    data = {"id": id, "hash": hash, "url": url, "dt": dt, "publisher_id": publisher_id, "name": name}
 
     with conn.cursor() as curs:
         curs.execute(sql1, data)
@@ -905,10 +878,7 @@ def getFileWhereHashChanged(conn, id, hash):
         WHERE document.id=%(id)s and document.hash != %(hash)s;
     """
 
-    data = {
-        "id": id,
-        "hash": hash
-    }
+    data = {"id": id, "hash": hash}
 
     cur.execute(sql, data)
     results = cur.fetchone()
@@ -991,8 +961,10 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
 
     sql = """
         WITH new_id AS (
-            INSERT INTO validation (document_id, document_hash, document_url, created, valid, report, publisher, publisher_name)
-            VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s, %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s)
+            INSERT INTO validation (document_id, document_hash, document_url, created,
+                valid, report, publisher, publisher_name)
+            VALUES (%(doc_id)s, %(doc_hash)s, %(doc_url)s, %(created)s,
+                %(valid)s, %(report)s, %(publisher)s, %(publisher_name)s)
             RETURNING id
         )
         UPDATE document
@@ -1009,7 +981,7 @@ def updateValidationState(conn, doc_id, doc_hash, doc_url, publisher, state, rep
         "valid": state,
         "report": report,
         "publisher": publisher,
-        "publisher_name": publisher_name
+        "publisher_name": publisher_name,
     }
 
     cur.execute(sql, data)

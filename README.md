@@ -3,7 +3,7 @@
 # Summary
 
  Product  |  IATI Refresher
---- | --- 
+--- | ---
 Description | A Python application which has the responsibility of tracking IATI data from around the Web and refreshing the core IATI software's data stores.
 Website |  None
 Related | [datastore-search](https://github.com/IATI/datastore-search), [validator-web](https://github.com/IATI/validator-web)
@@ -223,7 +223,7 @@ Service Loop (when container starts)
 
 ## Functions
 
-- `main()` - Flattens XML into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format. 
+- `main()` - Flattens XML into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format.
 
 Used to use the [iati-flattener service](https://github.com/IATI/iati-flattener),  but now it does it using a Python class it the same process.
 
@@ -289,6 +289,37 @@ service_loop() calls main(), then sleeps for 60 seconds
     - Add `iati_xml` field to flattened activity, index to `activity` collection
     - Remove `iati_xml` field, index to exploded collections (budget, transaction)
     - Update db that solrizing is complete for that hash (db.completeSolrize)
+
+# Development
+
+## Code formatters and linters
+
+The following code formatters and linters are installed: `isort`, `flake8`,
+`black`, and `mypy`. They can be run with the following commands:
+
+```bash
+isort .
+
+black src
+
+flake8 src
+
+mypy
+```
+
+These were installed July 2024. Not all the issues flagged by `flake8` and
+`mypy` have been addressed yet. If possible, address those issues pertaining to
+any code you work on. Similarly, `mypy` type hints have not been added to the
+existing code, but should be introduced when refactoring or adding new features.
+
+## Automated tests
+
+There are some unit tests written using `pytest`. Once the dev dependencies have
+been installed they can be run with:
+
+```bash
+pytest
+```
 
 # Deployment
 
