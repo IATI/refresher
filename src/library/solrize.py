@@ -164,6 +164,14 @@ def process_hash_list(document_datasets):
             identifier_indices = {}
 
             for fa in flattened_activities[0]:
+                if "iati_identifier" not in fa:
+                    logger.warning(
+                        "Encountered an activity in file id: {} hash: {} "
+                        "that has an empty <iati-identifier> element. "
+                        "Not adding to Solr".format(file_id, file_hash)
+                    )
+
+                    continue
                 hashed_iati_identifier = utils.get_hash_for_identifier(fa["iati_identifier"])
                 blob_name = "{}/{}.xml".format(file_id, hashed_iati_identifier)
 

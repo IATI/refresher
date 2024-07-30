@@ -165,7 +165,7 @@ def process_hash_list(document_datasets):
                     db.updateValidationError(conn, file_id, full_response.status_code)
                     logger.warning(
                         f"Full Validator reports Client Error HTTP {full_response.status_code} "
-                        "for hash: {file_hash} and id: {file_id}"
+                        f"for hash: {file_hash} and id: {file_id}"
                     )
                     continue
                 elif full_response.status_code >= 500:  # server errors
@@ -173,13 +173,13 @@ def process_hash_list(document_datasets):
                     db.updateValidationError(conn, file_id, full_response.status_code)
                     logger.warning(
                         f"Full Validator reports Server Error HTTP {full_response.status_code} "
-                        "for hash: {file_hash} and id: {file_id}"
+                        f"for hash: {file_hash} and id: {file_id}"
                     )
                     continue
                 else:
                     logger.error(
                         f"Full Validator reports HTTP {full_response.status_code} "
-                        "for hash: {file_hash} and id: {file_id}"
+                        f"for hash: {file_hash} and id: {file_id}"
                     )
 
             report = full_response.json()
@@ -228,7 +228,7 @@ def validate():
 
         logger.info(
             f"Processing {len(file_hashes)} IATI files in a maximum of "
-            "{config['VALIDATION']['PARALLEL_PROCESSES']} parallel processes for validation"
+            f"{config['VALIDATION']['PARALLEL_PROCESSES']} parallel processes for validation"
         )
 
         for chunk in chunked_hash_lists:
@@ -283,7 +283,7 @@ def safety_check():
                 "publisherId": org_id,
                 "reason": (
                     f"Over {config['VALIDATION']['SAFETY_CHECK_THRESHOLD']} critical documents "
-                    "in the last {config['VALIDATION']['SAFETY_CHECK_PERIOD']}) hours."
+                    f"in the last {config['VALIDATION']['SAFETY_CHECK_PERIOD']}) hours."
                 ),
             },
         }
@@ -301,7 +301,7 @@ def safety_check():
         if response.status_code != 200:
             logger.warning(
                 f"Could not notify Black Flag for publisher id: {org_id}, "
-                "Comms Hub Responded HTTP {response.status_code}"
+                f"Comms Hub Responded HTTP {response.status_code}"
             )
             continue
 

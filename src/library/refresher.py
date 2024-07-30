@@ -287,7 +287,7 @@ def clean_datasets(stale_datasets, changed_datasets):
                 except AzureExceptions.ResourceNotFoundError:
                     logger.info(
                         f"Can not delete blob from {config['CLEAN_CONTAINER_NAME']} as does not exist: "
-                        "{file_hash}.xml and id: {file_id}. Attempting to delete by ID."
+                        f"{file_hash}.xml and id: {file_id}. Attempting to delete by ID."
                     )
                     clean_containers_by_id(blob_service_client, file_id, containers=[config["CLEAN_CONTAINER_NAME"]])
 
