@@ -43,7 +43,7 @@ def process_hash_list(document_datasets):
                 )
                 continue
 
-            if file_schema_valid is False and publisher_black_flag:
+            if file_schema_valid is False and publisher_black_flag is True:
                 logger.info(
                     "Skipping Schema Invalid file for Full Validation since publisher: "
                     f"{publisher} is black flagged for hash: {file_hash} and id: {file_id}"
@@ -104,7 +104,7 @@ def process_hash_list(document_datasets):
                         )
                 try:
                     body = schema_response.json()
-                    if body["valid"] or not body["valid"]:
+                    if body["valid"] is True or body["valid"] is False:
                         db.updateDocumentSchemaValidationStatus(conn, file_id, body["valid"])
                         file_schema_valid = body["valid"]
                     else:
@@ -125,7 +125,7 @@ def process_hash_list(document_datasets):
                 )
                 continue
 
-            if file_schema_valid is False and publisher_black_flag:
+            if file_schema_valid is False and publisher_black_flag is True:
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} "
                     f"is flagged for hash: {file_hash} and id: {file_id}"
@@ -141,7 +141,7 @@ def process_hash_list(document_datasets):
             full_url = config["VALIDATION"]["FULL_VALIDATION_URL"]
 
             # only need meta=true for invalid files to "clean" them later
-            if not file_schema_valid:
+            if file_schema_valid is False:
                 full_url += "?meta=true"
             full_response = requests.post(
                 full_url,
