@@ -33,7 +33,7 @@ def process_hash_list(document_datasets):
             file_schema_valid = file_data[6]
             publisher_black_flag = file_data[7] is not None
 
-            if not file_schema_valid and downloaded > (
+            if file_schema_valid is False and downloaded > (
                 now - timedelta(hours=config["VALIDATION"]["SAFETY_CHECK_PERIOD"])
             ):
                 logger.info(
@@ -43,7 +43,7 @@ def process_hash_list(document_datasets):
                 )
                 continue
 
-            if not file_schema_valid and publisher_black_flag:
+            if file_schema_valid is False and publisher_black_flag:
                 logger.info(
                     "Skipping Schema Invalid file for Full Validation since publisher: "
                     f"{publisher} is black flagged for hash: {file_hash} and id: {file_id}"
@@ -115,7 +115,7 @@ def process_hash_list(document_datasets):
                     )
                     continue
 
-            if not file_schema_valid and downloaded > (
+            if file_schema_valid is False and downloaded > (
                 now - timedelta(hours=config["VALIDATION"]["SAFETY_CHECK_PERIOD"])
             ):
                 logger.info(
@@ -125,7 +125,7 @@ def process_hash_list(document_datasets):
                 )
                 continue
 
-            if not file_schema_valid and publisher_black_flag:
+            if file_schema_valid is False and publisher_black_flag:
                 logger.info(
                     f"Skipping Schema Invalid file for Full Validation since publisher: {publisher} "
                     f"is flagged for hash: {file_hash} and id: {file_id}"
