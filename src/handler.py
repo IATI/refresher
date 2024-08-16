@@ -7,13 +7,17 @@ import library.lakify as lakify
 import library.refresher as refresher
 import library.solrize as solrize
 import library.validate as validate
+from constants.config import config
 from library.logger import getLogger
+from library.prometheus import initialise_prom_metrics_and_start_server
 
 logger = getLogger("handler")
 
 
 def main(args):
     try:
+        initialise_prom_metrics(args.type)
+
         if args.type == "refresh":
             db.migrateIfRequired()
             refresher.refresh()
@@ -56,6 +60,24 @@ def main(args):
                 )
     except Exception as e:
         logger.error("{} Failed. {}".format(args.type, str(e).strip()))
+
+
+def initialise_prom_metrics(operation: str):
+    if not operation.endswith("loop"):
+        return
+
+    logger.info("Starting prometheus metrics exporter...")
+
+    if operation == "validateloop":
+        container_conf_name = "VALIDATION"
+    elif operation == "refreshloop":
+        container_conf_name = "REFRESHER"
+    else:
+        container_conf_name = operation[:-4].upper()
+
+    initialise_prom_metrics_and_start_server(
+        config[container_conf_name]["PROM_METRIC_DEFS"], config[container_conf_name]["PROM_PORT"]
+    )
 
 
 if __name__ == "__main__":

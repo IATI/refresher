@@ -11,6 +11,7 @@ import library.db as db
 import library.utils as utils
 from constants.config import config
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 
 logger = getLogger("lakify")
 
@@ -181,6 +182,8 @@ def main():
     db.resetUnfinishedLakifies(conn)
 
     file_hashes = db.getUnlakifiedDatasets(conn)
+
+    set_prom_metric("datasets_to_lakify", len(file_hashes))
 
     logger.info("Got unlakified datasets")
 

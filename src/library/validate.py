@@ -13,6 +13,7 @@ import library.db as db
 import library.utils as utils
 from constants.config import config
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 
 logger = getLogger("validate")
 
@@ -218,6 +219,8 @@ def validate():
 
     file_hashes = db.getUnvalidatedDatasets(conn)
 
+    set_prom_metric("datasets_to_validate", len(file_hashes))
+
     if config["VALIDATION"]["PARALLEL_PROCESSES"] == 1:
         logger.info(f"Processing {len(file_hashes)} IATI files in a single process for validation")
         process_hash_list(file_hashes)
@@ -273,6 +276,8 @@ def safety_check():
     )
 
     black_flags = db.getUnnotifiedBlackFlags(conn)
+
+    set_prom_metric("new_flagged_publishers", len(black_flags))
 
     for black_flag in black_flags:
         org_id = black_flag[0]

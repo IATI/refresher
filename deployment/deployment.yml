@@ -18,7 +18,7 @@ properties: # Properties of container group
       properties: # Properties of an instance
         resources: # Resource requirements of the instance
           requests:
-            memoryInGB: 4
+            memoryInGB: 3.7
             cpu: 0.5
         image: '#IMAGE_NAME#' # Container image used to create the instance
         command:
@@ -61,7 +61,7 @@ properties: # Properties of container group
       properties:
         resources:
           requests:
-            memoryInGB: 4
+            memoryInGB: 3.7
             cpu: 0.1
         image: '#IMAGE_NAME#'
         command:
@@ -292,3 +292,37 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_KEY#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+    - name: 'nginx-proxy-for-prometheus'
+      properties:
+        image: "#NGINX_IMAGE_NAME#"
+        ports:
+          - port: 9158
+            protocol: TCP
+          - port: 9159
+            protocol: TCP
+          - port: 9160
+            protocol: TCP
+          - port: 9161
+            protocol: TCP
+          - port: 9162
+            protocol: TCP
+          - port: 9163
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 0.1
+            memoryInGB: 0.6
+  ipAddress:
+    type: "public"
+    dnsNameLabel: "#NAME#-#ENVIRONMENT#-1"
+    ports:
+      - port: 9158
+      - port: 9159
+      - port: 9160
+  ipAddress:  # split across two IPs because there is hard limit of 5-public ports per IP
+    type: "public"
+    dnsNameLabel: "#NAME#-#ENVIRONMENT#-2"
+    ports:
+      - port: 9161      
+      - port: 9162      
+      - port: 9163

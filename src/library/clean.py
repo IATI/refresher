@@ -11,6 +11,7 @@ import library.db as db
 import library.utils as utils
 from constants.config import config
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 
 logger = getLogger("clean")
 
@@ -79,6 +80,8 @@ def copy_valid():
     db.resetUnfinishedCleans(conn)
 
     documents = db.getValidActivitiesDocsToCopy(conn)
+
+    set_prom_metric("valid_datasets_to_progress", len(documents))
 
     if config["CLEAN"]["PARALLEL_PROCESSES"] == 1:
         logger.info(f"Copying {len(documents)} valid IATI files in a single process.")
@@ -215,6 +218,8 @@ def clean_invalid():
 
     # get invalid docs that have valid activities
     documents = db.getInvalidActivitiesDocsToClean(conn)
+
+    set_prom_metric("invalid_datasets_to_clean", len(documents))
 
     if config["CLEAN"]["PARALLEL_PROCESSES"] == 1:
         logger.info(f"Cleaning and storing {len(documents)} IATI files in a single process.")

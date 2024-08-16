@@ -14,6 +14,7 @@ import library.db as db
 import library.utils as utils
 from constants.config import config
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 
 logger = getLogger("flatten")
 config_explode_elements = json.loads(config["SOLRIZE"]["EXPLODE_ELEMENTS"])
@@ -248,6 +249,8 @@ def main():
     db.resetUnfinishedFlattens(conn)
 
     file_hashes = db.getUnflattenedDatasets(conn)
+
+    set_prom_metric("datasets_to_flatten", len(file_hashes))
 
     if config["FLATTEN"]["PARALLEL_PROCESSES"] == 1:
         logger.info("Flattening and storing " + str(len(file_hashes)) + " IATI files in a single process.")
