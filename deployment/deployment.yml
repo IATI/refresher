@@ -298,31 +298,12 @@ properties: # Properties of container group
         ports:
           - port: 9158
             protocol: TCP
-          - port: 9159
-            protocol: TCP
-          - port: 9160
-            protocol: TCP
-          - port: 9161
-            protocol: TCP
-          - port: 9162
-            protocol: TCP
-          - port: 9163
-            protocol: TCP
         resources:
           requests:
             cpu: 0.1
             memoryInGB: 0.6
   ipAddress:
     type: "public"
-    dnsNameLabel: "#NAME#-#ENVIRONMENT#-1"
+    dnsNameLabel: "#NAME#-#ENVIRONMENT#"
     ports:
       - port: 9158
-      - port: 9159
-      - port: 9160
-  ipAddress:  # split across two IPs because there is hard limit of 5-public ports per IP
-    type: "public"
-    dnsNameLabel: "#NAME#-#ENVIRONMENT#-2"
-    ports:
-      - port: 9161      
-      - port: 9162      
-      - port: 9163
