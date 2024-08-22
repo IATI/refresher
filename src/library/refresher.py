@@ -16,6 +16,7 @@ import library.db as db
 from constants.config import config
 from constants.version import __version__
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 from library.solrize import addCore
 
 multiprocessing.set_start_method("spawn", True)
@@ -308,6 +309,9 @@ def sync_publishers():
     publisher_list = get_paginated_response("https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
 
     known_publishers_num = db.getNumPublishers(conn)
+
+    set_prom_metric("registered_publishers", len(publisher_list))
+
     if len(publisher_list) < (config["REFRESHER"]["PUBLISHER_SAFETY_PERCENTAGE"] / 100) * known_publishers_num:
         logger.error(
             "Number of publishers reported by registry: "
@@ -380,6 +384,8 @@ def sync_documents():
         conn.close()
         raise
 
+    set_prom_metric("registered_datasets", len(all_datasets))
+
     known_documents_num = db.getNumDocuments(conn)
     if len(all_datasets) < (config["REFRESHER"]["DOCUMENT_SAFETY_PERCENTAGE"] / 100) * known_documents_num:
         logger.error(
@@ -426,6 +432,8 @@ def sync_documents():
                 + " : Unidentified Error"
             )
 
+    set_prom_metric("datasets_changed", len(changed_datasets))
+
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
 
     if len(changed_datasets) > 0 or len(stale_datasets) > 0:
@@ -462,6 +470,9 @@ def reload(retry_errors):
     conn = db.getDirectConnection()
 
     datasets = db.getRefreshDataset(conn, retry_errors)
+
+    set_prom_metric("datasets_to_download", len(datasets))
+
     chunked_datasets = list(split(datasets, config["REFRESHER"]["PARALLEL_PROCESSES"]))
 
     processes = []
