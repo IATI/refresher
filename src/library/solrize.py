@@ -11,6 +11,7 @@ import library.db as db
 import library.utils as utils
 from constants.config import config
 from library.logger import getLogger
+from library.prometheus import set_prom_metric
 
 logger = getLogger("solrize")
 solr_cores = {}
@@ -427,6 +428,8 @@ def main():
     logger.info("Got DB connection")
 
     file_hashes = db.getUnsolrizedDatasets(conn)
+
+    set_prom_metric("datasets_to_solrize", len(file_hashes))
 
     logger.info("Got unsolrized datasets")
 

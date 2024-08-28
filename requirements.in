@@ -9,3 +9,4 @@ requests
 pysolr
 chardet
 python-dateutil
+prometheus-client

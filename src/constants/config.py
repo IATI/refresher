@@ -45,6 +45,13 @@ config = dict(
         DOCUMENT_SAFETY_PERCENTAGE=50,
         # Maximum number of blobs to delete in a single request when cleaning up blob containers
         MAX_BLOB_DELETE=250,
+        PROM_PORT=9091,
+        PROM_METRIC_DEFS=[
+            ("registered_publishers", "The number of publishers on the CKAN Registry"),
+            ("registered_datasets", "The number of datasets on the CKAN Registry"),
+            ("datasets_changed", "The number of changed datasets that have been changed"),
+            ("datasets_to_download", "The number of datasets that need re-downloading"),
+        ],
     ),
     VALIDATION=dict(
         # Number of parallel processes to run the validation loop with
@@ -64,18 +71,36 @@ config = dict(
         SAFETY_CHECK_THRESHOLD=100,
         # Hours
         SAFETY_CHECK_PERIOD=2,
+        PROM_PORT=9092,
+        PROM_METRIC_DEFS=[
+            ("new_flagged_publishers", "The number of publishers that have been newly flagged"),
+            ("datasets_to_validate", "The number of datasets that need validating"),
+        ],
     ),
     CLEAN=dict(
         # Number of parallel processes to run the clean loop with
-        PARALLEL_PROCESSES=1
+        PARALLEL_PROCESSES=1,
+        PROM_PORT=9093,
+        PROM_METRIC_DEFS=[
+            ("valid_datasets_to_progress", "The number of valid datasets to progress to flatten stage"),
+            ("invalid_datasets_to_clean", "The number of invalid datasets that need cleaning"),
+        ],
     ),
     FLATTEN=dict(
         # Number of parallel processes to run the flatten loop with
-        PARALLEL_PROCESSES=1
+        PARALLEL_PROCESSES=1,
+        PROM_PORT=9094,
+        PROM_METRIC_DEFS=[
+            ("datasets_to_flatten", "The number of datasets that need flattening"),
+        ],
     ),
     LAKIFY=dict(
         # Number of parallel processes to run the lakify loop with
-        PARALLEL_PROCESSES=10
+        PARALLEL_PROCESSES=10,
+        PROM_PORT=9095,
+        PROM_METRIC_DEFS=[
+            ("datasets_to_lakify", "The number of datasets that need lakifying"),
+        ],
     ),
     SOLRIZE=dict(
         # Number of parallel processes to run the solrize loop with
@@ -92,5 +117,9 @@ config = dict(
         PYSOLR_TIMEOUT=600,
         # Time in seconds to sleep after receiving a 5XX error from Solr
         SOLR_500_SLEEP=os.getenv("SOLR_500_SLEEP"),
+        PROM_PORT=9096,
+        PROM_METRIC_DEFS=[
+            ("datasets_to_solrize", "The number of datasets that need solrizing"),
+        ],
     ),
 )
