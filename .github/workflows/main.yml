@@ -70,6 +70,14 @@ jobs:
           docker build . -f Dockerfile -t $IMAGE_NAME
           docker push $IMAGE_NAME
 
+      - name: 'Build and push nginx reverse proxy image'
+        run: |
+          htpasswd -c -b ./nginx-reverse-proxy/htpasswd prom "${{ secrets.PROM_NGINX_REVERSE_PROXY_PASSWORD }}"
+          NGINX_IMAGE_NAME=$REGISTRY_LOGIN_SERVER/prom-nginx-reverse-proxy-$ENVIRONMENT:$TAG
+          echo "NGINX_IMAGE_NAME=$NGINX_IMAGE_NAME" >> $GITHUB_ENV
+          docker build nginx-reverse-proxy -f nginx-reverse-proxy/Dockerfile -t $NGINX_IMAGE_NAME
+          docker push $NGINX_IMAGE_NAME
+
       - name: 'Delete existing container group'
         uses: 'azure/CLI@v1'
         with:
@@ -84,6 +92,8 @@ jobs:
           sed -i ''s^#ENVIRONMENT#^$ENVIRONMENT^g'' ./deployment/deployment.yml
 
           sed -i ''s^#IMAGE_NAME#^$IMAGE_NAME^g'' ./deployment/deployment.yml
+
+          sed -i ''s^#NGINX_IMAGE_NAME#^$NGINX_IMAGE_NAME^g'' ./deployment/deployment.yml
 
           sed -i ''s^#REGISTRY_LOGIN_SERVER#^$REGISTRY_LOGIN_SERVER^g'' ./deployment/deployment.yml
           sed -i ''s^#REGISTRY_USERNAME#^$REGISTRY_USERNAME^g'' ./deployment/deployment.yml
