@@ -10,7 +10,7 @@ from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error as DbError
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 
 import library.db as db
 from constants.config import config
