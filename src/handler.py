@@ -76,7 +76,7 @@ def initialise_prom_metrics(operation: str):
         container_conf_name = operation[:-4].upper()
 
     initialise_prom_metrics_and_start_server(
-        config[container_conf_name]["PROM_METRIC_DEFS"], config[container_conf_name]["PROM_PORT"]
+        config[container_conf_name]["PROM_METRIC_DEFS"], config[container_conf_name]["PROM_PORT"]  # type: ignore
     )
 
 

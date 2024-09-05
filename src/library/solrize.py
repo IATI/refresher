@@ -15,7 +15,7 @@ from library.prometheus import set_prom_metric
 
 logger = getLogger("solrize")
 solr_cores = {}
-explode_elements = json.loads(config["SOLRIZE"]["EXPLODE_ELEMENTS"])
+explode_elements = json.loads(config["SOLRIZE"]["EXPLODE_ELEMENTS"])  # type: ignore
 
 
 def parse_status_code(error_str):
