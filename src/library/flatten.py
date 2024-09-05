@@ -17,7 +17,7 @@ from library.logger import getLogger
 from library.prometheus import set_prom_metric
 
 logger = getLogger("flatten")
-config_explode_elements = json.loads(config["SOLRIZE"]["EXPLODE_ELEMENTS"])
+config_explode_elements = json.loads(config["SOLRIZE"]["EXPLODE_ELEMENTS"])  # type: ignore
 
 
 class Flattener:

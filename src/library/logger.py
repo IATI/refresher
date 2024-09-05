@@ -3,7 +3,7 @@ import sys
 
 from constants.config import config
 
-loggers = {}
+loggers: dict[str, logging.Logger | None] = {}
 
 
 def getLogger(name="unknown"):

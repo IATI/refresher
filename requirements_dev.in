@@ -8,6 +8,7 @@ Flake8-pyproject
 black
 mypy
 types-requests
+types-urllib3
 types-psycopg2
 types-python-dateutil
 lxml-stubs
