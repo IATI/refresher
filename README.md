@@ -45,56 +45,27 @@ Before running any task, the Refresher checks the version of the database agains
 
 ## Create Local Database
 
-- Creates a database called `refresher` owned by `refresh`
+- Create a database called `refresher` owned by `refresh`:
+
    `createdb refresher -O refresh`
-
-## launch.json
-
-Setup a `.vscode/launch.json` to run locally with attached debugging like so:
-
-```json
-{
-  "configurations": [
-    {
-      "name": "Refresh - Local",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/handler.py",
-      "console": "integratedTerminal",
-      "args": ["-t", "refresh"],
-      "env": {
-        "AZURE_STORAGE_CONNECTION_STRING": "",
-        "AZURE_STORAGE_CONTAINER_SOURCE": "",
-        "SOLR_API_URL": "http://localhost:8983/solr/",
-        "DB_USER": "refresh",
-        "DB_PASS": "",
-        "DB_HOST": "localhost",
-        "DB_NAME": "refresher",
-        "DB_PORT": "5432",
-        "DB_SSL_MODE": "disable",
-        "PARALLEL_PROCESSES": "10"
-      }
-    }
-```
 
 ## Environment Variables
 
-See `src/constants/config.py` for all Environment Variables and Constants with descriptions. Additional information can be found below as well.
+The canonical source for environment variables and constants is `src/constants/config.py`. 
 
-### AZURE_STORAGE_CONNECTION_STRING
+To get started, copy `.env-example` to `.env` and fill in as needed. As a minimum, you'll need to set up the database password (the other database values are predone for the unified pipeline docker setup).
 
-- This can be found in the Azure Portal > Storage Account > Access Keys or by running `az storage account show-connection-string -g MyResourceGroup -n MyStorageAccount`
+If wanted to run the validate stage, you must replace `VALIDATOR_HOSTNAME_HERE` with the validator you want to use (e.g., a local copy, or the dev instance).
 
-### DB\_\*
+The `.env` file is referenced by VS Code's `launch.json`, and so is also used to setup the environment for interactive debugging sessions with VS Code.
 
-Example for connecting to local db you made above:
 
-- "DB_USER": "refresh",
-- "DB_PASS": "",
-- "DB_HOST": "localhost",
-- "DB_NAME": "refresher",
-- "DB_PORT": "5432",
-- "DB_SSL_MODE": "disable" - leaving blank with default to "require"
+## VS Code `launch.json`
+
+If using VS Code, copy `launch-example.json` to `launch.json`. This will allow you to run and debug each of the different pipeline stages from within VS Code. This file references the `.env` file, and you can have different launch tasks work with different environment files, as shown in the example file with two different validate stages.
+
+Note, you can override values found in the `.env` file by including a `env` key after the `envFile` key in the launch configuration--an example of this is shown (commented out) in the first launch configuration in the `launch-example.json` file.
+
 
 # Services
 
