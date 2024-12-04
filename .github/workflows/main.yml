@@ -3,6 +3,8 @@ name: Deploy_Refresher_To_Production_On_Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+
 
 env:
   ENVIRONMENT: prod
