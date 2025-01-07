@@ -24,6 +24,9 @@ multiprocessing.set_start_method("spawn", True)
 
 logger = getLogger("refresher")
 
+REQUESTS_HEADERS = {
+    "User-Agent": "iati-unified-platform-refresher/" + __version__["number"]
+}
 
 def requests_retry_session(
     retries=10,
@@ -48,7 +51,7 @@ def requests_retry_session(
 def fetch_datasets():
     results = []
     api_url = "https://iatiregistry.org/api/3/action/package_search?rows=1000"
-    response = requests_retry_session().get(url=api_url, timeout=30)
+    response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS)
     if response.status_code == 200:
         json_response = json.loads(response.content)
         full_count = json_response["result"]["count"]
@@ -81,7 +84,7 @@ def fetch_datasets():
         time.sleep(1)
 
         next_api_url = "{}&start={}".format(api_url, current_count)
-        response = requests_retry_session().get(url=next_api_url, timeout=30)
+        response = requests_retry_session().get(url=next_api_url, timeout=30, headers=REQUESTS_HEADERS)
         if response.status_code == 200:
             json_response = json.loads(response.content)
 
@@ -136,7 +139,7 @@ def fetch_datasets():
 def get_paginated_response(url, offset, limit, retval=[]):
     api_url = url + "?offset=" + str(offset) + "&limit=" + str(limit)
     try:
-        response = requests_retry_session().get(url=api_url, timeout=30).content
+        response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS).content
         json_response = json.loads(response)
 
         if len(json_response["result"]) != 0:
@@ -331,7 +334,7 @@ def sync_publishers():
         try:
             db.updatePublisherAsSeen(conn, publisher_name, start_dt)
             api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
-            response = requests_retry_session().get(url=api_url, timeout=30)
+            response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS)
             response.raise_for_status()
             json_response = json.loads(response.content)
             db.insertOrUpdatePublisher(conn, json_response["result"], start_dt)
@@ -532,9 +535,8 @@ def download_chunk(chunk, blob_service_client, datasets):
             blob_client = blob_service_client.get_blob_client(
                 container=config["SOURCE_CONTAINER_NAME"], blob=hash + ".xml"
             )
-            headers = {"User-Agent": "iati-unified-platform-refresher/" + __version__["number"]}
             logger.info("Trying to download url: " + url + " and hash: " + hash + " and id: " + id)
-            download_response = requests_retry_session(retries=3).get(url=url, headers=headers, timeout=5)
+            download_response = requests_retry_session(retries=3).get(url=url, headers=REQUESTS_HEADERS, timeout=5)
             download_xml = download_response.content
             if download_response.status_code == 200:
                 try:
