@@ -12,11 +12,14 @@ config = dict(
     DB_PORT=os.getenv("DB_PORT"),
     DB_NAME=os.getenv("DB_NAME"),
     DB_SSL_MODE=os.getenv("DB_SSL_MODE") or "require",
-    # Database retry/timeout constants
+    # Database retry/timeout/keepalive
     DB_CONN_RETRY_LIMIT=8,
     DB_CONN_SLEEP_START=5,
     DB_CONN_SLEEP_MAX=60,
     DB_CONN_TIMEOUT=5,
+    DB_KEEPALIVE_IDLE=int(os.getenv("DB_KEEPALIVE_IDLE", default=60)),
+    DB_KEEPALIVE_INTERVAL=int(os.getenv("DB_KEEPALIVE_INTERVAL", default=15)),
+    DB_KEEPALIVE_COUNT=int(os.getenv("DB_KEEPALIVE_COUNT", default=5)),
     # Azure Storage Account Connection String
     # This can be found in the Azure Portal > Storage Account > Access Keys
     STORAGE_CONNECTION_STR=os.getenv("AZURE_STORAGE_CONNECTION_STRING"),

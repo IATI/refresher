@@ -45,6 +45,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: SOLR_USER
@@ -84,6 +90,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: SOLR_USER
@@ -137,6 +149,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: SOLR_USER
@@ -190,6 +208,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: SOLR_USER
@@ -239,6 +263,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: COMMSHUB_URL
@@ -280,6 +310,12 @@ properties: # Properties of container group
             secureValue: '#DB_PASS#'
           - name: DB_NAME
             secureValue: '#DB_NAME#'
+          - name: DB_KEEPALIVE_IDLE
+            value: '#DB_KEEPALIVE_IDLE#'
+          - name: DB_KEEPALIVE_INTERVAL
+            value: '#DB_KEEPALIVE_INTERVAL#'
+          - name: DB_KEEPALIVE_COUNT
+            value: '#DB_KEEPALIVE_COUNT#'
           - name: SOLR_API_URL
             secureValue: '#SOLR_API_URL#'
           - name: SOLR_USER

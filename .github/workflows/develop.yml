@@ -34,6 +34,9 @@ env:
   DB_HOST: ${{ secrets.DB_HOST }}
   DB_NAME: ${{ secrets.DB_NAME }}
   DB_PORT: ${{ secrets.DB_PORT }}
+  DB_KEEPALIVE_IDLE: ${{ vars.DEV_DB_KEEPALIVE_IDLE }}
+  DB_KEEPALIVE_INTERVAL: ${{ vars.DEV_DB_KEEPALIVE_INTERVAL }}
+  DB_KEEPALIVE_COUNT: ${{ vars.DEV_DB_KEEPALIVE_COUNT }}
   LOG_WORKSPACE_ID: ${{ secrets.DEV_LOG_WORKSPACE_ID }}
   LOG_WORKSPACE_KEY: ${{ secrets.DEV_LOG_WORKSPACE_KEY }}
   COMMSHUB_URL: ${{ secrets.DEV_COMMSHUB_URL }}
@@ -115,6 +118,9 @@ jobs:
           sed -i ''s^#DB_USER#^$DB_USER^g'' ./deployment/deployment.yml
           sed -i ''s^#DB_PASS#^$DB_PASS^g'' ./deployment/deployment.yml
           sed -i ''s^#DB_NAME#^$DB_NAME^g'' ./deployment/deployment.yml
+          sed -i ''s^#DB_KEEPALIVE_IDLE#^$DB_KEEPALIVE_IDLE^g'' ./deployment/deployment.yml
+          sed -i ''s^#DB_KEEPALIVE_INTERVAL#^$DB_KEEPALIVE_INTERVAL^g'' ./deployment/deployment.yml
+          sed -i ''s^#DB_KEEPALIVE_COUNT#^$DB_KEEPALIVE_COUNT^g'' ./deployment/deployment.yml
 
           sed -i ''s^#SOLR_API_URL#^$SOLR_API_URL^g'' ./deployment/deployment.yml
           sed -i ''s^#SOLR_USER#^$SOLR_USER^g'' ./deployment/deployment.yml
