@@ -22,6 +22,10 @@ def getDirectConnection(retry_counter=0):
             port=config["DB_PORT"],
             sslmode=config["DB_SSL_MODE"],
             connect_timeout=config["DB_CONN_TIMEOUT"],
+            keepalives=1,
+            keepalives_idle=config["DB_KEEPALIVE_IDLE"],
+            keepalives_interval=config["DB_KEEPALIVE_INTERVAL"],
+            keepalives_count=config["DB_KEEPALIVE_COUNT"],
         )
         retry_counter = 0
         return connection
