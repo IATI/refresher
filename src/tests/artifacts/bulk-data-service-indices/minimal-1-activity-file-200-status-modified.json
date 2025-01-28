@@ -1,0 +1,18 @@
+{
+    "datasets": [
+      {
+        "hash": "6fb76e0d539f6229e7d5a6cddaf4e046fa75de82",
+        "hash_excluding_generated_timestamp": "043e0e0fe9d02418d50c37c058dba8c9a02a5ee4",
+        "id": "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a",
+        "last_successful_download": "2024-10-10 04:34:04.253219+00:01",
+        "short_name": "test-org-1-act-01",
+        "reporting_org_id": "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0",
+        "reporting_org_short_name": "test-org-1",
+        "source_url": "http://test-org-1.org/iati-xml-files/test-org-1-activity-1-modified.xml",
+        "url_xml": "http://localhost:3005/iati-xml-files/test-org-1-activity-1-modified.xml",
+        "url_zip": "http://localhost:3005/iati-xml-files/test-org-1-activity-1-modified.zip"
+        }
+    ],
+    "index_created": "2024-10-10 14:28:35.160452+00:00",
+    "index_created_epoch": 1728570515
+}
