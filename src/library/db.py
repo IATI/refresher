@@ -96,7 +96,7 @@ def migrateIfRequired():
         current_db_version = {"number": "0.0.0", "migration": -1}
 
     if current_db_version["migration"] == __version__["migration"]:
-        logger.info("DB at correct version")
+        logger.info("DB at correct version ({})".format(current_db_version["migration"]))
         return
 
     upgrade = __version__["migration"] > current_db_version["migration"]
@@ -153,11 +153,11 @@ def getRefreshDataset(conn, retry_errors=False):
 
     if retry_errors:
         sql = (
-            "SELECT id, hash, url FROM document WHERE downloaded is null "
+            "SELECT id, hash, bds_cache_url FROM document WHERE downloaded is null "
             "AND (download_error != 3 OR download_error is null)"
         )
     else:
-        sql = "SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"
+        sql = "SELECT id, hash, bds_cache_url FROM document WHERE downloaded is null AND download_error is null"
 
     cursor.execute(sql)
     results = cursor.fetchall()
@@ -777,15 +777,12 @@ def updateFileAsDownloadError(conn, id, status):
 
 def insertOrUpdatePublisher(conn, organization, last_seen):
     sql = """
-        INSERT INTO publisher (org_id, description, title, name, image_url, state,
-            country_code, created, last_seen, package_count, iati_id)
-        VALUES (%(org_id)s, %(description)s, %(title)s, %(name)s, %(image_url)s, %(state)s,
-            %(country_code)s, %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
+        INSERT INTO publisher (org_id, title, name,
+            created, last_seen, package_count, iati_id)
+        VALUES (%(org_id)s, %(title)s, %(name)s,
+            %(last_seen)s, %(last_seen)s, %(package_count)s, %(iati_id)s)
         ON CONFLICT (org_id) DO
             UPDATE SET title = %(title)s,
-                state = %(state)s,
-                image_url = %(image_url)s,
-                description = %(description)s,
                 last_seen = %(last_seen)s,
                 package_count = %(package_count)s,
                 iati_id = %(iati_id)s
@@ -794,20 +791,12 @@ def insertOrUpdatePublisher(conn, organization, last_seen):
 
     data = {
         "org_id": organization["id"],
-        "description": organization["publisher_description"],
-        "title": organization["title"],
-        "name": organization["name"],
-        "state": organization["state"],
-        "country_code": organization["publisher_country"],
+        "title": organization["human_readable_name"],
+        "name": organization["short_name"],
         "last_seen": last_seen,
-        "package_count": organization["package_count"],
-        "iati_id": organization["publisher_iati_id"],
+        "package_count": organization["dataset_count"],
+        "iati_id": organization["iati_identifier"],
     }
-
-    try:
-        data["image_url"] = organization["image_url"]
-    except:
-        data["image_url"] = None
 
     with conn.cursor() as curs:
         curs.execute(sql, data)
@@ -828,15 +817,16 @@ def updatePublisherAsSeen(conn, name, last_seen):
     conn.commit()
 
 
-def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt, name):
+def insertOrUpdateDocument(conn, dt: datetime, dataset: dict):
     sql1 = """
-        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name)
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s)
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name, bds_cache_url)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s, %(bds_cache_url)s)
         ON CONFLICT (id) DO
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
                 name = %(name)s,
                 modified = %(dt)s,
+                bds_cache_url = %(bds_cache_url)s,
                 downloaded = null,
                 download_error = null,
                 validation_request = null,
@@ -866,7 +856,15 @@ def insertOrUpdateDocument(conn, id, hash, url, publisher_id, dt, name):
             WHERE document.id=%(id)s;
     """
 
-    data = {"id": id, "hash": hash, "url": url, "dt": dt, "publisher_id": publisher_id, "name": name}
+    data = {
+        "id": dataset["id"],
+        "hash": dataset["hash"],
+        "url": dataset["url"],
+        "bds_cache_url": dataset["bds_cache_url"],
+        "publisher_id": dataset["publisher_id"],
+        "name": dataset["name"],
+        "dt": dt,
+    }
 
     with conn.cursor() as curs:
         curs.execute(sql1, data)
