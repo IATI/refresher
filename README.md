@@ -79,7 +79,42 @@ Setup a `.vscode/launch.json` to run locally with attached debugging like so:
 
 ## Environment Variables
 
-See `src/constants/config.py` for all Environment Variables and Constants with descriptions. Additional information can be found below as well.
+The canonical source for environment variables and constants is `src/constants/config.py`.
+
+To get started with local development, copy `.env-example` to `.env` and fill in as needed. As a minimum, you'll need to set up the database details. 
+
+If you want to run the validate stage, you'll need to configure `SCHEMA_VALIDATION_*` variables and `VALIDATION_*` variables. It is generally safe to use the dev server to do the validation.
+
+If you want to test the Solrize code, you'll need to run a local Solr instance - it is **not** safe to use the Solr dev server.
+
+### Limiting the reporting orgs (publishers) and datasets processed during development
+
+During local development, it is often desirable to limit the datasets which are processed. Three environment variables are available for this purpose.
+
+`LIMIT_ENABLED`
+
+Turn on limited processing. Should be 'yes' or 'no'. Default is 'no'.
+
+`LIMIT_TO_REPORTING_ORGS`
+
+A CSV list of reporting orgs (publishers) that should be included in the update. It is the `short_name`s of the reporting orgs (publishers), and not their UUIDs.
+
+Example:
+
+```
+LIMIT_TO_REPORTING_ORGS="wfp,who,worldbank,sida,onl,3fi,fifty_eight,aasaman,aw"
+```
+
+`LIMIT_TO_DATASETS`
+
+A CSV list of datasets that should be included in the processing. Note that you must include the reporting org that publishes the dataset in the list of reporting orgs above.
+
+Example:
+
+```
+LIMIT_TO_DATASETS="3fi-activities,fifty_eight-et,onl-activity,aw-jo,sida-102"
+```
+
 
 ### AZURE_STORAGE_CONNECTION_STRING
 
@@ -117,19 +152,25 @@ Some of these services have more than one task that they perform. Those tasks wi
 
 ## Functions
 
-- `refresh()` - Syncs IATI Publishers and Documents from the [IATI registry](https://iatiregistry.org) API to the Database.
+- `refresh_publisher_and_dataset_info()` - Syncs the list of IATI Publishers and Documents from the [IATI Bulk Data Service](https://bulk-data.iatistandard.org/) API to the Database.
 - `reload()` - Downloads source IATI XML from URLs as defined in the registry to blob storage.
 
 ## Logic
 
 Service Loop (when container starts)
 
-- `refresh()`
-  - `sync_publishers()` - gets publisher metadata from registry and saves to DB (table: publisher)
-    - removes any publishers where `document.last_seen` is from a previous run (so no longer in registry)
-  - `sync_documents()` - gets document metadata from registry and saves to DB (table: document)
-    - Checks for `changed_datasets` - `document.id` is same, but `document.hash` has changed
-    - Updates DB with all documents
+- `refresh_publisher_and_dataset_info()`
+  - `get_dataset_list()` and `get_reporting_orgs_supplemented_metadata()` 
+    - fetches the (minimal) dataset index and the reporting org index from the Bulk Data Service
+    - if these files are not from the same run of the Bulk Data Service, the update is skipped.
+  - `sync_publishers()` 
+    - checks the number of publishers hasn't reduced below the safety threshold (if it has, throws exception)
+    - updates database with the latest list of publishers, updating their last seen time (table: publisher)
+    - removes any publishers where `document.last_seen` is from a previous run (so no longer in Bulk Data Service)
+  - `sync_documents()` 
+    - checks the number of datasets hasn't reduced below the safety threshold (if it has, throws exception)
+    - compiles list of `changed_datasets` (i.e., where `document.id` is same, but `document.hash` has changed)
+    - updates database with latest dataset metadata from the Bulk Data Service (table: document)
       - If there is a conflict with `document.id`, `hash,url,modified,downloaded,download_error` are updated along with `validation_*`, `lakify_*`, `flatten_*`, `clean_*` and `solrize_*` columns being cleared
     - Checks for `stale_datasets` - `document.last_seen` is from a previous run (so no longer in registry)
     - `clean_datasets()`
@@ -142,16 +183,17 @@ Service Loop (when container starts)
   - Gets documents to download from DB (db.getRefreshDataset)
     - If `retry_errors=true` - `"SELECT id, hash, url FROM document WHERE downloaded is null AND (download_error != 3 OR download_error is null)"`
     - Else - `"SELECT id, hash, url FROM document WHERE downloaded is null AND download_error is null"`
-  - Downloads docs from publisher's URL, saves to Blob storage, updates DB
+  - Downloads docs from Bulk Data Service, saves to Blob storage, updates DB
     - `download_chunk()`
       - If successfully uploaded to Blob - `db.updateFileAsDownloaded`
         `"UPDATE document SET downloaded = %(dt)s, download_error = null WHERE id = %(id)s"`
       - If error occurs `db.updateFileAsDownloadError`
-        - Not 200 - `document.download_error` = status code
-        - Connection Error `document.download_error = 0`
-        - SSL Issue `document.download_error = 1`
-        - Charset detection issue `document.download_error = 2`
-        - Not HTTP URL (e.g. FTP) `document.download_error = 3` - these are NOT re-tried
+        - Dataset has non-200 response as reported by Bulk Data Service - `document.download_error` = status code (from Bulk Data Service index)
+        - Connection Error (to BDS Azure cache) `document.download_error = 0`
+        - SSL Issue (to BDS Azure cache) `document.download_error = 1`
+        - Charset detection issue (for downloaded content) `document.download_error = 2`
+        - ~~Not HTTP URL (e.g. FTP) `document.download_error = 3` - these are NOT re-tried~~
+        - `url` is null, as Bulk Data Service could not download `document.download_error = 4`
       - If `AzureExceptions.ServiceResponseError` or other Exception
         - Warning logged, DB not updated
 
@@ -314,12 +356,27 @@ existing code, but should be introduced when refactoring or adding new features.
 
 ## Automated tests
 
-There are some unit tests written using `pytest`. Once the dev dependencies have
-been installed they can be run with:
+Automated testing is done with `pytest`.
+
+There are some unit tests, and there is the beginnings of a framework setup for integration testing.
+
+At present, only the unit tests are run as part of the Github Actions setup.
+
+To run just the unit tests, install the dev dependencies, then run:
 
 ```bash
-pytest
+pytest src/tests/unit
 ```
+
+To run the all the tests, first start the docker compose test environment:
+
+```bash
+cd src/tests/integration/test-environment
+./start-test-environment.sh
+```
+
+The `start-test-environment.sh` script starts docker compose, creates the relevant Azurite blob storage containers, then re-attaches the console to the docker output.
+
 
 # Deployment
 
