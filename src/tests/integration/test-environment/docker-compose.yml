@@ -1,0 +1,57 @@
+name: pipeline-test-environment
+services:
+
+  unified-pipeline-test-env-dataset-registration-and-data-server:
+    image: mockoon/cli:latest
+    ports:
+      - 3005:3005
+    volumes:
+      - type: bind
+        source: mockoon-server-config.json
+        target: /server-config.json
+      - type: bind
+        source: ../../artifacts
+        target: /src/tests/artifacts
+        read_only: true
+    command: ["--data", "server-config.json", "-p", "3005"]
+    healthcheck:
+      test: curl -s -o /dev/null 'http://localhost:3005/bulk-data-service-indices/minimal-1-activity-file-200-status.json'
+      interval: 10s
+      timeout: 10s
+      retries: 1
+
+
+  unified-pipeline-test-env-db-server:
+    image: postgres:15
+    ports:
+      - "5441:5441"
+    environment:
+      - POSTGRES_DB=pipeline_automated_test_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - PGPORT=5441
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pipeline_automated_test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  unified-pipeline-test-env-azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    ports:
+      # this port numbers diff from default so to not conflict with other running instances, or the BDS test azurite setup
+      - 12000:12000
+      - 12001:12001
+      - 12002:12002
+    command: azurite --blobHost 0.0.0.0 --blobPort 12000 --queueHost 0.0.0.0 --queuePort 12001 --tableHost 0.0.0.0 --tablePort 12002 --location /data --loose --skipApiVersionCheck
+    tmpfs:
+      - /data
+    healthcheck:
+      test: nc 127.0.0.1 12000 -z
+      interval: 5s
+      retries: 1
+
