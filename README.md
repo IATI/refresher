@@ -377,6 +377,18 @@ cd src/tests/integration/test-environment
 
 The `start-test-environment.sh` script starts docker compose, creates the relevant Azurite blob storage containers, then re-attaches the console to the docker output.
 
+Then you can run all the tests:
+
+```bash
+pytest
+```
+
+Once you've installed the dev dependencies, the tool `pytest-watcher` will also be available. This tool automatically re-runs the test suite every time you save one of the source files. You can run it with:
+
+```bash
+pytest-watcher .
+```
+
 
 # Deployment
 
