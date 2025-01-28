@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import re
+from typing import Any
 
 import chardet
 
@@ -113,3 +114,7 @@ def parse_xsd_date_value(in_str):
         pass
     # We fail
     return None
+
+
+def find_object_by_key(objects: list, key: str, value_to_find: Any):
+    return next(filter(lambda x: x[key] == value_to_find, objects), None)
