@@ -63,6 +63,14 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_KEY#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: BULK_DATA_SERVICE_DATASET_INDEX_URL
+            value: '#BULK_DATA_SERVICE_DATASET_INDEX_URL#'
+          - name: BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL
+            value: '#BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL#'
+          - name: BULK_DATA_SERVICE_HTTP_TIMEOUT
+            value: '#BULK_DATA_SERVICE_HTTP_TIMEOUT#'
+          - name: REFRESH_STAGE_LOOP_SLEEP
+            value: '#REFRESH_STAGE_LOOP_SLEEP#'
     - name: 'validate'
       properties:
         resources:
