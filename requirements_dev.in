@@ -1,7 +1,10 @@
 -r requirements.in
 
+python-dotenv
 pip-tools
 pytest
+pytest-mock
+pytest-watcher
 isort
 flake8
 Flake8-pyproject
