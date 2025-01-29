@@ -359,7 +359,10 @@ def refresh_publisher_and_dataset_info():
 
     reporting_orgs_index_supplemented = get_reporting_orgs_supplemented_metadata()
 
-    if dataset_index["index_created_epoch"] != reporting_orgs_index_supplemented["index_created_epoch"]:
+    if (
+        dataset_index["index_created_unix_timestamp"]
+        != reporting_orgs_index_supplemented["index_created_unix_timestamp"]
+    ):
         logger.info("Dataset and reporting orgs indices are from different runs of Bulk Data Service")
         logger.info("Skipping refresh")
         return
