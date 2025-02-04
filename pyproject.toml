@@ -10,6 +10,7 @@ extend_skip = ['__pycache__', '.mypy_cache', '.ve', '.venv']
 skip_gitignore = true
 src_paths = ['src']
 line_length = 119
+profile = "black"
 
 
 [tool.flake8]
@@ -21,10 +22,24 @@ max_complexity = 7
 
 [tool.black]
 line-length = 119
-include='''src/.*/*.py$'''
+include='''src/.*.py$'''
 
 
 [tool.mypy]
 files=["src/"]
 mypy_path=["src/"]
 ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests/unit", "src/tests/integration"]
+python_files = ["src/tests/*.py", "src/tests/**/*.py"]
+addopts = [
+    "--import-mode=importlib"
+]
+pythonpath = [
+  "src"
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:pysolr.*:",
+]

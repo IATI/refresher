@@ -42,6 +42,10 @@ env:
   REGISTRY_USERNAME: ${{ secrets.ACR_USERNAME }}
   REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
   LOG_LEVEL: ${{ secrets.PROD_LOG_LEVEL }}
+  BULK_DATA_SERVICE_DATASET_INDEX_URL: ${{ vars.PROD_BULK_DATA_SERVICE_DATASET_INDEX_URL }}
+  BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL: ${{ vars.PROD_BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL }}
+  BULK_DATA_SERVICE_HTTP_TIMEOUT: ${{ vars.PROD_BULK_DATA_SERVICE_HTTP_TIMEOUT }}
+  REFRESH_STAGE_LOOP_SLEEP: ${{ vars.PROD_REFRESH_STAGE_LOOP_SLEEP }}
 
 jobs:
   build-and-deploy:
@@ -139,6 +143,11 @@ jobs:
           sed -i ''s^#FLATTENER_KEY_VALUE#^$FLATTENER_KEY_VALUE^g'' ./deployment/deployment.yml
 
           sed -i ''s^#LOG_LEVEL#^$LOG_LEVEL^g'' ./deployment/deployment.yml
+
+          sed -i ''s^#BULK_DATA_SERVICE_DATASET_INDEX_URL#^$BULK_DATA_SERVICE_DATASET_INDEX_URL^g'' ./deployment/deployment.yml
+          sed -i ''s^#BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL#^$BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL^g'' ./deployment/deployment.yml
+          sed -i ''s^#BULK_DATA_SERVICE_HTTP_TIMEOUT#^$BULK_DATA_SERVICE_HTTP_TIMEOUT^g'' ./deployment/deployment.yml
+          sed -i ''s^#REFRESH_STAGE_LOOP_SLEEP#^$REFRESH_STAGE_LOOP_SLEEP^g'' ./deployment/deployment.yml
 
       - name: 'Deploy group to Azure Container Instances'
         uses: 'azure/CLI@v1'

@@ -1,4 +1,5 @@
 import argparse
+import traceback
 
 import library.clean as clean
 import library.db as db
@@ -20,7 +21,7 @@ def main(args):
 
         if args.type == "refresh":
             db.migrateIfRequired()
-            refresher.refresh()
+            refresher.refresh_publisher_and_dataset_info()
         elif args.type == "refreshloop":
             db.migrateIfRequired()
             refresher.service_loop()
@@ -58,8 +59,9 @@ def main(args):
                     "Type is required - either refresh, reload, safety_check, validate, "
                     "clean, flatten, lakify, or solrize - or their related service loop."
                 )
-    except Exception as e:
-        logger.error("{} Failed. {}".format(args.type, str(e).strip()))
+    except Exception:
+        logger.error("{} stage failed (full traceback follows)".format(args.type))
+        logger.error(traceback.format_exc())
 
 
 def initialise_prom_metrics(operation: str):
