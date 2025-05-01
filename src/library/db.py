@@ -154,7 +154,7 @@ def getRefreshDataset(conn, retry_errors=False):
     if retry_errors:
         sql = (
             "SELECT id, hash, cached_dataset_url FROM document WHERE downloaded is null "
-            "AND (download_error != 3 OR download_error is null)"
+            "AND (download_error != 4 OR download_error is null)"
         )
     else:
         sql = "SELECT id, hash, cached_dataset_url FROM document WHERE downloaded is null AND download_error is null"
