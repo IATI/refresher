@@ -6,7 +6,6 @@ from datetime import datetime
 
 import chardet
 import requests
-import urllib3
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error as DbError
@@ -24,7 +23,6 @@ from library.http import requests_retry_session
 from library.logger import getLogger
 from library.prometheus import set_prom_metric
 from library.solrize import addCore
-from library.utils import find_object_by_key
 
 multiprocessing.set_start_method("spawn", True)
 
@@ -263,7 +261,7 @@ def sync_documents(dataset_list: list[dict]):
             "name": dataset_metadata["short_name"],
             "hash": (
                 dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"]
-                if dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"] != None
+                if dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"] is not None
                 else ""
             ),
             "cached_dataset_url": dataset_metadata["last_known_good_dataset"]["cached_dataset_url_xml"],

@@ -58,7 +58,7 @@ def load_config_from_env():
             BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL=os.getenv("BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL"),
             # the timeout when contacting the Bulk Data Service
             BULK_DATA_SERVICE_HTTP_TIMEOUT=os.getenv("BULK_DATA_SERVICE_HTTP_TIMEOUT"),
-            # Percent of Publishers/Documents that need to disappear from the registry to stop the refresher from syncing
+            # Percent of Publishers/Documents that must disappear from the Registry to stop the refresher from syncing
             PUBLISHER_SAFETY_PERCENTAGE=50,
             DOCUMENT_SAFETY_PERCENTAGE=50,
             # Maximum number of blobs to delete in a single request when cleaning up blob containers
