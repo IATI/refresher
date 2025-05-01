@@ -6,6 +6,7 @@ from datetime import datetime
 
 import chardet
 import requests
+import urllib3
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error as DbError
@@ -261,11 +262,11 @@ def sync_documents(dataset_list: list[dict]):
             "id": dataset_metadata["id"],
             "name": dataset_metadata["short_name"],
             "hash": (
-                dataset_metadata["hash_excluding_generated_timestamp"]
-                if dataset_metadata["hash_excluding_generated_timestamp"] != None
+                dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"]
+                if dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"] != None
                 else ""
             ),
-            "bds_cache_url": dataset_metadata["url_xml"],
+            "cached_dataset_url": dataset_metadata["last_known_good_dataset"]["cached_dataset_url_xml"],
             "url": dataset_metadata["source_url"],
             "publisher_id": dataset_metadata["reporting_org_id"],
         }
@@ -323,13 +324,14 @@ def sync_documents(dataset_list: list[dict]):
                 + e_message
             )
             conn.rollback()
-        except Exception:
+        except Exception as e:
             logger.error(
                 "Failed to sync document with hash: "
                 + dataset["hash"]
                 + " and id: "
                 + dataset["id"]
-                + " : Unidentified Error"
+                + ": Unexpected Error: "
+                + str(e)
             )
 
     set_prom_metric("datasets_changed", len(changed_datasets))
@@ -429,27 +431,36 @@ def service_loop():
     while True:
         count = count + 1
 
-        latest_bds_etag = get_dataset_list_etag()
+        try:
+            latest_bds_etag = get_dataset_list_etag()
 
-        if count > config["REFRESHER"]["RETRY_ERRORS_AFTER_LOOP"]:
-            logger.info("Reached threshold for re-trying failed downloads, so running refresh")
+            if count > config["REFRESHER"]["RETRY_ERRORS_AFTER_LOOP"]:
+                logger.info("Reached threshold for re-trying failed downloads, so running refresh")
 
-            refresh_publisher_and_dataset_info()
-            reload(True)
-            count = 0
+                refresh_publisher_and_dataset_info()
+                reload(True)
+                count = 0
 
-        elif existing_bds_etag != latest_bds_etag:
-            logger.info("Bulk Data Service index ETag changed to {}, so running refresh".format(latest_bds_etag))
+            elif existing_bds_etag != latest_bds_etag:
+                logger.info("Bulk Data Service index ETag changed to {}, so running refresh".format(latest_bds_etag))
 
-            refresh_publisher_and_dataset_info()
-            reload(False)
-            existing_bds_etag = latest_bds_etag
+                refresh_publisher_and_dataset_info()
+                reload(False)
+                existing_bds_etag = latest_bds_etag
 
-        else:
-            logger.info("Bulk Data Service index ETag unchanged ({}) so skipping refresh".format(existing_bds_etag))
+            else:
+                logger.info(
+                    "Bulk Data Service index ETag unchanged ({}) so skipping refresh".format(existing_bds_etag)
+                )
 
-        logger.info("Sleeping for {} seconds".format(service_loop_sleep))
-        time.sleep(service_loop_sleep)
+            logger.info("Sleeping for {} seconds".format(service_loop_sleep))
+            time.sleep(service_loop_sleep)
+
+        except RuntimeError as e:
+            logger.error("RuntimeError occurred in refresh/reload service loop.")
+            logger.error("Details: {}".format(e))
+            logger.error("Sleeping for {} seconds, then restarting loop".format(service_loop_sleep))
+            time.sleep(service_loop_sleep)
 
 
 def split(lst, n):
@@ -464,9 +475,9 @@ def download_chunk(chunk, blob_service_client, datasets):
 
         id = dataset[0]
         hash = dataset[1]
-        bds_cache_url = dataset[2]
+        cached_dataset_url = dataset[2]
 
-        if bds_cache_url is None:
+        if cached_dataset_url is None:
             db.updateFileAsDownloadError(conn, id, 4)
             continue
 
@@ -475,9 +486,11 @@ def download_chunk(chunk, blob_service_client, datasets):
                 container=config["SOURCE_CONTAINER_NAME"], blob=hash + ".xml"
             )
             headers = {"User-Agent": "iati-unified-platform-refresher/" + __version__["number"]}
-            logger.info("Trying to download url: " + bds_cache_url + " and hash: " + hash + " and id: " + id)
+            logger.info("Trying to download url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id)
             download_response = requests_retry_session(retries=3).get(
-                url=bds_cache_url, headers=headers, timeout=int(config["REFRESHER"]["BULK_DATA_SERVICE_HTTP_TIMEOUT"])
+                url=cached_dataset_url,
+                headers=headers,
+                timeout=int(config["REFRESHER"]["BULK_DATA_SERVICE_HTTP_TIMEOUT"]),
             )
             download_xml = download_response.content
             if download_response.status_code == 200:
@@ -494,7 +507,9 @@ def download_chunk(chunk, blob_service_client, datasets):
                 blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
                 blob_client.set_blob_tags({"document_id": id})
                 db.updateFileAsDownloaded(conn, id)
-                logger.debug("Successfully downloaded url: " + bds_cache_url + " and hash: " + hash + " and id: " + id)
+                logger.debug(
+                    "Successfully downloaded url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id
+                )
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
                 clean_containers_by_id(blob_service_client, id)
@@ -502,19 +517,26 @@ def download_chunk(chunk, blob_service_client, datasets):
                     "HTTP "
                     + str(download_response.status_code)
                     + " when downloading url: "
-                    + bds_cache_url
+                    + cached_dataset_url
                     + " and hash: "
                     + hash
                     + " and id: "
                     + id
                 )
         except requests.exceptions.SSLError:
-            logger.debug("SSLError while downloading url: " + bds_cache_url + " and hash: " + hash + " and id: " + id)
+            logger.debug(
+                "SSLError while downloading url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id
+            )
             db.updateFileAsDownloadError(conn, id, 1)
             clean_containers_by_id(blob_service_client, id)
         except requests.exceptions.ConnectionError:
             logger.debug(
-                "ConnectionError while downloading url: " + bds_cache_url + " and hash: " + hash + " and id: " + id
+                "ConnectionError while downloading url: "
+                + cached_dataset_url
+                + " and hash: "
+                + hash
+                + " and id: "
+                + id
             )
             db.updateFileAsDownloadError(conn, id, 0)
             clean_containers_by_id(blob_service_client, id)
@@ -525,7 +547,7 @@ def download_chunk(chunk, blob_service_client, datasets):
         except AzureExceptions.ResourceNotFoundError as e:
             logger.debug(
                 "ResourceNotFoundError while downloading url: "
-                + bds_cache_url
+                + cached_dataset_url
                 + " and hash: "
                 + hash
                 + " and id: "
@@ -536,7 +558,7 @@ def download_chunk(chunk, blob_service_client, datasets):
         except AzureExceptions.ServiceResponseError as e:
             logger.warning(
                 "Failed to upload file with url: "
-                + bds_cache_url
+                + cached_dataset_url
                 + " and hash: "
                 + hash
                 + " and id: "
@@ -550,7 +572,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 e_message = e.args[0]
             logger.warning(
                 "Failed to upload or download file with url: "
-                + bds_cache_url
+                + cached_dataset_url
                 + " and hash: "
                 + hash
                 + " and id: "

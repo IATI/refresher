@@ -153,11 +153,11 @@ def getRefreshDataset(conn, retry_errors=False):
 
     if retry_errors:
         sql = (
-            "SELECT id, hash, bds_cache_url FROM document WHERE downloaded is null "
+            "SELECT id, hash, cached_dataset_url FROM document WHERE downloaded is null "
             "AND (download_error != 3 OR download_error is null)"
         )
     else:
-        sql = "SELECT id, hash, bds_cache_url FROM document WHERE downloaded is null AND download_error is null"
+        sql = "SELECT id, hash, cached_dataset_url FROM document WHERE downloaded is null AND download_error is null"
 
     cursor.execute(sql)
     results = cursor.fetchall()
@@ -819,14 +819,14 @@ def updatePublisherAsSeen(conn, name, last_seen):
 
 def insertOrUpdateDocument(conn, dt: datetime, dataset: dict):
     sql1 = """
-        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name, bds_cache_url)
-        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s, %(bds_cache_url)s)
+        INSERT INTO document (id, hash, url, first_seen, last_seen, publisher, name, cached_dataset_url)
+        VALUES (%(id)s, %(hash)s, %(url)s, %(dt)s, %(dt)s, %(publisher_id)s, %(name)s, %(cached_dataset_url)s)
         ON CONFLICT (id) DO
             UPDATE SET hash = %(hash)s,
                 url = %(url)s,
                 name = %(name)s,
                 modified = %(dt)s,
-                bds_cache_url = %(bds_cache_url)s,
+                cached_dataset_url = %(cached_dataset_url)s,
                 downloaded = null,
                 download_error = null,
                 validation_request = null,
@@ -860,7 +860,7 @@ def insertOrUpdateDocument(conn, dt: datetime, dataset: dict):
         "id": dataset["id"],
         "hash": dataset["hash"],
         "url": dataset["url"],
-        "bds_cache_url": dataset["bds_cache_url"],
+        "cached_dataset_url": dataset["cached_dataset_url"],
         "publisher_id": dataset["publisher_id"],
         "name": dataset["name"],
         "dt": dt,
