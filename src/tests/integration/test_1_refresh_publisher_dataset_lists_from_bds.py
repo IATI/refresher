@@ -132,7 +132,7 @@ def test_dataset_add_single(setup_and_teardown, mocker):  # noqa: F811
     dataset = get_dataset(config, "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a")
     assert dataset is not None, "Dataset doesn't exist in the database"
     assert dataset["hash"] == "fbd23a51c3cc20d6fd53bd3d5c8b1568ec802170"
-    assert dataset["bds_cache_url"] == "http://localhost:3005/iati-xml-files/test-org-1-activity-1.xml"
+    assert dataset["cached_dataset_url"] == "http://localhost:3005/iati-xml-files/test-org-1-activity-1.xml"
     assert dataset["url"] == "http://test-org-1.org/iati-xml-files/test-org-1-activity-1.xml"
     assert dataset["name"] == "test-org-1-act-01"
     assert dataset["publisher"] == "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0"
@@ -154,7 +154,7 @@ def test_dataset_add_single_non_200(setup_and_teardown, mocker):  # noqa: F811
     dataset = get_dataset(config, "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a")
     assert dataset is not None, "Dataset doesn't exist in the database"
     assert dataset["hash"] == ""
-    assert dataset["bds_cache_url"] is None
+    assert dataset["cached_dataset_url"] is None
     assert dataset["url"] == "http://test-org-1.org/iati-xml-files/test-org-1-activity-1-404.xml"
     assert dataset["name"] == "test-org-1-act-01"
     assert dataset["publisher"] == "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0"
@@ -192,7 +192,7 @@ def test_dataset_update_single(setup_and_teardown, mocker):  # noqa: F811
     dataset = get_dataset(config, "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a")
     assert dataset is not None, "Dataset doesn't exist in the database"
     assert dataset["hash"] == "043e0e0fe9d02418d50c37c058dba8c9a02a5ee4"
-    assert dataset["bds_cache_url"] == "http://localhost:3005/iati-xml-files/test-org-1-activity-1-modified.xml"
+    assert dataset["cached_dataset_url"] == "http://localhost:3005/iati-xml-files/test-org-1-activity-1-modified.xml"
     assert dataset["url"] == "http://test-org-1.org/iati-xml-files/test-org-1-activity-1-modified.xml"
     assert dataset["publisher"] == "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0"
 
@@ -212,14 +212,14 @@ def test_dataset_add_multiple(setup_and_teardown, mocker):  # noqa: F811
 
     dataset2 = get_dataset(config, "bbbbbbbb-9bc5-41dd-9b16-9d9ea28cdf0b")
     assert dataset2["hash"] == "2f70ee0c0ee83daaf0bbbdc8c87a52eef2377c7b"
-    assert dataset2["bds_cache_url"] == "http://localhost:3005/iati-xml-files/test-org-2-activity-1.xml"
+    assert dataset2["cached_dataset_url"] == "http://localhost:3005/iati-xml-files/test-org-2-activity-1.xml"
     assert dataset2["url"] == "http://test-org-2.org/iati-xml-files/test-org-2-activity-1.xml"
     assert dataset2["name"] == "test-org-2-act-01"
     assert dataset2["publisher"] == "bbbbbbbb-pub2-4cb6-b08e-496e634e0cf0"
 
     dataset3 = get_dataset(config, "cccccccc-9bc5-41dd-9b16-9d9ea28cdf0c")
     assert dataset3["hash"] == "5664beb2ec52ad5f158c1615666d69458a2cb188"
-    assert dataset3["bds_cache_url"] == "http://localhost:3005/iati-xml-files/test-org-3-activity-1.xml"
+    assert dataset3["cached_dataset_url"] == "http://localhost:3005/iati-xml-files/test-org-3-activity-1.xml"
     assert dataset3["url"] == "http://test-org-3.org/iati-xml-files/test-org-3-activity-1.xml"
     assert dataset3["name"] == "test-org-3-act-01"
     assert dataset3["publisher"] == "cccccccc-pub3-4cb6-b08e-496e634e0cf0"
