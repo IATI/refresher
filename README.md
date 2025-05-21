@@ -97,7 +97,7 @@ Turn on limited processing. Should be 'yes' or 'no'. Default is 'no'.
 
 `LIMIT_TO_REPORTING_ORGS`
 
-A CSV list of reporting orgs (publishers) that should be included in the update. It is the `short_name`s of the reporting orgs (publishers), and not their UUIDs.
+A comma separated list of reporting orgs (publishers) that should be included in the update. It is the `short_name`s of the reporting orgs (publishers), and not their UUIDs.
 
 Example:
 

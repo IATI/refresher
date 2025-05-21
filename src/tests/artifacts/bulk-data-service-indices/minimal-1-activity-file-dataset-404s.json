@@ -1,16 +1,21 @@
 {
     "datasets": [
-      {
-        "hash": "60917540ffa08d2d038dcb72cff85bf7a8830f18",
-        "hash_excluding_generated_timestamp": "fbd23a51c3cc20d6fd53bd3d5c8b1568ec802170",
-        "id": "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a",
-        "last_successful_download": "2024-10-10 04:34:04.253219+00:00",
-        "short_name": "test-org-1-act-01",
-        "reporting_org_id": "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0",
-        "reporting_org_short_name": "test-org-1",
-        "source_url": "http://test-org-1.org/iati-xml-files/test-org-1-activity-1.xml",
-        "url_xml": "http://localhost:3005/404",
-        "url_zip": "https://bulk-data.iatistandard.org/test-org-1/test-org-1-act-01.zip"
+        {
+            "id": "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a",
+            "last_known_good_dataset": {
+                "cached_dataset_url_xml": "http://localhost:3005/404",
+                "cached_dataset_url_zip": "https://bulk-data.iatistandard.org/test-org-1/test-org-1-act-01.zip",
+                "downloaded": "2024-10-10 04:34:04.253219+00:00",
+                "hash": "60917540ffa08d2d038dcb72cff85bf7a8830f18",
+                "hash_excluding_generated_timestamp": "fbd23a51c3cc20d6fd53bd3d5c8b1568ec802170",
+                "verified_on_server": "2024-10-10 04:34:04.253219+00:00"
+            },
+            "last_update_check": "2024-10-10 04:34:04.253219+00:00",
+            "license_id": "other-at",
+            "short_name": "test-org-1-act-01",
+            "reporting_org_id": "aaaaaaaa-pub1-4cb6-b08e-496e634e0cf0",
+            "reporting_org_short_name": "test-org-1",
+            "source_url": "http://test-org-1.org/iati-xml-files/test-org-1-activity-1.xml"
         }
     ],
     "index_created": "2024-10-10 14:28:35.160452+00:00",

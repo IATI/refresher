@@ -1,8 +1,8 @@
 import pytest
-from dotenv import dotenv_values, load_dotenv
+from dotenv import load_dotenv
 
 import library.db as db
-from constants.config import config, load_config_from_env
+from constants.config import load_config_from_env
 from tests.integration.utilities import empty_azurite_containers, get_db_connection_patched, truncate_db_tables
 
 
