@@ -57,7 +57,7 @@ def load_config_from_env():
             # the URL of the Bulk Data Service's Reporting Orgs Index
             BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL=os.getenv("BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL"),
             # the timeout when contacting the Bulk Data Service
-            BULK_DATA_SERVICE_HTTP_TIMEOUT=os.getenv("BULK_DATA_SERVICE_HTTP_TIMEOUT"),
+            BULK_DATA_SERVICE_HTTP_TIMEOUT=int(os.getenv("BULK_DATA_SERVICE_HTTP_TIMEOUT", default=600)),
             # Percent of Publishers/Documents that must disappear from the Registry to stop the refresher from syncing
             PUBLISHER_SAFETY_PERCENTAGE=50,
             DOCUMENT_SAFETY_PERCENTAGE=50,

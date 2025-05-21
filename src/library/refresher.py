@@ -488,7 +488,7 @@ def download_chunk(chunk, blob_service_client, datasets):
             download_response = requests_retry_session(retries=3).get(
                 url=cached_dataset_url,
                 headers=headers,
-                timeout=int(config["REFRESHER"]["BULK_DATA_SERVICE_HTTP_TIMEOUT"]),
+                timeout=config["REFRESHER"]["BULK_DATA_SERVICE_HTTP_TIMEOUT"],
             )
             download_xml = download_response.content
             if download_response.status_code == 200:

@@ -8,14 +8,14 @@ from constants.config import config
 from library.http import requests_retry_session
 
 
-def make_remote_request(url: str, method: str, timeout: str) -> Response:
+def make_remote_request(url: str, method: str, timeout: int) -> Response:
     error_str = "{} received when making {} request to {}. Details: {}"
 
     try:
         if method == "head":
-            http_response = requests_retry_session().head(url=url, timeout=int(timeout))
+            http_response = requests_retry_session().head(url=url, timeout=timeout)
         else:
-            http_response = requests_retry_session().get(url=url, timeout=int(timeout))
+            http_response = requests_retry_session().get(url=url, timeout=timeout)
 
     except (ConnectionError, SSLError, ChunkedEncodingError) as e:
         raise RuntimeError(error_str.format(type(e).__name__, method, url, str(e)))
@@ -23,7 +23,7 @@ def make_remote_request(url: str, method: str, timeout: str) -> Response:
     return http_response
 
 
-def get_json_dict_from_url(url: str, timeout: str) -> dict:
+def get_json_dict_from_url(url: str, timeout: int) -> dict:
     http_response = make_remote_request(url, "get", timeout)
     try:
         response_dict = json.loads(http_response.content)
