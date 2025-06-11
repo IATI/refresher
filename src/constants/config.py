@@ -11,6 +11,7 @@ def load_config_from_env():
     return dict(
         # Logs
         LOG_LEVEL=os.getenv("LOG_LEVEL") or "info",
+        SENTRY_DSN=os.getenv("SENTRY_DSN", default=None),
         # Database Connection
         DB_USER=os.getenv("DB_USER"),
         DB_PASS=os.getenv("DB_PASS"),
