@@ -10,3 +10,4 @@ pysolr
 chardet
 python-dateutil
 prometheus-client
+sentry-sdk
