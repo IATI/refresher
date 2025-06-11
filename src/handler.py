@@ -1,6 +1,8 @@
 import argparse
 import traceback
 
+import sentry_sdk
+
 import library.clean as clean
 import library.db as db
 import library.flatten as flatten
@@ -17,6 +19,8 @@ logger = getLogger("handler")
 
 def main(args):
     try:
+        initialise_sentry(args.type)
+
         initialise_prom_metrics(args.type)
 
         if args.type == "refresh":
@@ -80,6 +84,25 @@ def initialise_prom_metrics(operation: str):
     initialise_prom_metrics_and_start_server(
         config[container_conf_name]["PROM_METRIC_DEFS"], config[container_conf_name]["PROM_PORT"]  # type: ignore
     )
+
+
+def initialise_sentry(operation: str):
+
+    container_name = get_container_name_from_cli_operation(operation)
+
+    sentry_sdk.init(
+        dsn=config["SENTRY_DSN"],
+        attach_stacktrace=True,
+        send_default_pii=True,
+        server_name=container_name,
+    )
+
+
+def get_container_name_from_cli_operation(operation: str):
+
+    container_name = operation[:-4] if operation.endswith("loop") else operation
+
+    return container_name
 
 
 if __name__ == "__main__":
