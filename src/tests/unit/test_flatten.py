@@ -23,7 +23,6 @@ FLATTENER_FILES = [
     ("date_format_timezones"),
     ("comments"),
     ("bad_dates"),
-    ("default_currency"),
 ]
 
 

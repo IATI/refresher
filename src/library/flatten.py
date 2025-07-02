@@ -53,11 +53,10 @@ class Flattener:
         )
         for _, activity in context:
             nsmap = activity.nsmap
-            activity_attribs = activity.attrib
             # Start
             activity_output = root_attributes.copy()
             # Activity Data
-            self._process_tag(activity, activity_output, nsmap=nsmap, activity_attribs=activity_attribs)
+            self._process_tag(activity, activity_output, nsmap=nsmap)
             # Sub lists?
             for child_tag_name in self.sub_list_elements:
                 child_tags = activity.findall(child_tag_name)
@@ -68,7 +67,7 @@ class Flattener:
                         # TODO this isn't the most efficient as we are parsing the same tag twice
                         # (here & above for activity)
                         # But for now, we'll do this to prove functionality then look at speed.
-                        self._process_tag(child_tag, child_tag_data, prefix=child_tag_name, nsmap=nsmap, activity_attribs=activity_attribs)
+                        self._process_tag(child_tag, child_tag_data, prefix=child_tag_name, nsmap=nsmap)
                         activity_output["@" + child_tag_name].append(child_tag_data)
             # We have output
             output.append(activity_output)
@@ -76,20 +75,13 @@ class Flattener:
         # Return
         return output
 
-    TAGS_THAT_SHOULD_USE_DEFAULT_CURRENCY = ["budget_value", "transaction_value", "planned_disbursement_value"]
-
-    def _process_tag(self, xml_tag, output, prefix="", nsmap={}, activity_attribs={}):
+    def _process_tag(self, xml_tag, output, prefix="", nsmap={}):
 
         # Attributes
         for attrib_k, attrib_v in xml_tag.attrib.items():
 
             self._add_to_output(
                 self._convert_name_to_canonical(attrib_k, prefix=prefix, nsmap=nsmap), attrib_v, output
-            )
-        # Anything missing to fill in from activity?
-        if prefix in self.TAGS_THAT_SHOULD_USE_DEFAULT_CURRENCY and "currency" not in xml_tag.attrib.keys() and "default-currency" in activity_attribs.keys():
-            self._add_to_output(
-                self._convert_name_to_canonical("currency", prefix=prefix, nsmap=nsmap), activity_attribs["default-currency"], output
             )
 
         # Immediate text
@@ -103,7 +95,6 @@ class Flattener:
                 output,
                 prefix=self._convert_name_to_canonical(child_xml_tag.tag, prefix=prefix, nsmap=nsmap),
                 nsmap=nsmap,
-                activity_attribs=activity_attribs
             )
 
     CANONICAL_NAMES_WITH_DATE_TIMES = ["iso_date", "value_date", "extraction_date", "_datetime"]
