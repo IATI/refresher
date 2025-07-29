@@ -1,0 +1,354 @@
+<?xml version="1.0"?>
+<iati-activities version="2.03" generated-datetime="2024-06-20T07:10:17+00:00">
+<iati-activity last-updated-datetime="2024-06-20T07:10:15+00:00" xml:lang="en" default-currency="GBP" humanitarian="false" hierarchy="1" linked-data-uri="">
+  <iati-identifier>TEST-ORG-01-SPA-2020</iati-identifier>
+  <reporting-org type="22" ref="TEST-ORG-01">
+    <narrative>Test Org 01</narrative>
+  </reporting-org>
+  <title>
+    <narrative>Test Activity 2022-2025</narrative>
+  </title>
+  <description type="2">
+    <narrative>SPA</narrative>
+  </description>
+  <participating-org ref="XM-DAC-3-1" type="10" role="1" activity-id="xc-dac-3-1-123456-654321" crs-channel-code="11000">
+    <narrative xml:lang="en">Denmark - Ministry of Foreign Affairs, Danida</narrative>
+  </participating-org>
+  <activity-status code="2"/>
+  <activity-date type="2" iso-date="2022-01-01"/>
+  <sector code="8.8" vocabulary="8"/>
+  <default-flow-type code="10"/>
+  <default-aid-type code="B03" vocabulary="1"/>
+  <budget type="1" status="2">
+    <period-start iso-date="2022-01-01"/>
+    <period-end iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">25653580</value>
+  </budget>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2023-11-14"/>
+    <value currency="GBP" value-date="2023-11-14">12826790</value>
+    <provider-org ref="DK-CVR-20453672" provider-activity-id="TEST-ORG-01" type="21"/>
+    <receiver-org ref="TEST-ORG-01" receiver-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">815132.15</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="BD"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">826371.20</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="LB"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">745154.00</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="ZM"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">988670.92</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="ZW"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">276096.79</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="LK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">924436.59</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="BO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">1295935.57</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="CO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">440955.07</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="HN"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">787033.16</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="LB"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">384143.97</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="TR"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">660237.42</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="BD"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2023-11-14"/>
+    <value currency="GBP" value-date="2023-11-14">3385000</value>
+    <provider-org ref="DK-CVR-20453672" provider-activity-id="DK-CVR-20453672" type="21"/>
+    <receiver-org ref="TEST-ORG-01" receiver-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2023-11-14"/>
+    <value currency="GBP" value-date="2023-11-14">615000</value>
+    <provider-org ref="DK-CVR-20453672" provider-activity-id="DK-CVR-20453672" type="21"/>
+    <receiver-org ref="TEST-ORG-01" receiver-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">618495.57</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="BO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">208656.19</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="JO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">549830.79</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="LK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">757159.10</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="ZA"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">822272.60</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="ZW"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">632258.26</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="ZM"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">1191351.28</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="CO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2023-07-13"/>
+    <value currency="GBP" value-date="2023-07-13">12826790</value>
+    <provider-org ref="DK-CVR-20453672" provider-activity-id="DK-CVR-20453672" type="21"/>
+    <receiver-org ref="TEST-ORG-01" receiver-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">262880.91</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="KE"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2023-12-31"/>
+    <value currency="GBP" value-date="2023-12-31">722213.50</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01" type="22"/>
+    <recipient-country code="HN"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2022-12-01"/>
+    <value currency="GBP" value-date="2022-12-01">12826790</value>
+    <provider-org ref="DKCVR20453672" provider-activity-id="DK-CVR-20453672-SPA-2022-2025 " type="21">
+      <narrative>DanishTradeUnionDevelopmentAgency</narrative>
+    </provider-org>
+    <receiver-org ref="DKCVR31378028" receiver-activity-id="TEST-ORG-01">
+      <narrative>Test Org 01 </narrative>
+    </receiver-org>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="1"/>
+    <transaction-date iso-date="2022-03-10"/>
+    <value currency="GBP" value-date="2022-03-10">12826790</value>
+    <provider-org ref="DKCVR20453672" provider-activity-id="DK-CVR-20453672-SPA-2022-2025 " type="21">
+      <narrative>DanishTradeUnionDevelopmentAgency</narrative>
+    </provider-org>
+    <receiver-org ref="TEST-ORG-01" receiver-activity-id="TEST-ORG-01-SPA-2022-2025">
+      <narrative>Test Org 01 </narrative>
+    </receiver-org>
+    <recipient-country code="DK"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">130593.77</value>
+    <provider-org ref="DKCVR31378028" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="JO"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">526878</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="ZA"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+  <transaction>
+    <transaction-type code="3"/>
+    <transaction-date iso-date="2022-12-31"/>
+    <value currency="GBP" value-date="2022-12-31">94028.73</value>
+    <provider-org ref="TEST-ORG-01" provider-activity-id="TEST-ORG-01 SPA 2022-2025">
+      <narrative>Test Org 01</narrative>
+    </provider-org>
+    <recipient-country code="KE"/>
+    <flow-type code="10"/>
+    <finance-type code="110"/>
+    <aid-type code="B03" vocabulary="1"/>
+  </transaction>
+</iati-activity>
+</iati-activities>

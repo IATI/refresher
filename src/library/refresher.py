@@ -9,12 +9,17 @@ import requests
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error as DbError
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 import library.db as db
 from constants.config import config
 from constants.version import __version__
+from library.bulk_data_service import (
+    get_dataset_index,
+    get_dataset_list_etag,
+    get_reporting_orgs_supplemented_metadata,
+    populate_reporting_orgs_with_dataset_count,
+)
+from library.http import requests_retry_session
 from library.logger import getLogger
 from library.prometheus import set_prom_metric
 from library.solrize import addCore
@@ -24,133 +29,6 @@ multiprocessing.set_start_method("spawn", True)
 
 logger = getLogger("refresher")
 
-REQUESTS_HEADERS = {
-    "User-Agent": "iati-unified-platform-refresher/" + __version__["number"]
-}
-
-def requests_retry_session(
-    retries=10,
-    backoff_factor=0.3,
-    status_forcelist=(),
-    session=None,
-):
-    session = session or requests.Session()
-    retry = Retry(
-        total=retries,
-        read=retries,
-        connect=retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=status_forcelist,
-    )
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
-
-
-def fetch_datasets():
-    results = []
-    api_url = "https://iatiregistry.org/api/3/action/package_search?rows=1000"
-    response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS)
-    if response.status_code == 200:
-        json_response = json.loads(response.content)
-        full_count = json_response["result"]["count"]
-        current_count = len(json_response["result"]["results"])
-        results += [
-            {
-                "id": resource["package_id"],
-                "hash": resource["hash"],
-                "url": resource["url"],
-                "org_id": result["owner_org"],
-                "name": result["name"],
-            }
-            for result in json_response["result"]["results"]
-            for resource in result["resources"]
-        ]
-    else:
-        logger.error(
-            "IATI Registry returned "
-            + str(response.status_code)
-            + " when getting document metadata from https://iatiregistry.org/api/3/action/package_search"
-        )
-        raise Exception()
-
-    live_count = full_count
-    last_live_count = None
-    last_current_count = None
-    numbers_not_changing_count = 0
-
-    while current_count < live_count:
-        time.sleep(1)
-
-        next_api_url = "{}&start={}".format(api_url, current_count)
-        response = requests_retry_session().get(url=next_api_url, timeout=30, headers=REQUESTS_HEADERS)
-        if response.status_code == 200:
-            json_response = json.loads(response.content)
-
-            live_count = json_response["result"]["count"]
-
-            if live_count != full_count:
-                logger.info(
-                    "The count changed whilst in the run - started at "
-                    + str(full_count)
-                    + ", now at "
-                    + str(live_count)
-                )
-
-            current_count += len(json_response["result"]["results"])
-
-            if current_count == last_current_count and live_count == last_live_count:
-                numbers_not_changing_count = numbers_not_changing_count + 1
-
-            if numbers_not_changing_count > 4:
-                logger.warning(
-                    "Numbers appear to have been the same for five iterations, "
-                    "indicating a problem - raising an exception to end run."
-                )
-                raise Exception()
-
-            last_current_count = current_count
-            last_live_count = live_count
-
-            results += [
-                {
-                    "id": resource["package_id"],
-                    "hash": resource["hash"],
-                    "url": resource["url"],
-                    "org_id": result["owner_org"],
-                    "name": result["name"],
-                }
-                for result in json_response["result"]["results"]
-                for resource in result["resources"]
-            ]
-        else:
-            logger.error(
-                "IATI Registry returned "
-                + str(response.status_code)
-                + " when getting document metadata from https://iatiregistry.org/api/3/action/package_search"
-            )
-            raise Exception()
-
-    logger.info("Final count:" + str(current_count) + ", full count: " + str(live_count))
-    return results
-
-
-def get_paginated_response(url, offset, limit, retval=[]):
-    api_url = url + "?offset=" + str(offset) + "&limit=" + str(limit)
-    try:
-        response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS).content
-        json_response = json.loads(response)
-
-        if len(json_response["result"]) != 0:
-            retval = retval + json_response["result"]
-            offset = offset + limit
-            return get_paginated_response(url, offset, limit, retval)
-        else:
-            return retval
-    except Exception:
-        logger.error("IATI Registry returned other than 200 when getting the list of orgs")
-
 
 def clean_containers_by_id(
     blob_service_client, document_id, containers=[config["SOURCE_CONTAINER_NAME"], config["CLEAN_CONTAINER_NAME"]]
@@ -159,7 +37,7 @@ def clean_containers_by_id(
         try:
             container_client = blob_service_client.get_container_client(container_name)
             filter_config = "@container='" + str(container_name) + "' and document_id='" + document_id + "'"
-            assoc_blobs = list(blob_service_client.find_blobs_by_tags(filter_config))
+            assoc_blobs = list(blob_service_client.find_blobs_by_tags(filter_config, timeout=1))
             if len(assoc_blobs) > 0:
                 logger.info(f"Removing document ID {document_id} from {container_name} container.")
                 container_client.delete_blobs(assoc_blobs[0]["name"])
@@ -196,8 +74,8 @@ def clean_datasets(stale_datasets, changed_datasets):
                         lake_container_client.delete_blobs(*list_chunk)
                 else:
                     lake_container_client.delete_blobs(*name_list)
-        except Exception:
-            logger.warning("Failed to clean up lake for id: " + file_id + " and hash: " + file_hash)
+        except Exception as e:
+            logger.warning("Failed to clean up lake for id: " + file_id + " and hash: " + file_hash + " " + str(e))
 
     # clean up source xml and solr for both stale and changed datasets
     if len(stale_datasets) > 0 or len(changed_datasets) > 0:
@@ -306,19 +184,27 @@ def clean_datasets(stale_datasets, changed_datasets):
                 )
 
 
-def sync_publishers():
+def sync_publishers(publishers_by_short_name: dict[str, dict]):
     conn = db.getDirectConnection()
     start_dt = datetime.now()
-    publisher_list = get_paginated_response("https://iatiregistry.org/api/3/action/organization_list", 0, 1000)
 
     known_publishers_num = db.getNumPublishers(conn)
 
-    set_prom_metric("registered_publishers", len(publisher_list))
+    set_prom_metric("registered_publishers", len(publishers_by_short_name))
 
-    if len(publisher_list) < (config["REFRESHER"]["PUBLISHER_SAFETY_PERCENTAGE"] / 100) * known_publishers_num:
+    logger.info(
+        "Number publishers in DB: {}, in Bulk Data Service: {}".format(
+            known_publishers_num, len(publishers_by_short_name)
+        )
+    )
+
+    if (
+        len(publishers_by_short_name)
+        < (config["REFRESHER"]["PUBLISHER_SAFETY_PERCENTAGE"] / 100) * known_publishers_num
+    ):
         logger.error(
-            "Number of publishers reported by registry: "
-            + str(len(publisher_list))
+            "Number of publishers reported by Bulk Data Service: "
+            + str(len(publishers_by_short_name))
             + ", is less than "
             + str(config["REFRESHER"]["PUBLISHER_SAFETY_PERCENTAGE"])
             + r"% of previously known publishers: "
@@ -328,33 +214,23 @@ def sync_publishers():
         conn.close()
         raise
 
-    logger.info("Syncing Publishers to DB...")
-    for publisher_name in publisher_list:
-        time.sleep(1)
+    for publisher_short_name, publisher in publishers_by_short_name.items():
+
+        if (
+            config["REFRESHER"]["LIMIT_ENABLED"] == "yes"
+            and publisher_short_name not in config["REFRESHER"]["LIMIT_TO_REPORTING_ORGS"]
+        ):
+            continue
+
         try:
-            db.updatePublisherAsSeen(conn, publisher_name, start_dt)
-            api_url = "https://iatiregistry.org/api/3/action/organization_show?id=" + publisher_name
-            response = requests_retry_session().get(url=api_url, timeout=30, headers=REQUESTS_HEADERS)
-            response.raise_for_status()
-            json_response = json.loads(response.content)
-            db.insertOrUpdatePublisher(conn, json_response["result"], start_dt)
-        except requests.HTTPError as e:
-            e_status_code = ""
-            if e.response.status_code is not None:
-                e_status_code = str(e.response.status_code)
-            logger.error(
-                "Failed to sync publisher with name "
-                + publisher_name
-                + " : Registry responded with HTTP "
-                + e_status_code
-            )
+            db.insertOrUpdatePublisher(conn, publisher, start_dt)
         except DbError as e:
             e_message = ""
             if e.pgerror is not None:
                 e_message = e.pgerror
             elif hasattr(e, "args"):
                 e_message = e.args[0]
-            logger.warning("Failed to sync publisher with name " + publisher_name + ": DbError : " + e_message)
+            logger.warning("Failed to update publisher with name " + publisher_short_name + ": DbError : " + e_message)
             conn.rollback()
             conn.close()
             raise e
@@ -363,7 +239,7 @@ def sync_publishers():
             if hasattr(e, "args"):
                 e_message = e.args[0]
             logger.error(
-                "Failed to sync publisher with name " + publisher_name + " : Unidentified Error: " + e_message
+                "Failed to update publisher with name " + publisher_short_name + " : Unidentified Error: " + e_message
             )
             conn.close()
             raise e
@@ -375,28 +251,43 @@ def sync_publishers():
     conn.close()
 
 
-def sync_documents():
+def sync_documents(dataset_list: list[dict]):
     conn = db.getDirectConnection()
     start_dt = datetime.now()
-    all_datasets = []
-    try:
-        all_datasets = fetch_datasets()
-        logger.info("...Registry result got. Updating DB...")
-    except Exception:
-        logger.error("Failed to fetch datasets from Registry")
-        conn.close()
-        raise
+
+    all_datasets = [
+        {
+            "id": dataset_metadata["id"],
+            "name": dataset_metadata["short_name"],
+            "hash": (
+                dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"]
+                if dataset_metadata["last_known_good_dataset"]["hash_excluding_generated_timestamp"] is not None
+                else ""
+            ),
+            "cached_dataset_url": dataset_metadata["last_known_good_dataset"]["cached_dataset_url_xml"],
+            "url": dataset_metadata["source_url"],
+            "publisher_id": dataset_metadata["reporting_org_id"],
+        }
+        for dataset_metadata in dataset_list
+    ]
 
     set_prom_metric("registered_datasets", len(all_datasets))
 
     known_documents_num = db.getNumDocuments(conn)
+
+    logger.info(
+        "Number datasets in DB (before update): {}, in Bulk Data Service: {}".format(
+            known_documents_num, len(all_datasets)
+        )
+    )
+
     if len(all_datasets) < (config["REFRESHER"]["DOCUMENT_SAFETY_PERCENTAGE"] / 100) * known_documents_num:
         logger.error(
-            "Number of documents reported by registry: "
+            "Number of documents reported by Bulk Data Service: "
             + str(len(all_datasets))
             + ", is less than "
             + str(config["REFRESHER"]["DOCUMENT_SAFETY_PERCENTAGE"])
-            + r"% of previously known publishers: "
+            + r"% of previously known documents: "
             + str(known_documents_num)
             + ", NOT Updating Documents at this time."
         )
@@ -406,13 +297,18 @@ def sync_documents():
     changed_datasets = []
 
     for dataset in all_datasets:
+
+        if (
+            config["REFRESHER"]["LIMIT_ENABLED"] == "yes"
+            and dataset["name"] not in config["REFRESHER"]["LIMIT_TO_DATASETS"]
+        ):
+            continue
+
         try:
             changed = db.getFileWhereHashChanged(conn, dataset["id"], dataset["hash"])
             if changed is not None:
                 changed_datasets += [changed]
-            db.insertOrUpdateDocument(
-                conn, dataset["id"], dataset["hash"], dataset["url"], dataset["org_id"], start_dt, dataset["name"]
-            )
+            db.insertOrUpdateDocument(conn, start_dt, dataset)
         except DbError as e:
             e_message = ""
             if e.pgerror is not None:
@@ -426,18 +322,27 @@ def sync_documents():
                 + e_message
             )
             conn.rollback()
-        except Exception:
+        except Exception as e:
             logger.error(
                 "Failed to sync document with hash: "
                 + dataset["hash"]
                 + " and id: "
                 + dataset["id"]
-                + " : Unidentified Error"
+                + ": Unexpected Error: "
+                + str(e)
             )
 
     set_prom_metric("datasets_changed", len(changed_datasets))
 
     stale_datasets = db.getFilesNotSeenAfter(conn, start_dt)
+
+    known_documents_num_after = db.getNumDocuments(conn)
+
+    logger.info(
+        "Number datasets added: {}, updated: {}, deleted (stale): {}".format(
+            known_documents_num_after - known_documents_num, len(changed_datasets), len(stale_datasets)
+        )
+    )
 
     if len(changed_datasets) > 0 or len(stale_datasets) > 0:
         clean_datasets(stale_datasets, changed_datasets)
@@ -447,19 +352,33 @@ def sync_documents():
     conn.close()
 
 
-def refresh():
-    logger.info("Begin refresh")
+def refresh_publisher_and_dataset_info():
+    logger.info("Begin refresh cycle")
 
-    logger.info("Syncing publishers from the Registry...")
+    dataset_index = get_dataset_index()
+
+    reporting_orgs_index_supplemented = get_reporting_orgs_supplemented_metadata()
+
+    if (
+        dataset_index["index_created_unix_timestamp"]
+        != reporting_orgs_index_supplemented["index_created_unix_timestamp"]
+    ):
+        logger.info("Dataset and reporting orgs indices are from different runs of Bulk Data Service")
+        logger.info("Skipping refresh")
+        return
+
+    populate_reporting_orgs_with_dataset_count(reporting_orgs_index_supplemented, dataset_index["datasets"])
+
+    logger.info("Updating list of publishers from the Bulk Data Service...")
     try:
-        sync_publishers()
+        sync_publishers(reporting_orgs_index_supplemented["reporting_orgs"])
         logger.info("Publishers synced.")
     except Exception:
         logger.error("Publishers failed to sync.")
 
-    logger.info("Syncing documents from the Registry...")
+    logger.info("Updating list of documents from the Bulk Data Service...")
     try:
-        sync_documents()
+        sync_documents(dataset_index["datasets"])
         logger.info("Documents synced.")
     except Exception:
         logger.error("Documents failed to sync.")
@@ -468,7 +387,7 @@ def refresh():
 
 
 def reload(retry_errors):
-    logger.info("Start reload...")
+    logger.info("Start reload (with retry_errors = {})...".format(retry_errors))
     blob_service_client = BlobServiceClient.from_connection_string(config["STORAGE_CONNECTION_STR"])
     conn = db.getDirectConnection()
 
@@ -504,17 +423,42 @@ def reload(retry_errors):
 def service_loop():
     logger.info("Start service loop")
     count = 0
+    service_loop_sleep = int(config["REFRESHER"]["SERVICE_LOOP_SLEEP"])
+    existing_bds_etag = None
+
     while True:
         count = count + 1
-        refresh()
 
-        if count > config["REFRESHER"]["RETRY_ERRORS_AFTER_LOOP"]:
-            count = 0
-            reload(True)
-        else:
-            reload(False)
+        try:
+            latest_bds_etag = get_dataset_list_etag()
 
-        time.sleep(config["REFRESHER"]["SERVICE_LOOP_SLEEP"])
+            if count > config["REFRESHER"]["RETRY_ERRORS_AFTER_LOOP"]:
+                logger.info("Reached threshold for re-trying failed downloads, so running refresh")
+
+                refresh_publisher_and_dataset_info()
+                reload(True)
+                count = 0
+
+            elif existing_bds_etag != latest_bds_etag:
+                logger.info("Bulk Data Service index ETag changed to {}, so running refresh".format(latest_bds_etag))
+
+                refresh_publisher_and_dataset_info()
+                reload(False)
+                existing_bds_etag = latest_bds_etag
+
+            else:
+                logger.info(
+                    "Bulk Data Service index ETag unchanged ({}) so skipping refresh".format(existing_bds_etag)
+                )
+
+            logger.info("Sleeping for {} seconds".format(service_loop_sleep))
+            time.sleep(service_loop_sleep)
+
+        except RuntimeError as e:
+            logger.error("RuntimeError occurred in refresh/reload service loop.")
+            logger.error("Details: {}".format(e))
+            logger.error("Sleeping for {} seconds, then restarting loop".format(service_loop_sleep))
+            time.sleep(service_loop_sleep)
 
 
 def split(lst, n):
@@ -529,14 +473,23 @@ def download_chunk(chunk, blob_service_client, datasets):
 
         id = dataset[0]
         hash = dataset[1]
-        url = dataset[2]
+        cached_dataset_url = dataset[2]
+
+        if cached_dataset_url is None:
+            db.updateFileAsDownloadError(conn, id, 4)
+            continue
 
         try:
             blob_client = blob_service_client.get_blob_client(
                 container=config["SOURCE_CONTAINER_NAME"], blob=hash + ".xml"
             )
-            logger.info("Trying to download url: " + url + " and hash: " + hash + " and id: " + id)
-            download_response = requests_retry_session(retries=3).get(url=url, headers=REQUESTS_HEADERS, timeout=5)
+            headers = {"User-Agent": "iati-unified-platform-refresher/" + __version__["number"]}
+            logger.info("Trying to download url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id)
+            download_response = requests_retry_session(retries=3).get(
+                url=cached_dataset_url,
+                headers=headers,
+                timeout=config["REFRESHER"]["BULK_DATA_SERVICE_HTTP_TIMEOUT"],
+            )
             download_xml = download_response.content
             if download_response.status_code == 200:
                 try:
@@ -552,7 +505,9 @@ def download_chunk(chunk, blob_service_client, datasets):
                 blob_client.upload_blob(download_xml, overwrite=True, encoding=charset)
                 blob_client.set_blob_tags({"document_id": id})
                 db.updateFileAsDownloaded(conn, id)
-                logger.debug("Successfully downloaded url: " + url + " and hash: " + hash + " and id: " + id)
+                logger.debug(
+                    "Successfully downloaded url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id
+                )
             else:
                 db.updateFileAsDownloadError(conn, id, download_response.status_code)
                 clean_containers_by_id(blob_service_client, id)
@@ -560,18 +515,27 @@ def download_chunk(chunk, blob_service_client, datasets):
                     "HTTP "
                     + str(download_response.status_code)
                     + " when downloading url: "
-                    + url
+                    + cached_dataset_url
                     + " and hash: "
                     + hash
                     + " and id: "
                     + id
                 )
         except requests.exceptions.SSLError:
-            logger.debug("SSLError while downloading url: " + url + " and hash: " + hash + " and id: " + id)
+            logger.debug(
+                "SSLError while downloading url: " + cached_dataset_url + " and hash: " + hash + " and id: " + id
+            )
             db.updateFileAsDownloadError(conn, id, 1)
             clean_containers_by_id(blob_service_client, id)
         except requests.exceptions.ConnectionError:
-            logger.debug("ConnectionError while downloading url: " + url + " and hash: " + hash + " and id: " + id)
+            logger.debug(
+                "ConnectionError while downloading url: "
+                + cached_dataset_url
+                + " and hash: "
+                + hash
+                + " and id: "
+                + id
+            )
             db.updateFileAsDownloadError(conn, id, 0)
             clean_containers_by_id(blob_service_client, id)
         except requests.exceptions.InvalidSchema as e:
@@ -580,14 +544,19 @@ def download_chunk(chunk, blob_service_client, datasets):
             clean_containers_by_id(blob_service_client, id)
         except AzureExceptions.ResourceNotFoundError as e:
             logger.debug(
-                "ResourceNotFoundError while downloading url: " + url + " and hash: " + hash + " and id: " + id
+                "ResourceNotFoundError while downloading url: "
+                + cached_dataset_url
+                + " and hash: "
+                + hash
+                + " and id: "
+                + id
             )
             db.updateFileAsDownloadError(conn, id, e.status_code)
             clean_containers_by_id(blob_service_client, id)
         except AzureExceptions.ServiceResponseError as e:
             logger.warning(
                 "Failed to upload file with url: "
-                + url
+                + cached_dataset_url
                 + " and hash: "
                 + hash
                 + " and id: "
@@ -601,7 +570,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 e_message = e.args[0]
             logger.warning(
                 "Failed to upload or download file with url: "
-                + url
+                + cached_dataset_url
                 + " and hash: "
                 + hash
                 + " and id: "

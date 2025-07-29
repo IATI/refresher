@@ -1,0 +1,40 @@
+{
+    "datasets": [
+        {
+            "id": "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0a",
+            "last_known_good_dataset": {
+                "cached_dataset_url_xml": "https://bulk-data.iatistandard.org/test-org-1/test-org-1-act-01.xml",
+                "cached_dataset_url_zip": "https://bulk-data.iatistandard.org/test-org-1/test-org-1-act-01.zip",
+                "downloaded": "2024-10-10 04:34:04.253219+00:00",
+                "hash": "780319192ca4c79184ca79bc4fc4849bf984d2f5",
+                "hash_excluding_generated_timestamp": "854a53af5c9666f737514a12e8a3d05316579a19",
+                "verified_on_server": "2024-10-10 04:34:04.253219+00:00"
+            },
+            "last_update_check": "2024-10-10 04:34:04.253219+00:00",
+            "license_id": "other-at",
+            "short_name": "test-org-1-act-01",
+            "reporting_org_id": "aaaaaaaa-02b9-4cb6-b08e-496e634e0cf0",
+            "reporting_org_short_name": "test-org-1",
+            "source_url": "http://test-org-1.org/iati-xml-files/test-org-1-activity-1.xml"
+        },
+        {
+            "id": "bbbbbbbb-9bc5-41dd-9b16-9d9ea28cdf0b",
+            "last_known_good_dataset": {
+                "cached_dataset_url_xml": "https://bulk-data.iatistandard.org/test-org-2/test-org-1-act-01.xml",
+                "cached_dataset_url_zip": "https://bulk-data.iatistandard.org/test-org-1/test-org-1-act-01.zip",
+                "downloaded": "2024-10-10 04:34:04.253219+00:00",
+                "hash": "780319192ca4c79184ca79bc4fc4849bf984d2f1",
+                "hash_excluding_generated_timestamp": "854a53af5c9666f737514a12e8a3d05316579a11",
+                "verified_on_server": "2024-10-10 04:34:04.253219+00:00"
+            },
+            "last_update_check": "2024-10-10 04:34:04.253219+00:00",
+            "license_id": "other-at",
+            "short_name": "test-org-2-act-01",
+            "reporting_org_id": "bbbbbbbb-02b9-4cb6-b08e-496e634e0cf0",
+            "reporting_org_short_name": "test-org-2",
+            "source_url": "http://test-org-2.org/iati-xml-files/test-org-2-activity-1.xml"
+        }
+    ],
+    "index_created": "2024-10-10 14:28:35.160452+00:00",
+    "index_created_unix_timestamp": 1728570515
+}

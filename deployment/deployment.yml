@@ -63,6 +63,16 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_KEY#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: BULK_DATA_SERVICE_DATASET_INDEX_URL
+            value: '#BULK_DATA_SERVICE_DATASET_INDEX_URL#'
+          - name: BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL
+            value: '#BULK_DATA_SERVICE_REPORTING_ORG_INDEX_URL#'
+          - name: BULK_DATA_SERVICE_HTTP_TIMEOUT
+            value: '#BULK_DATA_SERVICE_HTTP_TIMEOUT#'
+          - name: REFRESH_STAGE_LOOP_SLEEP
+            value: '#REFRESH_STAGE_LOOP_SLEEP#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'validate'
       properties:
         resources:
@@ -120,6 +130,8 @@ properties: # Properties of container group
             secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'clean'
       properties:
         resources:
@@ -179,6 +191,8 @@ properties: # Properties of container group
             secureValue: '#SCHEMA_VALIDATION_KEY_VALUE#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'flatten'
       properties:
         resources:
@@ -232,6 +246,8 @@ properties: # Properties of container group
             secureValue: '#FLATTENER_KEY_VALUE#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'lakify'
       properties:
         resources:
@@ -277,6 +293,8 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_KEY#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'solrize'
       properties:
         resources:
@@ -328,6 +346,8 @@ properties: # Properties of container group
             secureValue: '#COMMSHUB_KEY#'
           - name: LOG_LEVEL
             secureValue: '#LOG_LEVEL#'
+          - name: SENTRY_DSN
+            secureValue: '#SENTRY_DSN#'
     - name: 'nginx-proxy-for-prometheus'
       properties:
         image: "#NGINX_IMAGE_NAME#"
