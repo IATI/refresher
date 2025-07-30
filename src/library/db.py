@@ -845,7 +845,7 @@ def insertOrUpdateDocument(conn, dt: datetime, dataset: dict):
                 clean_start = null,
                 clean_end = null,
                 clean_error = null
-            WHERE document.id=%(id)s and document.hash != %(hash)s;
+            WHERE document.id=%(id)s and (document.hash != %(hash)s or document.cached_dataset_url is null or document.cached_dataset_url != %(cached_dataset_url)s);
     """
 
     sql2 = """
