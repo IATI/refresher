@@ -10,6 +10,8 @@ RECURSIVE_JSON_NEST_FILES = [
     ("basic"),
     ("edgecase"),
     ("comment"),
+    ("currency"),
+    ("default_currency"),
 ]
 
 
