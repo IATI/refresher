@@ -326,10 +326,12 @@ def sync_documents(dataset_list: list[dict]):
                 + dataset["hash"]
                 + " and id: "
                 + dataset["id"]
-                + " : "
+                + " : DbError: "
                 + e_message
             )
             conn.rollback()
+            conn.close()
+            raise e
         except Exception as e:
             sentry_sdk.capture_exception(e)
             logger.error(
@@ -340,6 +342,8 @@ def sync_documents(dataset_list: list[dict]):
                 + ": Unexpected Error: "
                 + str(e)
             )
+            conn.close()
+            raise e
 
     set_prom_metric("datasets_changed", len(changed_datasets))
 
