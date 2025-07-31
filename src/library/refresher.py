@@ -6,6 +6,7 @@ from datetime import datetime
 
 import chardet
 import requests
+import sentry_sdk
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from psycopg2 import Error as DbError
@@ -75,6 +76,7 @@ def clean_datasets(stale_datasets, changed_datasets):
                 else:
                     lake_container_client.delete_blobs(*name_list)
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.warning("Failed to clean up lake for id: " + file_id + " and hash: " + file_hash + " " + str(e))
 
     # clean up source xml and solr for both stale and changed datasets
@@ -95,6 +97,7 @@ def clean_datasets(stale_datasets, changed_datasets):
             for core_name in solr_cores:
                 solr_cores[core_name].ping()
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.error("ERROR with Initialising Solr to delete stale or changed documents")
             print(traceback.format_exc())
             if hasattr(e, "args"):
@@ -148,7 +151,8 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # Maybe we should clean up the last_solrize_end field here, as they are now gone?
                 # However, we don't have to as if you look at how clean_datasets is called,
                 #   in each case right afterwards the rows are removed from the DB anyway.
-            except Exception:
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.error(
                     "Unknown error occurred while attempting to remove stale document ID {} "
                     "from Source and SOLR".format(file_id)
@@ -177,7 +181,8 @@ def clean_datasets(stale_datasets, changed_datasets):
                 # We want old data to stay in the system until new data is ready to be put in Solr.
                 # The Solrize stage will delete the old data from Solr.
 
-            except Exception:
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.error(
                     "Unknown error occurred while attempting to remove changed "
                     "document ID {} from Source and SOLR".format(file_id)
@@ -225,6 +230,7 @@ def sync_publishers(publishers_by_short_name: dict[str, dict]):
         try:
             db.insertOrUpdatePublisher(conn, publisher, start_dt)
         except DbError as e:
+            sentry_sdk.capture_exception(e)
             e_message = ""
             if e.pgerror is not None:
                 e_message = e.pgerror
@@ -235,6 +241,7 @@ def sync_publishers(publishers_by_short_name: dict[str, dict]):
             conn.close()
             raise e
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             e_message = ""
             if hasattr(e, "args"):
                 e_message = e.args[0]
@@ -310,6 +317,7 @@ def sync_documents(dataset_list: list[dict]):
                 changed_datasets += [changed]
             db.insertOrUpdateDocument(conn, start_dt, dataset)
         except DbError as e:
+            sentry_sdk.capture_exception(e)
             e_message = ""
             if e.pgerror is not None:
                 e_message = e.pgerror
@@ -318,11 +326,14 @@ def sync_documents(dataset_list: list[dict]):
                 + dataset["hash"]
                 + " and id: "
                 + dataset["id"]
-                + " : "
+                + " : DbError: "
                 + e_message
             )
             conn.rollback()
+            conn.close()
+            raise e
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.error(
                 "Failed to sync document with hash: "
                 + dataset["hash"]
@@ -331,6 +342,8 @@ def sync_documents(dataset_list: list[dict]):
                 + ": Unexpected Error: "
                 + str(e)
             )
+            conn.close()
+            raise e
 
     set_prom_metric("datasets_changed", len(changed_datasets))
 
@@ -543,6 +556,7 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, 3)
             clean_containers_by_id(blob_service_client, id)
         except AzureExceptions.ResourceNotFoundError as e:
+            sentry_sdk.capture_exception(e)
             logger.debug(
                 "ResourceNotFoundError while downloading url: "
                 + cached_dataset_url
@@ -554,6 +568,7 @@ def download_chunk(chunk, blob_service_client, datasets):
             db.updateFileAsDownloadError(conn, id, e.status_code)
             clean_containers_by_id(blob_service_client, id)
         except AzureExceptions.ServiceResponseError as e:
+            sentry_sdk.capture_exception(e)
             logger.warning(
                 "Failed to upload file with url: "
                 + cached_dataset_url
@@ -565,6 +580,7 @@ def download_chunk(chunk, blob_service_client, datasets):
                 + e.message
             )
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             e_message = ""
             if hasattr(e, "args"):
                 e_message = e.args[0]

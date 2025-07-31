@@ -3,6 +3,7 @@ import time
 from io import BytesIO
 from multiprocessing import Process
 
+import sentry_sdk
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobServiceClient
 from lxml import etree
@@ -131,6 +132,7 @@ def process_hash_list(document_datasets):
             db.completeLakify(conn, doc_id)
 
         except ResourceNotFoundError as e:
+            sentry_sdk.capture_exception(e)
             err_message = "Unknown ResourceNotFoundError reason."
             if hasattr(e, "reason"):
                 err_message = e.reason
@@ -140,6 +142,7 @@ def process_hash_list(document_datasets):
             )
             db.sendLakifyErrorToClean(conn, doc_id)
         except (etree.XMLSyntaxError, etree.SerialisationError) as e:
+            sentry_sdk.capture_exception(e)
             err_message = "Unknown error"
             if hasattr(e, "msg"):
                 err_message = e.msg
@@ -149,6 +152,7 @@ def process_hash_list(document_datasets):
             )
             db.sendLakifyErrorToClean(conn, doc_id)
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             err_message = "Unknown error"
             if hasattr(e, "args") and len(e.args) > 0:
                 err_message = e.args[0]
