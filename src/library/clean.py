@@ -3,6 +3,7 @@ import traceback
 from io import BytesIO
 from multiprocessing import Process
 
+import sentry_sdk
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from lxml import etree
@@ -57,6 +58,7 @@ def copy_valid_documents(documents):
 
             db.completeClean(conn, id)
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.error("ERROR with copying valid documents to clean storage")
         print(traceback.format_exc())
         if hasattr(e, "message"):
@@ -152,7 +154,8 @@ def clean_invalid_documents(documents):
                     "Not Downloaded for the refresher to pick up."
                 )
                 db.updateFileAsNotDownloaded(conn, id)
-            except etree.XMLSyntaxError:
+            except etree.XMLSyntaxError as e:
+                sentry_sdk.capture_exception(e)
                 logger.warning(f"Cannot parse entire XML for hash: {hash} id: {id}. ")
                 try:
                     file_text, file_encoding = utils.get_text_from_blob(downloader, hash, True)
@@ -194,6 +197,7 @@ def clean_invalid_documents(documents):
             db.completeClean(conn, id)
 
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.error("ERROR with cleaning invalid documents and saving to clean storage")
         print(traceback.format_exc())
         if hasattr(e, "message"):

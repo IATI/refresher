@@ -5,6 +5,7 @@ import traceback
 from multiprocessing import Process
 
 import pysolr
+import sentry_sdk
 from azure.storage.blob import BlobServiceClient
 
 import library.db as db
@@ -316,6 +317,7 @@ def process_hash_list(document_datasets):
                         + core_name
                     )
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             message = "Unidentified ERROR with Solrizing hash: " + file_hash + " and id: " + file_id
             logger.error(message)
             db.updateSolrError(conn, file_id, message)

@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import psycopg2
+import sentry_sdk
 
 from constants.config import config
 from constants.version import __version__
@@ -30,6 +31,7 @@ def getDirectConnection(retry_counter=0):
         retry_counter = 0
         return connection
     except psycopg2.OperationalError as e:
+        sentry_sdk.capture_exception(e)
         if retry_counter >= config["DB_CONN_RETRY_LIMIT"]:
             raise e
         else:
@@ -46,6 +48,7 @@ def getDirectConnection(retry_counter=0):
             time.sleep(sleep_time)
             return getDirectConnection(retry_counter)
     except (Exception, psycopg2.Error) as e:
+        sentry_sdk.capture_exception(e)
         logger.error("Error connecting: {}. reconnecting {}".format(str(e).strip(), retry_counter))
         raise e
 
@@ -142,6 +145,7 @@ def migrateIfRequired():
         conn.commit()
         conn.close()
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.warning("Encountered unexpected exemption during migration... Rolling back...")
         conn.rollback()
         conn.close()
