@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from multiprocessing import Process
 
 import requests
+import sentry_sdk
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from azure.storage.queue import QueueServiceClient
@@ -198,6 +199,7 @@ def process_hash_list(document_datasets):
             )
             db.updateFileAsNotDownloaded(conn, file_id)
         except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.error(f"ERROR with validating {file_hash}")
             print(traceback.format_exc())
             if hasattr(e, "message"):
@@ -265,10 +267,12 @@ def safety_check():
                 db.removeBlackFlag(conn, message.content)
                 logger.info(f"Dequeueing message: {message.content}")
                 queue_client.delete_message(message.id, message.pop_receipt)
-            except Exception:
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.warning(f"Could not process message with id: {message.id} for publisher id: {message.content}")
                 continue
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.warning("Failed to process removal of publisher black flags")
 
     db.blackFlagDubiousPublishers(
@@ -299,7 +303,8 @@ def safety_check():
 
         try:
             response = requests.post(config["NOTIFICATION_URL"], data=json.dumps(notification), headers=headers)
-        except Exception:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             logger.warning(f"Could not notify Black Flag for publisher id: {org_id}")
             continue
 

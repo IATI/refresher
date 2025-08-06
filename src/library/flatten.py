@@ -6,6 +6,7 @@ import traceback
 from multiprocessing import Process
 
 import dateutil.parser
+import sentry_sdk
 from azure.core import exceptions as AzureExceptions
 from azure.storage.blob import BlobServiceClient
 from lxml import etree
@@ -208,6 +209,7 @@ def process_hash_list(document_datasets):
             )
             db.updateFileAsNotDownloaded(conn, doc_id)
         except (Exception, FlattenerException) as e:
+            sentry_sdk.capture_exception(e)
             # Log to logs
             logger.error("ERROR with flattening " + file_hash)
             print(traceback.format_exc())
