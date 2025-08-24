@@ -21,14 +21,29 @@ def clean_identifier(identifier):
     return identifier.strip().replace("\n", "")
 
 
-def recursive_json_nest(element, output):
+def recursive_json_nest(element, output, key="", activity_data={}):
+    # If we are at root, put anything we want to save into activity_data
+    if key == "":
+        activity_data["default-currency"] = element.get("default-currency")
+
+    # Start building output
     element_dict = {"@{}".format(e_key): element.get(e_key) for e_key in element.keys()}
+
+    # Usefull var
     element_tag = element.tag
     if element_tag is etree.Comment:
         element_tag = "comment()"
     elif element_tag is etree.PI:
         element_tag = "PI()"
 
+    # If missing any data here, maybe take it from activity_data
+    if (key in ["/iati-activity/budget","/iati-activity/transaction","/iati-activity/planned-disbursement"] 
+            and element_tag == "value" 
+            and not "currency" in element.keys() 
+            and activity_data.get("default-currency")):
+        element_dict["@currency"] = activity_data.get("default-currency")
+
+    # Sort out text()
     if element.text is not None and element.text.strip() != "":
         element_dict["text()"] = element.text
     else:
@@ -41,9 +56,11 @@ def recursive_json_nest(element, output):
     if element_tag == "narrative" and "text()" not in element_dict:
         element_dict["text()"] = ""
 
+    # Child content
     for e_child in element.getchildren():
-        element_dict = recursive_json_nest(e_child, element_dict)
+        element_dict = recursive_json_nest(e_child, element_dict, key=key+"/"+element_tag, activity_data=activity_data)
 
+    # Put in output, return
     if element_tag in output.keys():
         output[element_tag].append(element_dict)
     else:
