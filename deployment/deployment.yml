@@ -18,7 +18,7 @@ properties: # Properties of container group
       properties: # Properties of an instance
         resources: # Resource requirements of the instance
           requests:
-            memoryInGB: 3.7
+            memoryInGB: 3.5
             cpu: 0.5
         image: '#IMAGE_NAME#' # Container image used to create the instance
         command:
@@ -77,7 +77,7 @@ properties: # Properties of container group
       properties:
         resources:
           requests:
-            memoryInGB: 3.7
+            memoryInGB: 3.5
             cpu: 0.1
         image: '#IMAGE_NAME#'
         command:
@@ -136,7 +136,7 @@ properties: # Properties of container group
       properties:
         resources:
           requests:
-            memoryInGB: 0.7
+            memoryInGB: 1.1
             cpu: 0.1
         image: '#IMAGE_NAME#'
         command:
