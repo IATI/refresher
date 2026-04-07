@@ -2,6 +2,7 @@ import time
 import traceback
 from io import BytesIO
 from multiprocessing import Process
+from typing import Any
 
 import sentry_sdk
 from azure.core import exceptions as AzureExceptions
@@ -112,7 +113,7 @@ def copy_valid():
     logger.info("copy_valid Finished.")
 
 
-def clean_invalid_documents(documents):
+def clean_invalid_documents(documents: list[tuple[str, str, list[dict[str, Any]]]]):
     """removes invalid activities from documents and saves to clean container storage
 
     Args:
@@ -122,10 +123,10 @@ def clean_invalid_documents(documents):
         conn = db.getDirectConnection()
 
         for document in documents:
-            hash = document[0]
-            id = document[1]
-            index = document[2]
-            valid_dict = {act["index"]: act["valid"] for act in index if act["valid"] is True}
+            hash: str = document[0]
+            id: str = document[1]
+            index: list[dict[str, Any]] = document[2]
+            valid_dict: dict[int, bool] = {act["index"]: act["valid"] for act in index if act["valid"] is True}
 
             logger.info(
                 f"Copying {len(valid_dict)} valid of {len(index)} total activities xml to "
@@ -154,21 +155,23 @@ def clean_invalid_documents(documents):
                     "Not Downloaded for the refresher to pick up."
                 )
                 db.updateFileAsNotDownloaded(conn, id)
+                continue
             except etree.XMLSyntaxError as e:
                 sentry_sdk.capture_exception(e)
-                logger.warning(f"Cannot parse entire XML for hash: {hash} id: {id}. ")
+                logger.warning(f"Cannot parse entire XML for hash: {hash} id: {id}: {e}. ")
                 try:
-                    file_text, file_encoding = utils.get_text_from_blob(downloader, hash, True)
+                    _, file_encoding = utils.get_text_from_blob(downloader, hash, True)
                 except:
-                    logger.warning(f"Can not identify charset for hash: {hash} id: {id} to remove invalid activities.")
-                    db.updateCleanError(conn, id, "Could not parse")
-                    continue
+                    logger.warning(f"Cannot identify charset for hash: {hash} id: {id} to remove invalid activities.")
+                db.updateCleanError(conn, id, "Could not parse")
+                continue
 
             # loop and save valid activities to clean doc
             activities = iati_activities_el.xpath("iati-activity")
 
             cleanDoc = etree.Element("iati-activities")
 
+            # copy attributes from the iati-activities element over to the new element
             for att in iati_activities_el.attrib:
                 cleanDoc.attrib[att] = iati_activities_el.attrib[att]
 
@@ -196,9 +199,11 @@ def clean_invalid_documents(documents):
 
             db.completeClean(conn, id)
 
+        conn.close()
+
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        logger.error("ERROR with cleaning invalid documents and saving to clean storage")
+        logger.error(f"ERROR with cleaning invalid documents and saving to clean storage: {e}")
         print(traceback.format_exc())
         if hasattr(e, "message"):
             logger.error(e.message)
