@@ -53,6 +53,24 @@ def getDirectConnection(retry_counter=0):
         raise e
 
 
+def _exec_with_deadlock_retry(conn, sql, params=None, max_attempts=3):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with conn.cursor() as curs:
+                if params is not None:
+                    curs.execute(sql, params)
+                else:
+                    curs.execute(sql)
+            conn.commit()
+            return
+        except psycopg2.errors.DeadlockDetected:
+            conn.rollback()
+            if attempt >= max_attempts:
+                raise
+            logger.warning(f"Deadlock detected: making attempt {attempt + 1} of {max_attempts}")
+            time.sleep(0.1 * attempt)
+
+
 def get_current_db_version(conn):
     sql = "SELECT number, migration FROM version LIMIT 1"
 
@@ -387,17 +405,18 @@ def getUnlakifiedDatasets(conn):
 
 
 def resetUnfinishedLakifies(conn):
-    cur = conn.cursor()
     sql = """
         UPDATE document
-        SET lakify_start=null
-        WHERE lakify_end is null
-        AND lakify_error is null
+        SET lakify_start = null
+        WHERE id IN (
+            SELECT id FROM document
+            WHERE lakify_end IS NULL
+            AND lakify_error IS NULL
+            ORDER BY id
+            FOR UPDATE
+        )
     """
-
-    cur.execute(sql)
-    conn.commit()
-    cur.close()
+    _exec_with_deadlock_retry(conn, sql)
 
 
 def resetUnfoundLakify(conn, doc_id):
@@ -420,28 +439,31 @@ def resetUnfoundLakify(conn, doc_id):
 
 
 def resetUnfinishedFlattens(conn):
-    cur = conn.cursor()
     sql = """
         UPDATE document
-        SET flatten_start=null
-        WHERE flatten_end is null
+        SET flatten_start = null
+        WHERE id IN (
+            SELECT id FROM document
+            WHERE flatten_end IS NULL
+            ORDER BY id
+            FOR UPDATE
+        )
     """
-
-    cur.execute(sql)
-    conn.commit()
-    cur.close()
+    _exec_with_deadlock_retry(conn, sql)
 
 
 def resetUnfinishedCleans(conn):
     sql = """
         UPDATE document
         SET clean_start = null
-        WHERE clean_end is null
+        WHERE id IN (
+            SELECT id FROM document
+            WHERE clean_end IS NULL
+            ORDER BY id
+            FOR UPDATE
+        )
     """
-
-    with conn.cursor() as curs:
-        curs.execute(sql)
-    conn.commit()
+    _exec_with_deadlock_retry(conn, sql)
 
 
 def updateDocumentSchemaValidationStatus(conn, id, valid):
