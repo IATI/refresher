@@ -115,7 +115,7 @@ def load_config_from_env():
         ),
         LAKIFY=dict(
             # Number of parallel processes to run the lakify loop with
-            PARALLEL_PROCESSES=10,
+            PARALLEL_PROCESSES=3,
             PROM_PORT=9095,
             PROM_METRIC_DEFS=[
                 ("datasets_to_lakify", "The number of datasets that need lakifying"),

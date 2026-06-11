@@ -267,8 +267,6 @@ Service Loop (when container starts)
 
 - `main()` - Flattens XML into a flat JSON document, then stores it in the database (`document.flattened_activities`) in JSONB format.
 
-Used to use the [iati-flattener service](https://github.com/IATI/iati-flattener),  but now it does it using a Python class it the same process.
-
 ## Logic
 
 - `main()`
