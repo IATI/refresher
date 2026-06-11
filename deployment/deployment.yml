@@ -358,7 +358,7 @@ properties: # Properties of container group
         resources:
           requests:
             cpu: 0.1
-            memoryInGB: 0.3  # 30 day max as of June 2026 was 0.05
+            memoryInGB: 0.2  # 30 day max as of June 2026 was 0.05
   ipAddress:
     type: "public"
     dnsNameLabel: "#NAME#-#ENVIRONMENT#"
