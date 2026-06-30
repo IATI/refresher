@@ -300,7 +300,7 @@ properties: # Properties of container group
       properties:
         resources:
           requests:
-            memoryInGB: 3.8  # 30 day max as of June 2026 was unknown, crashing at cap 3
+            memoryInGB: 5  # 30 day max as of June 2026 was unknown, crashing at cap 4
             cpu: 1
         image: '#IMAGE_NAME#'
         command:
