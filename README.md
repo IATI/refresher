@@ -14,15 +14,15 @@ Support | https://iatistandard.org/en/guidance/get-support/
 
 Its responsibilities include:
 
-- Downloads IATI data as presented by the IATI registry
+- Downloads the all of the IATI XML datasets (as output by the Bulk Data Service)
 - Store and track changes in the source files
 - Validate the source files using the IATI Validator API
-- Store and index the normalised data in a compressed and performant Postgresql database.
-- Flattens and Lakifies the IATI data into documents which are then added to Solr.
+- Store and index the normalised data in a compressed and performant PostgreSQL database.
+- Flattens and lakifies the IATI data into documents which are then added to Solr.
 
 # DB Migrations
 
-For alterations and additions to the database schema, migration files are used. These can be found at https://github.com/IATI/refresher/tree/integrateValidator/src/migrations
+For alterations and additions to the database schema, migration files are used. These can be found at https://github.com/IATI/refresher/tree/develop/src/migrations
 
 Each migration file should have an `upgrade` and a `downgrade` variable, containing the sql required to either upgrade to, or downgrade from, that version. A simple example might be:
 

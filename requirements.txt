@@ -14,11 +14,12 @@ azure-storage-blob==12.6.0
     # via unified-pipeline-refresher (pyproject.toml)
 azure-storage-queue==12.2.0
     # via unified-pipeline-refresher (pyproject.toml)
-certifi==2023.7.22
+certifi==2026.10.23
     # via
     #   msrest
     #   requests
     #   sentry-sdk
+    #   unified-pipeline-refresher (pyproject.toml)
 cffi==1.15.1
     # via cryptography
 chardet==5.2.0
