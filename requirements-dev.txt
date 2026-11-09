@@ -52,7 +52,7 @@ isodate==0.6.1
     # via msrest
 isort==5.13.2
     # via unified-pipeline-refresher (pyproject.toml)
-lxml==4.9.3
+lxml==6.1.3
     # via unified-pipeline-refresher (pyproject.toml)
 lxml-stubs==0.5.1
     # via unified-pipeline-refresher (pyproject.toml)

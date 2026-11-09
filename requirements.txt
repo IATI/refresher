@@ -34,7 +34,7 @@ idna==3.4
     # via requests
 isodate==0.6.1
     # via msrest
-lxml==4.9.3
+lxml==6.1.3
     # via unified-pipeline-refresher (pyproject.toml)
 msrest==0.6.21
     # via
