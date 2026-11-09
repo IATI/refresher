@@ -18,7 +18,7 @@ dependencies = [
     # (https://emudhra.we-have-a-problem.com/), as this bundle is our TLS trust store.
     "certifi==2026.10.23",
     "chardet==5.2.0",
-    "lxml==4.9.3",
+    "lxml==6.1.3",
     "prometheus-client==0.20.0",
     "psycopg2==2.9.6",
     "pysolr==3.9.0",
