@@ -14,6 +14,9 @@ dependencies = [
     "azure-core==1.15.0",
     "azure-storage-blob==12.6.0",
     "azure-storage-queue==12.2.0",
+    # Pinned to a release which distrusts the compromised eMudhra G3 intermediates
+    # (https://emudhra.we-have-a-problem.com/), as this bundle is our TLS trust store.
+    "certifi==2026.10.23",
     "chardet==5.2.0",
     "lxml==4.9.3",
     "prometheus-client==0.20.0",

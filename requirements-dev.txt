@@ -18,11 +18,12 @@ black==24.4.2
     # via unified-pipeline-refresher (pyproject.toml)
 build==1.2.1
     # via pip-tools
-certifi==2024.7.4
+certifi==2026.10.23
     # via
     #   msrest
     #   requests
     #   sentry-sdk
+    #   unified-pipeline-refresher (pyproject.toml)
 cffi==1.16.0
     # via cryptography
 chardet==5.2.0
