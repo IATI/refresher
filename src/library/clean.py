@@ -145,7 +145,7 @@ def clean_invalid_documents(documents: list[tuple[str, str, list[dict[str, Any]]
 
                 downloader = blob_client.download_blob()
 
-                large_parser = etree.XMLParser(huge_tree=True)
+                large_parser = etree.XMLParser(huge_tree=False, resolve_entities="internal")  # type: ignore[arg-type]
                 root = etree.parse(BytesIO(downloader.content_as_bytes()), parser=large_parser)
                 iati_activities_el = root.getroot()
                 file_encoding = "utf-8"

@@ -80,7 +80,7 @@ def process_hash_list(document_datasets):
             downloader = blob_client.download_blob()
             blob_bytes = BytesIO(downloader.content_as_bytes())
 
-            large_parser = etree.XMLParser(huge_tree=True)
+            large_parser = etree.XMLParser(huge_tree=False, resolve_entities="internal")  # type: ignore[arg-type]
             root = etree.parse(blob_bytes, parser=large_parser).getroot()
 
             if root.tag != "iati-activities":
@@ -92,7 +92,7 @@ def process_hash_list(document_datasets):
 
             del root
 
-            context = etree.iterparse(blob_bytes, tag="iati-activity", huge_tree=True)
+            context = etree.iterparse(blob_bytes, tag="iati-activity", huge_tree=False, resolve_entities="internal")
 
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unified-pipeline-refresher"
-version = "2.9.2"
+version = "2.9.3"
 requires-python = ">= 3.10"
 readme = "README.md"
 dependencies = [
