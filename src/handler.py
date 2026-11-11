@@ -61,7 +61,8 @@ def main(args):
             else:
                 print(
                     "Type is required - either refresh, reload, safety_check, validate, "
-                    "clean, flatten, lakify, or solrize - or their related service loop."
+                    "copy_valid, clean_invalid, flatten, lakify, or solrize - "
+                    "or their related service loop."
                 )
     except Exception:
         logger.error("{} stage failed (full traceback follows)".format(args.type))
