@@ -427,6 +427,8 @@ def main():
 
     conn = db.getDirectConnection()
 
+    conn.set_session(autocommit=True, readonly=True)
+
     logger.info("Got DB connection")
 
     file_hashes = db.getUnsolrizedDatasets(conn)
@@ -457,6 +459,10 @@ def main():
             process = Process(target=process_hash_list, args=(chunk,))
             process.start()
             processes.append(process)
+
+        while any(p.is_alive() for p in processes):
+            set_prom_metric("datasets_to_solrize", len(db.getUnsolrizedDatasets(conn)))
+            time.sleep(8)
 
         for process in processes:
             process.join()

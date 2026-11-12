@@ -7,22 +7,22 @@
 Description | A Python application which has the responsibility of tracking IATI data from around the Web and refreshing the core IATI software's data stores.
 Website |  None
 Related | [datastore-search](https://github.com/IATI/datastore-search), [validator-web](https://github.com/IATI/validator-web)
-Documentation | Rest of readme
+Documentation | Rest of this `README.md`
 Technical Issues | See https://github.com/IATI/refresher/issues
 Support | https://iatistandard.org/en/guidance/get-support/
 
 
 Its responsibilities include:
 
-- Downloads IATI data as presented by the IATI registry
+- Downloads all of the IATI XML datasets (as output by the Bulk Data Service)
 - Store and track changes in the source files
 - Validate the source files using the IATI Validator API
-- Store and index the normalised data in a compressed and performant Postgresql database.
-- Flattens and Lakifies the IATI data into documents which are then added to Solr.
+- Store and index the normalised data in a compressed and performant PostgreSQL database.
+- Flattens and lakifies the IATI data into documents which are then added to Solr.
 
 # DB Migrations
 
-For alterations and additions to the database schema, migration files are used. These can be found at https://github.com/IATI/refresher/tree/integrateValidator/src/migrations
+For alterations and additions to the database schema, migration files are used. These can be found at https://github.com/IATI/refresher/tree/develop/src/migrations
 
 Each migration file should have an `upgrade` and a `downgrade` variable, containing the sql required to either upgrade to, or downgrade from, that version. A simple example might be:
 
@@ -34,7 +34,7 @@ downgrade = """ALTER TABLE public.refresher
     DROP COLUMN valid;"""
 ```
 
-Before running any task, the Refresher checks the version of the database against the version number found at https://github.com/IATI/refresher/blob/integrateValidator/src/constants/version.py. The `__version__` variable in that file is an object with the version number and the corresponding DB migration number. Of course, not every version will require a DB change, but if it does the Refresher will migrate the database either up or down to match the versions, running each step as it goes. So, an upgrade from migration 2 to 4 will run the `upgrade` sql from migration 3 and then 4. A downgrade from 4 to 2 will run the `downgrade` sql from migration 4 and then 3.
+Before running any task, the Refresher checks the version of the database against the version number found at https://github.com/IATI/refresher/tree/develop/src/constants/version.py. The `__version__` variable in that file is an object with the version number and the corresponding DB migration number. Of course, not every version will require a DB change, but if it does the Refresher will migrate the database either up or down to match the versions, running each step as it goes. So, an upgrade from migration 2 to 4 will run the `upgrade` sql from migration 3 and then 4. A downgrade from 4 to 2 will run the `downgrade` sql from migration 4 and then 3.
 
 # Local Setup
 
@@ -332,6 +332,27 @@ service_loop() calls main(), then sleeps for 60 seconds
 
 # Development
 
+## Install dependencies
+
+Dependencies are declared in `pyproject.toml`. `requirements.txt` (runtime) and
+`requirements-dev.txt` (runtime plus development tools) are pip-compile lock
+files generated from it, and are what the container image and CI install.
+To install the development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+
+After changing `pyproject.toml`, regenerate both lock files with the Python
+version used in the image (3.11):
+```bash
+pip-compile --strip-extras --output-file requirements.txt pyproject.toml
+pip-compile --strip-extras --extra dev --output-file requirements-dev.txt pyproject.toml
+```
+
+pip-compile keeps the versions already pinned in the lock files, so normal
+regeneration does not upgrade transitive dependencies. Use `--upgrade` (or
+`--upgrade-package <name>`) only when you deliberately want to move them.
+
 ## Code formatters and linters
 
 The following code formatters and linters are installed: `isort`, `flake8`,
@@ -360,7 +381,7 @@ There are some unit tests, and there is the beginnings of a framework setup for 
 
 At present, only the unit tests are run as part of the Github Actions setup.
 
-To run just the unit tests, install the dev dependencies, then run:
+To run just the unit tests, [install the dev dependencies](#install-dependencies), then run:
 
 ```bash
 pytest src/tests/unit
