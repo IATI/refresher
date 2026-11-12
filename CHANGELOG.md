@@ -14,7 +14,7 @@ The subheadings `CHANGELOG`s can use are: Added, Changed, Deprecated, Fixed, Rem
 
 - Updated `certifi` to 2026.10.23 to distrust the compromised eMudhra certificates.
 - Updated `lxml` to 6.1.3.
-- Made calls to create XML parses explicitly set `resolve_entities="internal"`.
+- Made calls to create XML parsers explicitly set `resolve_entities="internal"`.
 
 ### Fixed
 

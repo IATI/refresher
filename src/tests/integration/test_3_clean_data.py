@@ -61,10 +61,8 @@ def test_clean_stages_parse_xml_doesnt_resolve_file_entities(setup_and_teardown,
         blob_stream_downloader = blob_client.download_blob(encoding="UTF-8")
         file_content_azure = blob_stream_downloader.readall()
     except AzureExceptions.ResourceNotFoundError:
-        # clean rejects a file it cannot parse, so there may be no clean copy at all
-        file_content_azure = ""
-
+        pytest.fail("Expected cleaned XML blob to be written, but it was not found (clean may have failed).")
     with open("src/tests/artifacts/iati-xml-files/test-org-1-activity-2-should-not-read.txt", encoding="UTF-8") as f:
         should_not_read_content = f.read().strip()
 
-    assert should_not_read_content not in file_content_azure
+    pytest.raises(ValueError, file_content_azure.index, should_not_read_content)

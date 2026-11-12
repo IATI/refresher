@@ -14,7 +14,7 @@ Support | https://iatistandard.org/en/guidance/get-support/
 
 Its responsibilities include:
 
-- Downloads the all of the IATI XML datasets (as output by the Bulk Data Service)
+- Downloads all of the IATI XML datasets (as output by the Bulk Data Service)
 - Store and track changes in the source files
 - Validate the source files using the IATI Validator API
 - Store and index the normalised data in a compressed and performant PostgreSQL database.
@@ -34,7 +34,7 @@ downgrade = """ALTER TABLE public.refresher
     DROP COLUMN valid;"""
 ```
 
-Before running any task, the Refresher checks the version of the database against the version number found at https://github.com/IATI/refresher/blob/integrateValidator/src/constants/version.py. The `__version__` variable in that file is an object with the version number and the corresponding DB migration number. Of course, not every version will require a DB change, but if it does the Refresher will migrate the database either up or down to match the versions, running each step as it goes. So, an upgrade from migration 2 to 4 will run the `upgrade` sql from migration 3 and then 4. A downgrade from 4 to 2 will run the `downgrade` sql from migration 4 and then 3.
+Before running any task, the Refresher checks the version of the database against the version number found at https://github.com/IATI/refresher/tree/develop/src/constants/version.py. The `__version__` variable in that file is an object with the version number and the corresponding DB migration number. Of course, not every version will require a DB change, but if it does the Refresher will migrate the database either up or down to match the versions, running each step as it goes. So, an upgrade from migration 2 to 4 will run the `upgrade` sql from migration 3 and then 4. A downgrade from 4 to 2 will run the `downgrade` sql from migration 4 and then 3.
 
 # Local Setup
 
