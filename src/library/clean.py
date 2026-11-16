@@ -176,10 +176,11 @@ def clean_invalid_documents(documents: list[tuple[str, str, list[dict[str, Any]]
                 cleanDoc.attrib[att] = iati_activities_el.attrib[att]
 
             i = 0
-            for activity in activities:
-                if i in valid_dict:
-                    cleanDoc.append(activity)
-                i += 1
+            if isinstance(activities, list):
+                for activity in activities:
+                    if i in valid_dict:
+                        cleanDoc.append(activity)
+                    i += 1
 
             if len(cleanDoc) == 0:
                 logger.info(f"No valid activities for hash: {hash} id: {id}. ")
