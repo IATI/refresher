@@ -21,7 +21,7 @@ def test_clean_stages_parse_xml_doesnt_resolve_file_entities(setup_and_teardown,
     # Prior to 2.9.3, lxml 4.9.3 was used, and it defaulted to resolving file entities
 
     patch_bds_index_url(
-        mocker, "/bulk-data-service-indices/minimal-1-activity-file-200-status-containing-custom-entity.json"
+        mocker, "/bulk-data-service-indices/minimal-1-activity-file-200-status-containing-custom-file-entity.json"
     )
 
     # run the refresh stage once
@@ -49,20 +49,5 @@ def test_clean_stages_parse_xml_doesnt_resolve_file_entities(setup_and_teardown,
     clean.clean_invalid()
 
     dataset = get_dataset(config, DATASET_ID)
-    assert dataset is not None and dataset["clean_start"] is not None
-
-    blob_service_client = BlobServiceClient.from_connection_string(config["STORAGE_CONNECTION_STR"])
-
-    blob_client = blob_service_client.get_blob_client(
-        container=config["CLEAN_CONTAINER_NAME"], blob=row["hash"] + ".xml"
-    )
-
-    try:
-        blob_stream_downloader = blob_client.download_blob(encoding="UTF-8")
-        file_content_azure = blob_stream_downloader.readall()
-    except AzureExceptions.ResourceNotFoundError:
-        pytest.fail("Expected cleaned XML blob to be written, but it was not found (clean may have failed).")
-    with open("src/tests/artifacts/iati-xml-files/test-org-1-activity-2-should-not-read.txt", encoding="UTF-8") as f:
-        should_not_read_content = f.read().strip()
-
-    pytest.raises(ValueError, file_content_azure.index, should_not_read_content)
+    assert dataset is not None
+    assert dataset["clean_error"] == "Could not parse"

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE iati-activities [
-    <!ENTITY xxe SYSTEM "test-org-1-activity-2-should-not-read.txt">
+    <!ENTITY xxe SYSTEM "./src/tests/artifacts/iati-xml-files/test-org-1-activity-2-should-not-read.txt">
 ]>
 <iati-activities version="2.03" generated-datetime="2024-06-20T07:10:17+00:00">
 <iati-activity last-updated-datetime="2024-06-20T07:10:15+00:00" xml:lang="en" default-currency="GBP" humanitarian="false" hierarchy="1" linked-data-uri="">
