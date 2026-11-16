@@ -92,7 +92,9 @@ def process_hash_list(document_datasets):
 
             del root
 
-            context = etree.iterparse(blob_bytes, tag="iati-activity", huge_tree=False, resolve_entities="internal")
+            context = etree.iterparse(  # type: ignore[arg-type]
+                blob_bytes, tag="iati-activity", huge_tree=False, resolve_entities="internal"
+            )
 
             for _, activity in context:
                 identifiers = activity.xpath("iati-identifier/text()")

@@ -60,7 +60,7 @@ class Flattener:
             huge_tree=False,
             recover=True,
             remove_comments=True,
-            resolve_entities="internal",
+            resolve_entities="internal",  # type: ignore[arg-type]
         )
         for _, activity in context:
             nsmap = activity.nsmap
