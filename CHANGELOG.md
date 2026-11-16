@@ -8,10 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 The subheadings `CHANGELOG`s can use are: Added, Changed, Deprecated, Fixed, Removed, Security.
 
-## 2026-11-11
+## [2.9.3] - 2026-11-11
 
 ### Changed
 
+- Moved requirements to `pyproject.toml`
 - Updated `certifi` to 2026.10.23 to distrust the compromised eMudhra certificates.
 - Updated `lxml` to 6.1.3.
 - Made calls to create XML parsers explicitly set `resolve_entities="internal"`.

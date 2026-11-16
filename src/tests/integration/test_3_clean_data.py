@@ -15,7 +15,7 @@ DATASET_ID = "aaaaaaaa-9bc5-41dd-9b16-9d9ea28cdf0b"
 @pytest.mark.parametrize(
     "setup_and_teardown", ["src/tests/integration/unified-pipeline-test-env-setup.env"], indirect=True
 )
-def test_clean_stages_parse_xml_doesnt_resolve_file_entities(setup_and_teardown, mocker):  # noqa: F811
+def test_clean_stage_doesnt_resolve_file_entities(setup_and_teardown, mocker):  # noqa: F811
     # Regression test to ensure that XML custom ENTITIES that reference files aren't resolved
     # Prior to 2.9.3, lxml 4.9.3 was used, and it defaulted to resolving file entities
 
