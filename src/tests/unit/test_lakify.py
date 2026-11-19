@@ -23,7 +23,9 @@ def test_recursive_json_nest(filename):
     )
 
     # Get input, Process
-    context = etree.iterparse(xml_filename, tag="iati-activity", huge_tree=True)
+    context = etree.iterparse(  # type: ignore[arg-type]
+        xml_filename, tag="iati-activity", huge_tree=False, resolve_entities="internal"
+    )
     _, activity = next(context)
     output = recursive_json_nest(activity, {})
 
